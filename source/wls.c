@@ -67,6 +67,7 @@ volatile int abortthread;
 HANDLE hthread;
 int searchstate=0;
 int foundcount;
+int writecount;
 
 pens_type pens;
 brushes_type brushes;
@@ -76,6 +77,7 @@ int centerx,centery,centerxodd,centeryodd;
 int genmax;
 int origfield[GENMAX][COLMAX][ROWMAX];
 int currfield[GENMAX][COLMAX][ROWMAX];
+
 POINT scrollpos;
 
 // This is self-explanatory, right?
@@ -298,6 +300,9 @@ void InitGameSettings(void)
 	smartstatsumwnd = 0;
 	smartstatsumlenc = 0;
 	smartstatsumwndc = 0;
+	smarton=TRUE;
+	combine=FALSE;
+	combining=FALSE;
 	orderwide=FALSE;
 	ordergens=TRUE;
 	ordermiddle=FALSE;
@@ -619,19 +624,71 @@ void DrawCell(HDC hDC,int x,int y)
 
 }
 
+// Set/reset unknown/unchecked
+void ChangeChecking(HDC hDC, int x, int y, int allgens, int set)
+{
+	POINT *pts;
+	int numpts,i,j;
+	int s1, s2;
+	int g1, g2;
+
+	if (set)
+	{
+		s1 = 2;
+		s2 = 3;
+	} else {
+		s1 = 3;
+		s2 = 2;
+	}
+
+	if (allgens)
+	{
+		g1 = 0;
+		g2 = GENMAX - 1;
+	}
+	else
+	{
+		g1 = curgen;
+		g2 = curgen;
+	}
+
+	pts=GetSymmetricCells(x,y,&numpts);
+
+	for(j=g1;j<=g2;j++)
+	{
+		if (currfield[j][x][y] == s1)
+		{
+			currfield[j][x][y] = s2;
+		}
+	}
+	DrawCell(hDC,x,y);
+
+	for(i=0;i<numpts;i++) {
+		for(j=g1;j<=g2;j++)
+		{
+			if (currfield[j][pts[i].x][pts[i].y] == s1)
+			{
+				currfield[j][pts[i].x][pts[i].y] = s2;
+			}
+		}
+		DrawCell(hDC,pts[i].x,pts[i].y);
+	}
+}
+
 // set and paint all cells symmetrical to the given cell
 // (including the given cell)
 void Symmetricalize(HDC hDC,int x,int y,int allgens)
 {
-
 	POINT *pts;
 	int numpts,i,j;
 
 	pts=GetSymmetricCells(x,y,&numpts);
 
 	if(allgens) {
-		for(j=0;j<GENMAX;j++)
+		for(j=0;j<GENMAX;j++) 
+		{
 			currfield[j][x][y]=currfield[curgen][x][y];
+		}
 	}
 	DrawCell(hDC,x,y);
 
@@ -639,7 +696,9 @@ void Symmetricalize(HDC hDC,int x,int y,int allgens)
 		currfield[curgen][pts[i].x][pts[i].y]=currfield[curgen][x][y];
 		if(allgens) {
 			for(j=0;j<GENMAX;j++)
+			{
 				currfield[j][pts[i].x][pts[i].y]=currfield[curgen][x][y];
+			}
 		}
 		DrawCell(hDC,pts[i].x,pts[i].y);
 	}
@@ -665,7 +724,7 @@ void InvertCells(HDC hDC1)
 		r.bottom= (endcell.y+1)*cellheight;
 	}
 	else {
-		r.top=   endcell.y*cellheight;
+		r.top=endcell.y*cellheight;
 		r.bottom=(startcell.y+1)*cellheight;
 	}
 
@@ -874,7 +933,7 @@ int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 	case WM_CHAR:
 		vkey=(int)wParam;
 
-		if(vkey=='C' || vkey=='X' || vkey=='A' || vkey=='S' || vkey=='F')
+		if(vkey=='C' || vkey=='X' || vkey=='A' || vkey=='S' || vkey=='F' || vkey=='I' || vkey=='O')
 			allgens=1;
 
 		if(vkey=='C' || vkey=='c') {
@@ -892,8 +951,11 @@ int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 		else if(vkey=='F' || vkey=='f') {
 			newval=4;
 			allgens=1;
-		}
-		else {
+		} else if(vkey=='I' || vkey=='i') {
+			newval=11;
+		} else if(vkey=='O' || vkey=='o') {
+			newval=10;
+		} else {
 			return 1;
 		}
 
@@ -914,14 +976,27 @@ int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 			if(newval>=0) {
 				for(i=selectrect.left;i<=selectrect.right;i++) {
 					for(j=selectrect.top;j<=selectrect.bottom;j++) {
-						currfield[curgen][i][j]=newval;
-						Symmetricalize(hDC,i,j,allgens);
+						if (newval < 10)
+						{
+							currfield[curgen][i][j]=newval;
+							Symmetricalize(hDC,i,j,allgens);
+						} else {
+							ChangeChecking(hDC,i,j,allgens,newval == 10);
+						}
 					}
 				}
 			}
 		} else {
-			if(newval>=0) currfield[curgen][x][y]=newval;
-			Symmetricalize(hDC,x,y,allgens);
+			if(newval>=0) 
+			{
+				if (newval < 10)
+				{
+					currfield[curgen][x][y]=newval;
+					Symmetricalize(hDC,x,y,allgens);
+				} else {
+					ChangeChecking(hDC,x,y,allgens,newval == 10);
+				}
+			}
 		}
 	}
 
@@ -938,6 +1013,8 @@ int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 BOOL set_initial_cells(void)
 {
 	CELL *cell;
+	CELL **setpos;
+	BOOL change;
 	char buf[80];
 	int i,j,g;
 
@@ -977,6 +1054,56 @@ BOOL set_initial_cells(void)
 			}
 		}
 	}
+
+	// now let's try all UNK cells for ON and OFF state
+	// set those which allow only one
+
+	setpos = newset;
+	do {
+		change = FALSE;
+		for(g=0;g<genmax;g++) {
+			for(i=0;i<colmax;i++) {
+				for(j=0;j<rowmax;j++) {
+					cell = findcell(j+1,i+1,g);
+					if (cell->active && (cell->state == UNK)) {
+						if (proceed(cell, OFF, TRUE))
+						{
+							backup();
+							if (proceed(cell, ON, TRUE))
+							{
+								backup();
+							} else {
+								// OFF possible, ON impossible
+								if (setpos != newset) backup();
+								if (proceed(cell, OFF, TRUE))
+								{
+									change = TRUE;
+								} else {
+									// we should never get here
+									// because it's already tested that the OFF state is possible
+									wlsMessage("Program inconsistency found",0);
+									return FALSE;
+								}
+							}							
+						} else {
+							// can't set OFF state
+							// let's try ON state
+							if (setpos != newset) backup();
+							if (proceed(cell, ON, TRUE))
+							{
+								change = TRUE;
+							} else {
+								// can't set neither ON nor OFF state
+								sprintf(buf,"Inconsistent UNK state for cell (col %d,row %d,gen %d)",i+1,j+1,g);
+								wlsMessage(buf,0);
+								return FALSE;
+							}
+						}
+					}
+				}
+			}
+		}
+	} while (change);
 
 	newset = settable;
 	nextset = settable;
@@ -1020,8 +1147,12 @@ void showcount(void)
 }
 
 
+// possible values for type:
+// 0 - nothing happens
+// 1 - store the generation as a solution
+// 2 - copy solution
 
-void printgen()
+void printgen(void)
 {
 	int i,j,g;
 	CELL *cell;
@@ -1041,10 +1172,76 @@ void printgen()
 					currfield[g][i][j] = 0;
 					break;
 				case UNK:
-					if (cell->unchecked) {
-						currfield[g][i][j] = 3;
+					currfield[g][i][j] = origfield[g][i][j];
+				}
+			}
+		}
+	}
+
+	InvalidateRect(hwndMain,NULL,FALSE);
+}
+
+void do_combine(void)
+{
+	int i,j,g;
+	CELL *cell;
+
+	if (combining)
+	{
+		for(g=0;g<genmax;g++) {
+			for(i=0;i<colmax;i++){
+				for(j=0;j<rowmax;j++) {
+					cell=findcell(j+1,i+1,g);
+					if ((cell->combined != UNK) && (cell->combined != cell->state))
+					{
+						--combinedcells;
+						cell->combined = UNK;
+					}
+				}
+			}
+		}
+	} else {
+		combining = TRUE;
+		combinedcells = 0;
+		for(g=0;g<genmax;g++) {
+			for(i=0;i<colmax;i++){
+				for(j=0;j<rowmax;j++) {					
+					cell=findcell(j+1,i+1,g);
+					if ((origfield[g][i][j] > 1) && ((cell->state == ON) || (cell->state == OFF)))
+					{
+						++combinedcells;
+						cell->combined = cell->state;
 					} else {
-						currfield[g][i][j] = 2;
+						cell->combined = UNK;
+					}
+				}
+			}
+		}
+	}
+	setcombinedcells = combinedcells;
+	differentcombinedcells = 0;
+}
+
+void show_combine(void)
+{
+	int i,j,g;
+	CELL *cell;
+
+	if (combinedcells > 0)
+	{
+		for(g=0;g<genmax;g++) {
+			for(i=0;i<colmax;i++){
+				for(j=0;j<rowmax;j++) {					
+					cell=findcell(j+1,i+1,g);
+					switch(cell->combined) {
+					case ON:
+						currfield[g][i][j] = 1;
+						break;
+					case OFF:
+						currfield[g][i][j] = 0;
+						break;
+					case UNK:
+						currfield[g][i][j] = origfield[g][i][j];
 					}
 				}
 			}
@@ -1054,12 +1251,13 @@ void printgen()
 	InvalidateRect(hwndMain,NULL,FALSE);
 }
 
-
 void pause_search(void);  // forward decl
 
 DWORD WINAPI search_thread(LPVOID foo)
 {
+	BOOL reset = 0;
 	char buf[180];
+	int i, j, k;
 
 	/*
 	 * Initial commands are complete, now look for the object.
@@ -1086,6 +1284,17 @@ DWORD WINAPI search_thread(LPVOID foo)
 			dumpstate(dumpfile, FALSE);
 		}
 
+		if ((curstatus == FOUND) && combine)
+		{
+			curstatus = OK;
+			++foundcount;
+            do_combine();
+			writegen(outputfile, TRUE);
+			sprintf(buf,"Combine: %d cells remaining from %d solutions", combinedcells, foundcount);
+			wlsStatus(buf);
+			continue;
+		}
+
 		/*
 		 * Here if results are going to a file.
 		 */
@@ -1103,17 +1312,47 @@ DWORD WINAPI search_thread(LPVOID foo)
 			goto done;
 		}
 
-		showcount();
-		printgen();
+		if (combine)
+		{
+			show_combine();
+			if (combining)
+			{
+				sprintf(buf, "Search completed: %ld cell%s found",
+					combinedcells, (combinedcells == 1) ? "" : "s");
+				reset = (combinedcells == 0);
+			}
+			else
+			{
+				sprintf(buf, "Search completed: no solution");
+				reset = 1;
+			}
+		} else {
+			showcount();
+			printgen();
+			sprintf(buf,"Search completed:  %ld object%s found",
+				foundcount, (foundcount == 1) ? "" : "s");
 
-		sprintf(buf,"Search completed:  %ld object%s found",
-			foundcount, (foundcount == 1) ? "" : "s");
+			reset = (foundcount == 0);
+		}
+
 		wlsMessage(buf,0);
 
 		goto done;
 	}
 done:
-	searchstate=1;
+	if (reset)
+	{
+		for(k=0;k<GENMAX;k++) 
+			for(i=0;i<COLMAX;i++)
+				for(j=0;j<ROWMAX;j++)
+					currfield[k][i][j]=origfield[k][i][j];
+		searchstate = 0;
+		InvalidateRect(hwndMain,NULL,FALSE);
+	}
+	else
+	{
+		searchstate=1;
+	}
 	_endthreadex(0);
 	return 0;
 }
@@ -1124,7 +1363,23 @@ void resume_search(void)
 	DWORD threadid;
 
 	SetWindowText(hwndFrame,"WinLifeSearch");
-	wlsStatus("Searching...");
+	if (combine)
+	{
+		if (combining)
+		{
+			char buf[80];
+			sprintf(buf, "Combine: %d cells remaining", combinedcells);
+			wlsStatus(buf);
+		}
+		else
+		{
+			wlsStatus("Combining...");
+		}
+	}
+	else
+	{
+		wlsStatus("Searching...");
+	}
 
 	if(searchstate!=1) {
 		wlsError("No search is paused",0);
@@ -1191,6 +1446,14 @@ BOOL prepare_search(BOOL load)
 	viewcount = -1; // KAS
 	showcount(); // KAS
 
+	foundcount=0;
+	writecount=0;
+
+	combining = FALSE;
+	combinedcells = 0;
+	setcombinedcells = 0;
+	differentcombinedcells = 0;
+
 	if (load) {
 		if(!loadstate()) return FALSE;
 
@@ -1207,9 +1470,11 @@ BOOL prepare_search(BOOL load)
 		}
 
 		initsearchorder(); 
-		foundcount=0;
 	}
 	searchstate=1;  // pretend the search is "paused"
+
+	printgen();
+
 	return TRUE;
 }
 
@@ -1298,6 +1563,10 @@ void gen_changeby(int delta)
 	InvalidateRect(hwndMain,NULL,FALSE);
 }
 
+void hide_selection(void)
+{
+	SelectOff(NULL);
+}
 
 void clear_gen(int g)
 {	int i,j;
@@ -1310,23 +1579,151 @@ void clear_all(void)
 {	int g;
 	for(g=0;g<GENMAX;g++)
 		clear_gen(g);
+	hide_selection();
+}
+
+void flip_h(int fromgen, int togen)
+{
+	int g, r, c;
+	int fromrow, torow, fromcol, tocol;
+	int buffer;
+
+	if (selectstate == 2)
+	{
+		fromcol = selectrect.left;
+		tocol = selectrect.right;
+		fromrow = selectrect.top;
+		torow = selectrect.bottom;
+	} else {
+		fromcol = 0;
+		tocol = colmax - 1;
+		fromrow = 0;
+		torow = rowmax - 1;
+	}
+
+	for (g = fromgen; g <= togen; ++g)
+	{
+		for (r = fromrow; r <= torow; ++r)
+		{
+			for (c = (fromcol + tocol) / 2; c >= fromcol; --c)
+			{
+				buffer = currfield[g][c][r];
+				currfield[g][c][r] = currfield[g][tocol + fromcol - c][r];
+				currfield[g][tocol + fromcol - c][r] = buffer;
+			}
+		}	
+	}
+	hide_selection();
+}
+
+void flip_v(int fromgen, int togen)
+{
+	int g, r, c;
+	int fromrow, torow, fromcol, tocol;
+	int buffer;
+
+	if (selectstate == 2)
+	{
+		fromcol = selectrect.left;
+		tocol = selectrect.right;
+		fromrow = selectrect.top;
+		torow = selectrect.bottom;
+	} else {
+		fromcol = 0;
+		tocol = colmax - 1;
+		fromrow = 0;
+		torow = rowmax - 1;
+	}
+
+	for (g = fromgen; g <= togen; ++g)
+	{
+		for (r = (fromrow + torow) / 2; r >= fromrow; --r)
+		{
+			for (c = fromcol; c <= tocol; ++c)
+			{
+				buffer = currfield[g][c][r];
+				currfield[g][c][r] = currfield[g][c][tocol + fromcol - r];
+				currfield[g][c][tocol + fromcol - r] = buffer;
+			}
+		}	
+	}
+	hide_selection();
+}
+
+void transpose(int fromgen, int togen)
+{
+	int g, r, c;
+	int fromrow, torow, fromcol, tocol;
+	int buffer;
+
+	if (selectstate == 2)
+	{
+		fromcol = selectrect.left;
+		tocol = selectrect.right;
+		fromrow = selectrect.top;
+		torow = selectrect.bottom;
+	} else {
+		fromcol = 0;
+		tocol = colmax - 1;
+		fromrow = 0;
+		torow = rowmax - 1;
+	}
+
+	if ((fromcol - tocol) != (fromrow - torow))
+	{
+		// only transpose squares
+		return;
+	}
+
+	for (g = fromgen; g <= togen; ++g)
+	{
+		for (r = fromrow + 1; r <= torow; ++r)
+		{
+			for (c = fromcol; c < fromcol + (r - fromrow); ++c)
+			{
+				buffer = currfield[g][c][r];
+				currfield[g][c][r] = currfield[g][fromcol - fromrow + r][fromrow - fromcol + c];
+				currfield[g][fromcol - fromrow + r][fromrow - fromcol + c] = buffer;
+			}
+		}	
+	}
+	hide_selection();
 }
 
 void shift_gen(int fromgen, int togen, int gend, int cold, int rowd)
 {
 	int g,r,c;
+	int fromrow, torow, fromcol, tocol;
+	int gx,rx,cx;
+
+	if (selectstate == 2)
+	{
+		fromcol = selectrect.left;
+		tocol = selectrect.right;
+		fromrow = selectrect.top;
+		torow = selectrect.bottom;
+	} else {
+		fromcol = 0;
+		tocol = colmax - 1;
+		fromrow = 0;
+		torow = rowmax - 1;
+	}
+
 	for(g=fromgen; g<=togen; g++) {
-		for(c=0; c<colmax; c++) {
-			for (r=0; r<rowmax; r++) {
+		for(c=fromcol; c<=tocol; c++) {
+			for (r=fromrow; r<=torow; r++) {
 				origfield[g][c][r] = currfield[g][c][r];
 			}
 		}
 	}
 
 	for(g=fromgen; g<=togen; g++) {
-		for(c=0; c<colmax; c++) {
-			for (r=0; r<rowmax; r++) {
-				currfield[(g+gend-fromgen+togen-fromgen+1) % (togen-fromgen+1) + fromgen][(c+cold+colmax) % colmax][(r+rowd+rowmax) % rowmax] = origfield[g][c][r];
+		for(c=fromcol; c<=tocol; c++) {
+			for (r=fromrow; r<=torow; r++) {
+				gx = (g + gend - fromgen + togen - fromgen + 1) % (togen - fromgen + 1) + fromgen;
+				cx = (c + cold - fromcol + tocol - fromcol + 1) % (tocol - fromcol + 1) + fromcol;
+				rx = (r + rowd - fromrow + torow - fromrow + 1) % (torow - fromrow + 1) + fromrow;
+				currfield[gx][cx][rx] = origfield[g][c][r];
 			}
 		}
 	}
@@ -1335,38 +1732,50 @@ void shift_gen(int fromgen, int togen, int gend, int cold, int rowd)
 void copy_result(void)
 {
 	int g, i, j;
-	CELL *cell;
 
 	if (searchstate == 0) return;
 
 	if (searchstate != 1) pause_search();
 
-	// copy dbell's format back into mine
 	for(g=0;g<genmax;g++) {
 		for(i=0;i<colmax;i++){
 			for(j=0;j<rowmax;j++) {
-
-				cell=findcell(j+1,i+1,g);
-
-				switch (cell->state) {
-				case ON:
-					origfield[g][i][j] = 1;
-					break;
-				case OFF:
-					origfield[g][i][j] = 0;
-					break;
-				case UNK:
-					if (cell->unchecked) {
-						origfield[g][i][j] = 3;
-					} else {
-						origfield[g][i][j] = 2;
-					}
-				}
+				origfield[g][i][j] = currfield[g][i][j];
 			}
 		}
 	}
 
 	if (searchstate != 0) reset_search();
+}
+
+void copy_combination(void)
+{
+	int g, i, j;
+
+	if (searchstate == 0) return;
+
+	if (searchstate != 1) pause_search();
+
+	show_combine();
+
+	for(g=0;g<genmax;g++) {
+		for(i=0;i<colmax;i++){
+			for(j=0;j<rowmax;j++) {
+				origfield[g][i][j] = currfield[g][i][j];
+			}
+		}
+	}
+
+	if (searchstate != 0) reset_search();
+}
+
+void clear_combination(void)
+{
+	if (searchstate == 0) return;
+
+	if (searchstate != 1) pause_search();
+
+	combining = 0;
 }
 
 void copytoclipboard(void)
@@ -1484,11 +1893,15 @@ LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		
 	case WM_INITMENU:
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHSTART,searchstate==0?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHPREPARE,searchstate==0?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESET,searchstate!=0?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHPAUSE,searchstate==2?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESUME,searchstate==1?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP,searchstate!=0?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP2,searchstate!=0?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_COPYRESULT,searchstate!=0?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_COPYCOMBINATION,searchstate!=0?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_CLEARCOMBINATION,searchstate!=0?MF_ENABLED:MF_GRAYED);
 		return 0;
 
 	case WM_CHAR:
@@ -1528,6 +1941,9 @@ LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			return 0;
 		case IDC_SEARCHSTART:
 			start_search();
+			return 0;
+		case IDC_SEARCHPREPARE:
+			prepare_search(FALSE);
 			return 0;
 		case IDC_SEARCHPAUSE:
 			pause_search();
@@ -1578,6 +1994,7 @@ LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			return 0;
 		case IDC_CLEARGEN:
 			if(searchstate == 0) clear_gen(curgen);
+			hide_selection();
 			InvalidateRect(hwndMain,NULL,FALSE);
 			return 0;
 		case IDC_CLEAR:
@@ -1587,45 +2004,78 @@ LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_COPYRESULT:
 			if(searchstate != 0) copy_result();
 			return 0;
+		case IDC_COPYCOMBINATION:
+			if (searchstate != 0) copy_combination();
+			return 0;
+		case IDC_CLEARCOMBINATION:
+			if (searchstate != 0) clear_combination();
+			return 0;
 		case IDC_SHIFTGUP:
 			if(searchstate == 0) shift_gen(curgen, curgen, 0, 0, -1);
-			InvalidateRect(hwndMain,NULL,FALSE);
+			InvalidateRect(hwndMain,NULL,selectstate == 2);
 			return 0;
 		case IDC_SHIFTGDOWN:
 			if(searchstate == 0) shift_gen(curgen, curgen, 0, 0, 1);
-			InvalidateRect(hwndMain,NULL,FALSE);
+			InvalidateRect(hwndMain,NULL,selectstate == 2);
 			return 0;
 		case IDC_SHIFTGLEFT:
 			if(searchstate == 0) shift_gen(curgen, curgen, 0, -1, 0);
-			InvalidateRect(hwndMain,NULL,FALSE);
+			InvalidateRect(hwndMain,NULL,selectstate == 2);
 			return 0;
 		case IDC_SHIFTGRIGHT:
 			if(searchstate == 0) shift_gen(curgen, curgen, 0, 1, 0);
-			InvalidateRect(hwndMain,NULL,FALSE);
+			InvalidateRect(hwndMain,NULL,selectstate == 2);
 			return 0;
 		case IDC_SHIFTAUP:
 			if(searchstate == 0) shift_gen(0, GENMAX-1, 0, 0, -1);
-			InvalidateRect(hwndMain,NULL,FALSE);
+			InvalidateRect(hwndMain,NULL,selectstate == 2);
 			return 0;
 		case IDC_SHIFTADOWN:
 			if(searchstate == 0) shift_gen(0, GENMAX-1, 0, 0, 1);
-			InvalidateRect(hwndMain,NULL,FALSE);
+			InvalidateRect(hwndMain,NULL,selectstate == 2);
 			return 0;
 		case IDC_SHIFTALEFT:
 			if(searchstate == 0) shift_gen(0, GENMAX-1, 0, -1, 0);
-			InvalidateRect(hwndMain,NULL,FALSE);
+			InvalidateRect(hwndMain,NULL,selectstate == 2);
 			return 0;
 		case IDC_SHIFTARIGHT:
 			if(searchstate == 0) shift_gen(0, GENMAX-1, 0, 1, 0);
-			InvalidateRect(hwndMain,NULL,FALSE);
+			InvalidateRect(hwndMain,NULL,selectstate == 2);
 			return 0;
 		case IDC_SHIFTAPAST:
 			if(searchstate == 0) shift_gen(0, genmax-1, -1, 0, 0);
-			InvalidateRect(hwndMain,NULL,FALSE);
+			InvalidateRect(hwndMain,NULL,selectstate == 2);
 			return 0;
 		case IDC_SHIFTAFUTURE:
 			if(searchstate == 0) shift_gen(0, genmax-1, 1, 0, 0);
-			InvalidateRect(hwndMain,NULL,FALSE);
+			InvalidateRect(hwndMain,NULL,selectstate == 2);
+			return 0;
+		case ID_FLIP_GEN_H:
+			if(searchstate == 0) flip_h(curgen, curgen);
+			InvalidateRect(hwndMain,NULL,selectstate == 2);
+			return 0;
+		case ID_FLIP_GEN_V:
+			if(searchstate == 0) flip_v(curgen, curgen);
+			InvalidateRect(hwndMain,NULL,selectstate == 2);
+			return 0;
+		case ID_FLIP_ALL_H:
+			if(searchstate == 0) flip_h(0, GENMAX - 1);
+			InvalidateRect(hwndMain,NULL,selectstate == 2);
+			return 0;
+		case ID_FLIP_ALL_V:
+			if(searchstate == 0) flip_v(0, GENMAX - 1);
+			InvalidateRect(hwndMain,NULL,selectstate == 2);
+			return 0;
+		case ID_TRANS_GEN:
+			if(searchstate == 0) transpose(curgen, curgen);
+			InvalidateRect(hwndMain,NULL,selectstate == 2);
+			return 0;
+		case ID_TRANS_ALL:
+			if(searchstate == 0) transpose(0, GENMAX - 1);
+			InvalidateRect(hwndMain,NULL,selectstate == 2);
+			return 0;
+		case ID_HIDESEL:
+			hide_selection();
 			return 0;
 		break;
 		}
@@ -1691,10 +2141,6 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	return (DefWindowProc(hWnd, msg, wParam, lParam));
 }
-
-
-
-
 
 
 LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -1923,6 +2369,8 @@ BOOL CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		CheckDlgButton(hWnd,IDC_FOLLOW,follow);
 		CheckDlgButton(hWnd,IDC_FOLLOWGENS,followgens);
 		CheckDlgButton(hWnd,IDC_SMART,smart);
+		CheckDlgButton(hWnd,IDC_SMARTON,smarton);
+		CheckDlgButton(hWnd,IDC_COMBINE,combine);
 		SetDlgItemInt(hWnd,IDC_NEARCOLS,nearcols,TRUE);
 		SetDlgItemInt(hWnd,IDC_USECOL,usecol,TRUE);
 		SetDlgItemInt(hWnd,IDC_USEROW,userow,TRUE);
@@ -1951,6 +2399,8 @@ BOOL CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			follow=     IsDlgButtonChecked(hWnd,IDC_FOLLOW     )?1:0;
 			followgens= IsDlgButtonChecked(hWnd,IDC_FOLLOWGENS )?1:0;
 			smart=      IsDlgButtonChecked(hWnd,IDC_SMART      )?1:0;
+			smarton=    IsDlgButtonChecked(hWnd,IDC_SMARTON    )?1:0; 
+			combine=    IsDlgButtonChecked(hWnd,IDC_COMBINE    )?1:0; 
 			
 			nearcols=GetDlgItemInt(hWnd,IDC_NEARCOLS,NULL,TRUE);
 			usecol=GetDlgItemInt(hWnd,IDC_USECOL,NULL,TRUE);

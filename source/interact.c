@@ -24,6 +24,7 @@ static	BOOL	setall;		/* set all cells from initial file */
 static	BOOL	islife;		/* whether the rules are for standard Life */
 extern char	rulestring[20];	/* rule string for printouts */
 static	int	foundcount;	/* number of objects found */
+static int writecount; /* number of objects written to a file */
 static	char *	initfile;	/* file containing initial cells */
 static	char *	loadfile;	/* file to load state from */
 extern int saveoutput;
@@ -42,7 +43,7 @@ static	long	getnum PROTO((char **, int));
  * When changed incompatibly, the dump file version should be incremented.
  * The table is ended with a NULL pointer.
  */
-static	int *	param_table[] =
+static	int *param_table[] =
 {
 	&curstatus,
 	&rowmax, &colmax, &genmax, 
@@ -54,8 +55,10 @@ static	int *	param_table[] =
 	&orderwide, &ordergens, &ordermiddle, &followgens, 
 	&diagsort, &symmetry, &trans_rotate, &trans_flip, &trans_x, &trans_y,
 	&knightsort,
-	&smart, &smartwindow, &smartthreshold, 
+	&smart, &smartwindow, &smartthreshold,
 	&foundcount,
+	&combine, &combining, &combinedcells, &setcombinedcells, &differentcombinedcells, 
+
 	NULL
 };
 
@@ -209,7 +212,6 @@ void writegen(char *file1, BOOL append)
 	int	minrow, maxrow, mincol, maxcol;
 	char buf[80];
 	char file[MAX_PATH];
-	static int writecount=0;
 
 	if(!saveoutput && !outputcols) return;
 
@@ -244,7 +246,7 @@ void writegen(char *file1, BOOL append)
 	maxrow = -1;
 	maxcol = -1;
 
-	for (gen=0; gen < (saveoutputallgen ? genmax : 1); gen++)
+	for (gen=0; gen < genmax; gen++)
 	{
 		for (row = 1; row <= rowmax; row++)
 		{
@@ -335,7 +337,7 @@ void writegen(char *file1, BOOL append)
 
 	writecount++;
 	if (fp != stdout) {
-		sprintf(buf,"\"%s\" written (%d)",file,writecount);
+		sprintf(buf,"\"%s\" written (%d)",file, writecount);
 		wlsStatus(buf);
 	}
 }
@@ -355,6 +357,7 @@ void dumpstate(char *file1, BOOL echo)
 	int	gen;
 	int **	param;
 	char file[MAX_PATH];
+	char ind;
 
 	if(file1) {
 		strcpy(file,file1);
@@ -417,9 +420,41 @@ void dumpstate(char *file1, BOOL echo)
 	{
 		cell = *set++;
 
-		fprintf(fp, "S %d %d %d %d %d\n", cell->row, cell->col,
-			cell->gen, (cell->state == ON) ? 1 : 0, cell->free);
+		if (combining && (cell->combined != UNK))
+		{
+			ind = (cell->combined == cell->state) ? '=' : '!';
+		}
+		else
+		{
+			ind = '.';
+		}
+
+		fprintf(fp, "S %3d %3d %2d %d %d %c\n", cell->row, cell->col,
+			cell->gen, (cell->state == ON) ? 1 : 0, cell->free, ind);
 	}
+
+	/*
+	 * save combination
+	 */
+
+	if (combining) 
+	{
+		for(col=1;col<=colmax;col++) {
+			for(row=1;row<=rowmax;row++) {
+				for(gen=0;gen<genmax;gen++) {
+					cell = findcell(row, col, gen);
+					if (cell->combined != UNK)
+					{
+						fprintf(fp, "F %3d %3d %2d %d \n", row, col, gen, (cell->combined == ON) ? 1 : 0);
+					}
+				}
+			}
+		}
+	}
+
+	/*
+	 * end of file marker
+	 */
 
 	fprintf(fp, "E\n");
 
@@ -597,6 +632,7 @@ BOOL loadstate(void)
 
 	for (;;)
 	{
+		// read the next line
 		buf[0] = '\0';
 		fgets(buf, LINESIZE, fp);
 
@@ -607,7 +643,7 @@ BOOL loadstate(void)
 		row = getnum(&cp, 0);
 		col = getnum(&cp, 0);
 		gen = getnum(&cp, 0);
-		state = (getnum(&cp, 0) != 0) ? ON : OFF;
+		state = (getnum(&cp, 0) == 1) ? ON : OFF;
 		free = getnum(&cp, 0);
 
 		cell = findcell(row, col, gen);
@@ -622,6 +658,7 @@ BOOL loadstate(void)
 
 			return FALSE;
 		}
+
 	}
 
 //*********************************************
@@ -637,6 +674,30 @@ BOOL loadstate(void)
 		fclose(fp);
 
 		return FALSE;
+	}
+
+//*********************************************
+// Read combination
+//*********************************************
+
+	for (;;)
+	{
+		if (buf[0] != 'F')
+		{
+			break;
+		}
+		cp = &buf[1];
+		row = getnum(&cp, 0);
+		col = getnum(&cp, 0);
+		gen = getnum(&cp, 0);
+		state = (getnum(&cp, 0) == 1) ? ON : OFF;
+
+		cell = findcell(row, col, gen);
+		cell->combined = state;
+
+		buf[0] = '\0';
+		fgets(buf, LINESIZE, fp);
+	
 	}
 
 //*********************************************

@@ -56,6 +56,7 @@
 #define IDC_CONWAY                      1041
 #define IDC_CHECK5                      1042
 #define IDC_STOPONFOUND                 1042
+#define IDC_COMBINE                     1042
 #define IDC_OUTPUTFILEYN                1043
 #define IDC_EDIT6                       1044
 #define IDC_MAXCOUNT                    1044
@@ -74,6 +75,7 @@
 #define IDC_SMARTWINDOW                 1055
 #define IDC_SMARTTHRESHOLD              1056
 #define IDC_VIEWFREQ                    1057
+#define IDC_SMARTON                     1057
 #define IDC_DIAGSORT                    1058
 #define IDC_ORDERWIDE                   1059
 #define IDC_ORDERGENS                   1060
@@ -122,13 +124,23 @@
 #define IDC_SHIFTARIGHT                 40040
 #define IDC_SHIFTAPAST                  40041
 #define IDC_SHIFTAFUTURE                40042
+#define IDC_SEARCHPREPARE               40043
+#define IDC_COPYCOMBINATION             40044
+#define IDC_CLEARCOMBINATION            40047
+#define ID_TRANS_GEN                    40055
+#define ID_TRANS_ALL                    40056
+#define ID_FLIP_GEN_H                   40057
+#define ID_FLIP_GEN_V                   40058
+#define ID_FLIP_ALL_H                   40059
+#define ID_FLIP_ALL_V                   40060
+#define ID_HIDESEL                      40061
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        134
-#define _APS_NEXT_COMMAND_VALUE         40043
+#define _APS_NEXT_COMMAND_VALUE         40062
 #define _APS_NEXT_CONTROL_VALUE         1075
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

@@ -1,155 +1,17 @@
 WinLifeSearch - A Windows port of David Bell's LIFESRC program.
 
-By Jason Summers
-v0.5 - 24 Sep 2002
-
-["Greatest impact" feature, and other changes in v0.5, by Karel Suhajda.]
-
-
+v0.6 - Jan 2003
 Requires Windows 95/98/NT/whatever
 
-
-WARNING! This program may be buggy, quirky, illogical, and incomplete in 
-places. And it isn't very well documented. Nearly all of that is the 
-fault of the porter, not the author of LIFESRC.
+By Jason Summers.
+Additional searching and editing options by Karel Suhajda.
 
 
 This is a program to search for oscillators, spaceships, and related objects 
 in Conway's Game of Life and related cellular automata. In order to make any 
-sense of it, you must be familiar with Life. If not, you can start by 
-visiting some of the web sites on the topic, such as 
-<http://www.pobox.com/~jason1/life/>.
+sense of it, you must be familiar with Life and/or Life-like cellular automata.
 
 
+My web site: <http://www.pobox.com/~jason1/life/>.
 
-Brief instructions
-------------------
-
-First, get a copy of David Bell's LIFESRC and read through the 
-documentation. It would help to be familiar with using LIFESRC, but it 
-should not be absolutely necessary.
-
-Run wls.exe. Look through all the menu options. Try a few things.
-
-Keyboard/mouse functions:
-  's' or left mouse button = The cell under the mouse is forced ON.
-  'a' or right mouse button = The cell under the mouse is forced OFF.
-  'x' = Cell is UNCHECKED. Use this to find partial patterns.
-  'f' = Cell is frozen (forced to be the same in all generations. Frozen 
-        cells don't seem to work too well sometimes. There may be a bug 
-        somewhere causing this.
-  'c' = Cell is cleared.
-  'S' or shift+left mouse button = cell is forced ON in all generations
-  'A' or shift+right = cell is forced off in all generations
-  'X' = UNCHECKED in all gens
-  'C' = cleared in all generations.
-
-You can also select a region of cells using the mouse, then point to the 
-selected region and press one of the above keys to set many cells at once. 
-This function is a little flaky.
-
-Set up a search by choosing field size, period, symmetry, translation, etc.
-
-Force some cells ON. Often just one in one of the leftmost columns is best. 
-Or, use the Search setting "Force an ON cell in column..." to do that.
-
-Start the search. Observe partial results. Run simpler searches for 
-practice. Do lots of waiting. Try to get a feel for how well a search is 
-going. The "rows" setting will usually determine how fast the search will 
-run. Increasing the rows by 1 could slow down the search considerably. 
-Increasing columns has usually little or no effect.
-
-The fastest direction to search for spaceships is usually to set the X 
-translation to -1 (or -2 as appropriate).
-
-Version 0.4 has a new option (in Search Settings) named "Fast symmetry".
-It is usually ON, and can speed up some symmetric searches considerably.
-However, it is flawed in several ways. It is only implemented for mirror-Y
-and backward-diagonal symmetry types. It causes half of your search
-region to be mostly blank. If you copy a patter to your Life program,
-you'll have to manually duplicate it to create the other half. Worse,
-it is the top half that is blank -- I know the other half would be better,
-but for some reason I wasn't able to get that to work. It also screws up
-so of the internal cell-counting logic, and ends up breaking the "Save
-Partial Results Every X Generations" feature, and maybe other things.
-
-
--------------------------------
-
-This port has a few improvements over lifesrc:
-
-- A GUI
-- Can reset without restarting the program
-- More symmetry options
-- More translation options
-- Diagonal and "knightship" sort order
-- "Fast symmetry" option.
-
-And a number of de-improvements and broken things. Off the top of my head:
-
-You cannot change cells after the search has started.
-
-You can only save the state when a search is paused.
-
-Can only save searches, not initial setups. If you want to save a setup, 
-start a search first, Pause, use Save state, then when you load it back, do 
-a Reset.
-
-There's no way to select and move a region of cells.
-
-There's no way to paste a pattern into the program.
-
-
-Other notes:
-------------
-
-Cells that are the same in all generations will be drawn with a thin border. 
-At the lower left is a control that shows which generation being displayed.
-
-You can access the menus while a search is running, but if you change 
-settings at that time, it will probably screw up the search. However, it is 
-safe to change the Output settings (I think).
-
-You can use Edit|Copy to copy the currently displayed pattern to the 
-clipboard. The format is compatible with Life32. This works at any time, 
-even while a search is running.
-
-Some symmetry and translation settings will be unavailable unless you set 
-rows and columns to the same number.
-
-The Save format is NOT compatible with other versions of lifesrc. I had to 
-change it to save the initial setup. It also stores some additional 
-settings, and does symmetry and translations a little differently.
-
-The search thread runs at "low" priority, so it shouldn't slow down your 
-whole computer to a crawl. However, when it redraws the diagram every X 
-generations, that is done at normal priority, so other programs may hesitate 
-for an moment.
-
-
--------------------------------
-
-The source code is included, but please note...
-
-I initially wanted to do this port primarily by replacing the interface 
-functions with Windows version. This turned out to be impractical, and I 
-eventually gave up on any pretense of keeping track of the modifications I 
-made. The only thing I will mention is the "FASTER" macro in search.c, which 
-can be defined to search a few percent faster at the expense of some 
-features.
-
-The source contains lots of hacks, bad decisions, redundant code, and dead 
-code. It was written by someone who didn't understand LIFESRC very well. I 
-recommend against attempting to figure out how this program works in order 
-to add significant new features. It really needs a complete overhaul, and it 
-would be better just to start over and do it right. 
-
--------------------------------
-
-You can send feedback to <jason1@pobox.com>. However, I'm not really very 
-interested in bug report concerning the interface (unless it's really 
-serious), or feature suggestions concerning the interface (unless it's 
-really simple). I already know how to fix lots of things, I'm just too lazy 
-to do it :-). Suggestions that would increase the search speed, though, 
-would be welcome.
 

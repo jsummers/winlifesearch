@@ -58,13 +58,31 @@ BEGIN
                 MENUITEM "To &future\tCtrl+Shift+PgDn", IDC_SHIFTAFUTURE
             END
         END
+        POPUP "&Flip"
+        BEGIN
+            POPUP "&Generation"
+            BEGIN
+                MENUITEM "&Horizontal\tCtrl+H",         ID_FLIP_GEN_H
+                MENUITEM "&Vertical\tCtrl+E",           ID_FLIP_GEN_V
+            END
+            POPUP "&All generations"
+            BEGIN
+                MENUITEM "&Horizontal\tCtrl+Shift+H",   ID_FLIP_ALL_H
+                MENUITEM "&Vertical\tCtrl+Shift+E",     ID_FLIP_ALL_V
+            END
+        END
+        POPUP "&Transpose"
+        BEGIN
+            MENUITEM "&Generation\tCtrl+T",         ID_TRANS_GEN
+            MENUITEM "&All generations\tCtrl+Shift+T", ID_TRANS_ALL
+        END
         POPUP "Clea&r"
         BEGIN
             MENUITEM "&Generation\tCtrl+Del",       IDC_CLEARGEN
             MENUITEM "&All generations\tCtrl+Shift+Del", IDC_CLEAR
         END
         MENUITEM SEPARATOR
-        MENUITEM "Copy result to &definition",  IDC_COPYRESULT
+        MENUITEM "&Hide selection\tBackspace",  ID_HIDESEL
     END
     POPUP "View"
     BEGIN
@@ -82,12 +100,18 @@ BEGIN
     END
     POPUP "&Search"
     BEGIN
+        MENUITEM "Pr&epare\tCtrl+P",            IDC_SEARCHPREPARE
         MENUITEM "&Start\tCtrl+G",              IDC_SEARCHSTART
-        MENUITEM "&Reset\tCtrl+R",              IDC_SEARCHRESET
+        MENUITEM SEPARATOR
         MENUITEM "&Pause\tEsc",                 IDC_SEARCHPAUSE
         MENUITEM "&Continue\tSpace",            IDC_SEARCHRESUME
         MENUITEM "&Backup\tB",                  IDC_SEARCHBACKUP
         MENUITEM "Backup 20\tY",                IDC_SEARCHBACKUP2
+        MENUITEM "Clear combination",           IDC_CLEARCOMBINATION
+        MENUITEM "&Reset\tCtrl+R",              IDC_SEARCHRESET
+        MENUITEM SEPARATOR
+        MENUITEM "Copy result",                 IDC_COPYRESULT
+        MENUITEM "Copy combination",            IDC_COPYCOMBINATION
     END
     POPUP "&Help"
     BEGIN
@@ -166,15 +190,15 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,253,24,50,14
 END
 
-DLGABOUT DIALOG DISCARDABLE  0, 0, 217, 90
+DLGABOUT DIALOG DISCARDABLE  0, 0, 186, 70
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "About"
 FONT 8, "MS Sans Serif"
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,160,7,50,14
-    LTEXT           "WinLifeSearch v0.5\r\n\r\nA Windows port of David Bell's LIFESRC v3.5\r\n\r\nBy Jason Summers\r\n\r\n""Try cells with greatest impact"" feature by Karel Suhajda",
-                    IDC_STATIC,7,7,150,76
-    ICON            "ICONWLS",IDC_STATIC,173,33,21,20,SS_REALSIZEIMAGE
+    DEFPUSHBUTTON   "OK",IDOK,129,7,50,14
+    LTEXT           "WinLifeSearch v0.6\r\n\r\nA Windows port of David Bell's LIFESRC v3.5\r\n\r\nBy Jason Summers",
+                    IDC_STATIC,7,7,114,56
+    ICON            "ICONWLS",IDC_STATIC,143,33,20,20,SS_REALSIZEIMAGE
 END
 
 DLGROWS DIALOG DISCARDABLE  0, 0, 186, 55
@@ -288,7 +312,7 @@ BEGIN
                     BS_AUTOCHECKBOX | WS_TABSTOP,170,42,62,10
 END
 
-DLGSEARCHSETTINGS DIALOGEX 0, 0, 365, 206
+DLGSEARCHSETTINGS DIALOGEX 0, 0, 365, 222
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Search settings"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
@@ -336,18 +360,23 @@ BEGIN
                     138,167,10
     CONTROL         "First try cells with the greatest impact",IDC_SMART,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,185,154,131,10
-    LTEXT           "Impact checking window",IDC_STATIC,185,171,108,8,0,
+    LTEXT           "Impact checking window",IDC_STATIC,185,187,108,8,0,
                     WS_EX_RIGHT
-    EDITTEXT        IDC_SMARTWINDOW,297,168,28,14,ES_AUTOHSCROLL
-    LTEXT           "Impact checking threshold",IDC_STATIC,185,187,108,8,0,
+    EDITTEXT        IDC_SMARTWINDOW,297,184,28,14,ES_AUTOHSCROLL
+    LTEXT           "Impact checking threshold",IDC_STATIC,185,203,108,8,0,
                     WS_EX_RIGHT
-    EDITTEXT        IDC_SMARTTHRESHOLD,297,184,28,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SMARTTHRESHOLD,297,201,28,14,ES_AUTOHSCROLL
     DEFPUSHBUTTON   "OK",IDOK,308,7,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,308,24,50,14
-    EDITTEXT        IDC_SMARTWINDOWSTAT,330,168,28,14,ES_AUTOHSCROLL | 
+    EDITTEXT        IDC_SMARTWINDOWSTAT,330,184,28,14,ES_AUTOHSCROLL | 
                     ES_READONLY
-    EDITTEXT        IDC_SMARTTHRESHOLDSTAT,330,184,28,14,ES_AUTOHSCROLL | 
+    EDITTEXT        IDC_SMARTTHRESHOLDSTAT,330,201,28,14,ES_AUTOHSCROLL | 
                     ES_READONLY
+    CONTROL         "Try ON cells first if they have greater impact",
+                    IDC_SMARTON,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,199,
+                    170,153,10
+    CONTROL         "Combine solutions only",IDC_COMBINE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,170,87,10
 END
 
 
@@ -370,9 +399,9 @@ BEGIN
     "DLGABOUT", DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 210
+        RIGHTMARGIN, 179
         TOPMARGIN, 7
-        BOTTOMMARGIN, 83
+        BOTTOMMARGIN, 63
     END
 
     "DLGROWS", DIALOG
@@ -425,7 +454,7 @@ BEGIN
         VERTGUIDE, 180
         VERTGUIDE, 185
         TOPMARGIN, 7
-        BOTTOMMARGIN, 199
+        BOTTOMMARGIN, 215
         HORZGUIDE, 14
         HORZGUIDE, 31
         HORZGUIDE, 47
@@ -438,6 +467,7 @@ BEGIN
         HORZGUIDE, 159
         HORZGUIDE, 175
         HORZGUIDE, 191
+        HORZGUIDE, 207
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -488,13 +518,24 @@ BEGIN
     "B",            IDC_SEARCHBACKUP,       VIRTKEY, NOINVERT
     "C",            IDC_EDITCOPY,           VIRTKEY, CONTROL, NOINVERT
     "D",            IDC_SAVEGAME,           VIRTKEY, NOINVERT
+    "E",            ID_FLIP_GEN_V,          VIRTKEY, CONTROL, NOINVERT
+    "E",            ID_FLIP_ALL_V,          VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
     "G",            IDC_SEARCHSTART,        VIRTKEY, CONTROL, NOINVERT
+    "H",            ID_FLIP_GEN_H,          VIRTKEY, CONTROL, NOINVERT
+    "H",            ID_FLIP_ALL_H,          VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
     "L",            IDC_OPENSTATE,          VIRTKEY, NOINVERT
     "N",            IDC_NEXTGEN,            VIRTKEY, NOINVERT
     "O",            IDC_OPENSTATE,          VIRTKEY, CONTROL, NOINVERT
     "P",            IDC_PREVGEN,            VIRTKEY, NOINVERT
+    "P",            IDC_SEARCHPREPARE,      VIRTKEY, CONTROL, NOINVERT
     "R",            IDC_SEARCHRESET,        VIRTKEY, CONTROL, NOINVERT
     "S",            IDC_SAVEGAME,           VIRTKEY, CONTROL, NOINVERT
+    "T",            ID_TRANS_GEN,           VIRTKEY, CONTROL, NOINVERT
+    "T",            ID_TRANS_ALL,           VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_BACK,        ID_HIDESEL,             VIRTKEY, NOINVERT
     VK_DELETE,      IDC_CLEARGEN,           VIRTKEY, SHIFT, NOINVERT
     VK_DELETE,      IDC_CLEAR,              VIRTKEY, SHIFT, CONTROL, 
                                                     NOINVERT
@@ -528,52 +569,6 @@ BEGIN
                                                     NOINVERT
     "Y",            IDC_SEARCHBACKUP2,      VIRTKEY, NOINVERT
 END
-
-
-#ifndef _MAC
-/////////////////////////////////////////////////////////////////////////////
-//
-// Version
-//
-
-VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,5,0,1
- PRODUCTVERSION 0,5,0,1
- FILEFLAGSMASK 0x3fL
-#ifdef _DEBUG
- FILEFLAGS 0x1L
-#else
- FILEFLAGS 0x0L
-#endif
- FILEOS 0x40004L
- FILETYPE 0x1L
- FILESUBTYPE 0x0L
-BEGIN
-    BLOCK "StringFileInfo"
-    BEGIN
-        BLOCK "040904b0"
-        BEGIN
-            VALUE "Comments", "\0"
-            VALUE "CompanyName", "\0"
-            VALUE "FileDescription", "wls\0"
-            VALUE "FileVersion", "0, 5, 0, 1\0"
-            VALUE "InternalName", "wls\0"
-            VALUE "LegalCopyright", "\0"
-            VALUE "LegalTrademarks", "\0"
-            VALUE "OriginalFilename", "wls.exe\0"
-            VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "WinLifeSearch\0"
-            VALUE "ProductVersion", "0, 5, 0, 1\0"
-            VALUE "SpecialBuild", "\0"
-        END
-    END
-    BLOCK "VarFileInfo"
-    BEGIN
-        VALUE "Translation", 0x409, 1200
-    END
-END
-
-#endif    // !_MAC
 
 #endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////

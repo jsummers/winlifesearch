@@ -150,6 +150,7 @@ initcells()
 				{
 					linkcell(cell);
 					cell->state = UNK;
+					cell->combined = UNK;
 					cell->free = TRUE;
 				}
 
@@ -432,6 +433,15 @@ rescell(CELL *cell)
 				--cell->colinfo->setcount;
 			}
 
+			if (combining && (cell->combined != UNK))
+			{
+				if (cell->combined == ON) 
+				{
+					++differentcombinedcells;
+				}
+				--setcombinedcells;
+			}
+
 			cell = cell->loop;
 		} while (cell != c1);
 
@@ -444,6 +454,15 @@ rescell(CELL *cell)
 				if (cell->colinfo->setcount == rowmax) --fullcolumns;
 				--cell->colinfo->setcount;
 
+			}
+
+			if (combining && (cell->combined != UNK))
+			{
+				if (cell->combined == OFF) 
+				{
+					++differentcombinedcells;
+				}
+				--setcombinedcells;
 			}
 
 			cell = cell->loop;
@@ -479,6 +498,8 @@ setcell(CELL *cell, STATE state, BOOL free)
 
 		return FALSE;
 	}
+
+	if (combining && (differentcombinedcells == 0)) return FALSE;
 
 	c1 = cell;
 
@@ -545,6 +566,19 @@ setcell(CELL *cell, STATE state, BOOL free)
 
 			}
 
+			if (combining &&(cell->combined != UNK))
+			{
+				if (cell->combined == ON) 
+				{
+					--differentcombinedcells;
+				}
+				++setcombinedcells;
+				if ((setcombinedcells == combinedcells) && (differentcombinedcells == 0)) 
+				{
+					return FALSE;
+				}
+			}
+
 			cell = cell->loop;
 		} while (c1 != cell);
 	} else {
@@ -576,6 +610,19 @@ setcell(CELL *cell, STATE state, BOOL free)
 				}
 
 				free = FALSE;
+			}
+
+			if (combining && (cell->combined != UNK))
+			{
+				if (cell->combined == OFF) 
+				{
+					--differentcombinedcells;
+				}
+				++setcombinedcells;
+				if ((setcombinedcells == combinedcells) && (differentcombinedcells == 0)) 
+				{
+					return FALSE;
+				}
 			}
 
 			cell = cell->loop;
@@ -839,7 +886,7 @@ go(CELL *cell, STATE state, BOOL free)
 
 		if (proceed(cell, state, free)) return TRUE;
 
-		if (setpos == nextset) 
+		if ((setpos == nextset) && free)
 		{
 			// no cell added to stack
 			// no backup required
@@ -945,11 +992,11 @@ getaverageunknown()
 // calculate how many cells will change
 // if we change the current cell to ON or OFF
 // set smartlen1 and smartlen0 to appropriate numbers
-// return the sum
 
-static int getsmartnumbers(CELL *cell)
+static BOOL getsmartnumbers(CELL *cell)
 {
 	int cellno;
+	int comb0, comb1;
 	CELL ** setpos;
 
 	// known and inactive cells are unimportant
@@ -961,10 +1008,12 @@ static int getsmartnumbers(CELL *cell)
 	// remember cell count to calculate the change
 	cellno = cellcount;
 
+	comb0 = comb1 = differentcombinedcells + setcombinedcells;
 	// test the cell
 	if (proceed(cell, ON, TRUE))
 	{
 		smartlen1 = cellcount - cellno;
+		comb1 = differentcombinedcells  + setcombinedcells - comb1;
 
 		// back up
 		backup(); 
@@ -974,32 +1023,59 @@ static int getsmartnumbers(CELL *cell)
 		if (proceed(cell, OFF, TRUE))
 		{
 			smartlen0 = cellcount - cellno;
+			comb0 = differentcombinedcells + setcombinedcells - comb0;
+
+			if (smarton)
+			{
+				if (comb0 == comb1)
+				{
+					smartcomb = comb0;
+					smartchoice = (smartlen1 > smartlen0) ? ON : OFF;
+				}
+				else if (comb0 > comb1)
+				{
+					smartcomb = comb0;
+					smartchoice = OFF;
+				}
+				else
+				{
+					smartcomb = comb1;
+					smartchoice = ON;
+				}
+			}
+			else
+			{
+				smartcomb = 0;
+				smartchoice = (smartlen1 > smartlen0) ? ON : OFF;
+			}
 
 			// back up
 			backup();
 
+			return TRUE;
+
 		} else {
 			// OFF state inconsistent
 			// makes a good candidate
-			smartlen0 = MAXCELLS;
+			smartchoice = OFF;
 
 			// back up if something changed
 			if (setpos != newset) backup();
+
+			return FALSE;
 		}
 
 	} else {
 		// ON state inconsistent
 		// it's actually a good candidate
-		smartlen1 = MAXCELLS;
-		// no need to check the OFF choice
-		smartlen0 = 1;
+		smartchoice = ON;
 
 		// back up if something changed
 		if (setpos != newset) backup();
 
-	}
+		return FALSE;
 
-	return smartlen0 + smartlen1;
+	}
 }
 
 // Smart cell ordering
@@ -1009,7 +1085,8 @@ getsmartunknown()
 {
 	CELL *cell;
 	CELL *best;
-	int max1, max, curr, window, threshold, bestlen1, bestlen0, wnd;
+	STATE bestchoice;
+	int max, window, threshold, bestlen1, bestlen0, bestcomb, wnd, n1, n2, a, b, c, d;
 
 	// Move the searchlist over all known cells
 	while ((searchlist != NULL) && (searchlist->state != UNK)) {
@@ -1019,39 +1096,98 @@ getsmartunknown()
 	// Return NULL if no unknown cells
 	if (searchlist == NULL) return NULL;
 
-	// Let's start here
-	cell = searchlist;
-
-	// Prepare window size
-	window = smartwindow;
-	if (window <= 0) window = MAXCELLS;
-
 	// Prepare threshold
 	threshold = smartthreshold;
 	if (threshold <= 0) threshold = MAXCELLS;
 
 	// Prepare the dummy maximum
-	max = 3; // at least 3 cells must change
-	max1 = -1;
+	max = 2; // at least 3 cells must change
+	bestlen0 = 1;
+	bestlen1 = 1;
+	bestcomb = 0;
+
 	best = NULL;
 
 	wnd = 0;
 
+	window = smartwindow;
+	cell = searchlist;
+
 	while ((cell != NULL) && (window > 0) && (max < threshold)) {
 		++wnd;
 		--window; // count known cells too
-		if (cell->state == UNK) { // process unknown cells only
-			curr = getsmartnumbers(cell); // get the changes
-			if (curr >= max) { // most often we don't get the maximum
-///				if ((curr > max) || (smartlen1 > max1)) {
-				if ((curr > max) || (smartlen0 > max1)) {
-					max = curr; // store the new maximum
-///					max1 = smartlen1;
-					max1 = smartlen0;
-					bestlen1 = smartlen1; // store the changes
-					bestlen0 = smartlen0; // to propose the first state to try
-					best = cell; // and of course store the best cell
+		if (cell->state == UNK)
+		{
+			if (getsmartnumbers(cell))
+			{
+				if (bestcomb == smartcomb)
+				{
+					// (smartlen0, smartlen1) is better than (bestlen0, bestlen1) if
+					// 1/2**smartlen0 + 1/2**smartlen1 < 1/2**bestlen0 + 1/2**bestlen1
+					// i.e.
+					// 2**(b0+b1+s0) + 2**(b0+b1+s1) < 2**(s0+s1+b0) + 2**(s0+s1+b1)
+					//
+					// both sides are binary numbers with one or two 1's
+					// so let's compare the exponents
+
+					n1 = smartlen0 + smartlen1;
+					n2 = n1 + bestlen1;
+					n1 += bestlen0;
+
+					if (n1 > n2) 
+					{
+						a = n1;
+						b = n2;
+					} else if (n1 == n2) {
+						a = n1 + 1;
+						b = -1;
+					} else {
+						a = n2;
+						b = n1;
+					}
+
+					// max = bestlen0 + bestlen1
+
+					n1 = max + smartlen0;
+					n2 = max + smartlen1;
+
+					if (n1 > n2)
+					{
+						c = n1;
+						d = n2;
+					} else if (n1 == n2) {
+						c = n1 + 1;
+						d = -1;
+					} else {
+						c = n2;
+						d = n1;
+					}
+
+					if ((a > c) || ((a = c) && (b > d)))
+					{
+						best = cell;
+						bestchoice = smartchoice;
+						// bestcomb = smartcomb; -- it's equal anyway
+						bestlen1 = smartlen1;
+						bestlen0 = smartlen0;
+						max = bestlen0 + bestlen1;
+					}
 				}
+				else if (bestcomb < smartcomb)
+				{
+					best = cell;
+					bestchoice = smartchoice;
+					bestcomb = smartcomb;
+					bestlen1 = smartlen1;
+					bestlen0 = smartlen0;
+					max = bestlen0 + bestlen1;
+				}
+			} else {
+				// the cell can be set only one way
+				best = cell;
+				bestchoice = smartchoice;
+				max = MAXCELLS + 1;
+				window = 0;
 			}
 		}
 		cell = cell->search;
@@ -1060,28 +1196,32 @@ getsmartunknown()
 	// Found something?
 	if (best != NULL) {
 
-		smartstatsumwnd += wnd;
-		++smartstatsumwndc;
 
-		if (MAXCELLS > max) {
+		if (MAXCELLS >= max) {
+			smartstatsumwnd += wnd;
+			++smartstatsumwndc;
 			smartstatsumlen += max;
 			++smartstatsumlenc;
-		}
-
-		if (smartstatsumwndc >= 100000) {
-			smartstatwnd = smartstatsumwnd / smartstatsumwndc;
-			smartstatsumwnd = 0;
-			smartstatsumwndc = 0;
-			if (smartstatsumlenc >= 10000) {
-				smartstatlen = smartstatsumlen / smartstatsumlenc;
-				smartstatsumlen = 0;
-				smartstatsumlenc = 0;
+		
+			if (smartstatsumwndc >= 100000) {
+				smartstatwnd = smartstatsumwnd / smartstatsumwndc;
+				smartstatsumwnd = 0;
+				smartstatsumwndc = 0;
+				if (smartstatsumlenc >= 10000) {
+					smartstatlen = smartstatsumlen / smartstatsumlenc;
+					smartstatsumlen = 0;
+					smartstatsumlenc = 0;
+				}
 			}
 		}
 
-		// propose the better way
-		smartchoice = (bestlen1 > bestlen0) ? ON : OFF;
-		//smartchoice = UNK;
+		if (smarton)
+		{
+			// propose the shorter tree
+			smartchoice = bestchoice;
+		} else {
+			smartchoice = UNK;
+		}
 		return best;
 	}
 
@@ -1134,6 +1274,8 @@ choose(cell)
 
 	return OFF;
 }
+
+CELL *combinebackup(void);
 
 /*
  * The top level search routine.
