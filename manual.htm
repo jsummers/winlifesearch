@@ -1,0 +1,780 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1250">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>WinLifeSearch</title>
+</head>
+
+<body>
+
+<h1>WinLifeSearch version 0.61 - 28 Mar 2003</h1>
+
+<h2>Contents</h2>
+<blockquote>
+  <ul>
+    <li><a href="#Purpose">Purpose</a></li>
+    <li><a href="#Authors">Authors</a></li>
+    <li><a href="#Requirements">Requirements</a></li>
+    <li><a href="#Disclaimer">Disclaimer</a></li>
+    <li><a href="#Window">Window Contents</a>
+      <ul>
+        <li><a href="#OnOff">ON and OFF cells</a></li>
+        <li><a href="#Blank">Blank Cells</a></li>
+        <li><a href="#Frozen">Frozen Cells</a></li>
+        <li><a href="#Unchecked">Unchecked Cells</a></li>
+      </ul>
+    </li>
+    <li><a href="#Editing">Editing</a>
+      <ul>
+        <li><a href="#CellStates">Cell's State</a></li>
+        <li><a href="#Selecting">Selecting</a></li>
+        <li><a href="#BlockOps">Block Operations</a></li>
+        <li><a href="#ChangeGen">Change Generation</a></li>
+        <li><a href="#FieldSize">Field Size</a></li>
+        <li><a href="#Period">Period</a></li>
+        <li><a href="#Symmetry">Symmetry</a></li>
+        <li><a href="#Translation">Translation</a></li>
+      </ul>
+    </li>
+    <li><a href="#Search">Search</a>
+      <ul>
+        <li><a href="#SearchSettings">Search Settings</a></li>
+        <li><a href="#OutputSettings">Output Settings</a></li>
+        <li><a href="#SearchItself">The Search Itself</a></li>
+      </ul>
+    </li>
+    <li><a href="#Saving">Save/Load</a></li>
+    <li><a href="#Keyboard">Keyboard Reference</a></li>
+    <li><a href="#KnownBugs">Known Bugs</a></li>
+    <li><a href="#History">Revision History</a></li>
+    <li><a href="#Credits">Credits</a></li>
+  </ul>
+</blockquote>
+<h2><a name="Purpose"></a>Purpose</h2>
+<p>This is a program to search for oscillators, spaceships, and related objects in Conway's Game of Life and related cellular automata. In order to make any
+sense of it, you must be familiar with Life. If not, you can start by visiting some of the web sites on the topic, such as
+<a href="http://www.pobox.com/~jason1/life/">http://www.pobox.com/~jason1/life/</a>.</p>
+
+<h2><a name="Authors"></a>Authors</h2>
+
+<p>LIFESRC by David Bell</p>
+
+<p>Initial Windows port by Jason Summers</p>
+
+<p>Further development by Karel Suhajda</p>
+
+<h2><a name="Requirements"></a>Requirements</h2>
+<p>Requires Windows 95/98/NT/whatever</p>
+<p>Lots and lots of CPU time</p>
+<h2><a name="Disclaimer"></a>Disclaimer</h2>
+<p>This program may be buggy, quirky, illogical, and incomplete in places. And it isn't very well documented. Nearly all of that is the
+fault of the porter, not the author of LIFESRC.</p>
+<h2><a name="Window"></a>Window contents</h2>
+<p>This following picture isn't a typical WLS window but it shows all the elements that can be present:</p>
+<p><img border="0" src="manual/main.gif" width="379" height="384"></p>
+<ol>
+  <li><img border="0" src="manual/blank.gif" width="15" height="15"> Blank cell</li>
+  <li><img border="0" src="manual/on.gif" width="15" height="15"> ON cell</li>
+  <li><img border="0" src="manual/off.gif" width="15" height="15"> OFF cell</li>
+  <li><img border="0" src="manual/unc.gif" width="15" height="15"> Unchecked
+    cell</li>
+  <li><img border="0" src="manual/frozen.gif" width="15" height="15"> Frozen
+    cell</li>
+  <li>Cells marked by thick border are not the same in all generations</li>
+  <li>Selected cells</li>
+  <li>Symmetry marker</li>
+  <li>Translation markers</li>
+  <li>Generation number</li>
+</ol>
+<p>The array displayed in the window represents the state of a block of cells
+during a certain number of generations (one generation is displayed at a time). If you want a given cell
+to be ON or OFF in a certain generation, you can force it to that state by setting
+it so in the array. All the other cells have an unknown state the program must determine to support the definition.</p>
+<h3><a name="OnOff"></a>ON and OFF cells</h3>
+<p>These are cells set to ON of OFF in a given generation.</p>
+<h3><a name="Blank"></a>Blank cells</h3>
+<p>Blank cells are neither ON nor OFF. They are set to either ON or OFF state during
+the search&nbsp; while keeping
+the Life rules. If all blank cells are set to ON or OFF, the array is
+declared a solution.</p>
+<h3><a name="Frozen"></a>Frozen cells</h3>
+<p>A frozen cell is a blank cell that must be the same in all generations. This means that during the search, the program assigns it the
+state ON or OFF in all generations at once.</p>
+<h3><a name="Unchecked"></a>Unchecked cells</h3>
+<p>Unchecked cells are blank cells that do not need to be set to find a solution. The program doesn't
+set them to ON or OFF during the search unless this choice is forced by the surrounding pattern and
+Life rules.</p>
+<h2><a name="Editing"></a>Editing</h2>
+<h3><a name="CellStates"></a>Cell's state</h3>
+<p>You can change cell state by pointing the mouse at the cell and pressing one
+of the following keys:</p>
+<ul>
+  <li>'s' or left mouse button - change cell to ON <img border="0" src="manual/on.gif" width="15" height="15"></li>
+  <li>'a' or right mouse button - change cell to OFF <img border="0" src="manual/off.gif" width="15" height="15"></li>
+  <li>'c' - change cell to Blank <img border="0" src="manual/blank.gif" width="15" height="15"></li>
+  <li>'x' - change cell to Unchecked <img border="0" src="manual/unc.gif" width="15" height="15"></li>
+  <li>'f' - change cell to Frozen <img border="0" src="manual/frozen.gif" width="15" height="15"></li>
+  <li>'i' - change Unchecked cells to Blank, leave other states as is</li>
+  <li>'o' - change Blank cells to Unchecked, leave other states as is</li>
+</ul>
+<p>Normal (lowercase) keys change only the currently displayed generation.
+Pressed with shift (uppercase) set the cell in all generations. Note that Caps
+Lock reverses this behaviour. This
+doesn't apply to frozen cells, which are always set in all generations.</p>
+<p>Mouse buttons have a reverse function, too. For instance, pressing the left mouse
+button over an ON cell changes the cell to blank.</p>
+<p>If a block of cells is selected, all cells in the selected block are changed
+the desired way.</p>
+<h3><a name="Selecting"></a>Selecting</h3>
+<p>A block of cells can be selected simply by pressing and holding mouse button
+while dragging the mouse over the area to be selected. Only rectangular
+selections are possible.</p>
+<h3><a name="BlockOps"></a>Block operations</h3>
+<p>All block operations are reachable from the Edit menu. However, keyboard
+shortcuts appear to be more practical. If there is a block selected, the operation is performed on it. Otherwise, the operation is
+performed on the whole field.</p>
+<ul>
+  <li>Shift left/right/up/down (Shift+Arrow for current generation,
+    Ctrl+Shift+Arrow for all generations)</li>
+  <li>Shift to past/future (Ctrl+Shift+PgUp/PgDn)</li>
+  <li>Flip vertical (Ctrl+E for current generation, Ctrl+Shift+E for all
+    generations)</li>
+  <li>Flip horizontal (Ctrl+H for current generation, Ctrl+Shif+H for all
+    generations)</li>
+  <li>Transpose (Ctrl+T for current generation, Ctrl+Shift+T for all
+    generations) - the
+    field/selection must be square or nothing happens</li>
+  <li>Hide selection (Backspace)</li>
+</ul>
+<p>The following operation works on the whole field only, ignoring the
+selection.</p>
+<ul>
+  <li>Clear (Ctrl+Delete for current generation, Ctrl+Shift+Delete for all
+    generations) - sets all
+    cells in the generation to Blank. Use 'c' to clear selection.</li>
+</ul>
+<h3><a name="ChangeGen"></a>Change generation</h3>
+<p>The following keys change the displayed generation:</p>
+<p>PgDn, ArrowRight, 'n', '.' - go to next generation</p>
+<p>PgUp, ArrowLeft, 'p', ',' - go to previous generation</p>
+<p>The generation can also be changed with the scroll bar at the bottom.</p>
+<h3><a name="FieldSize"></a>Field size</h3>
+<p>The field size can be changed by selecting <b>Options/Rows and columns</b> or by
+pressing 'F2':</p>
+<p><img border="0" src="manual/f2.gif" width="285" height="114"></p>
+<p>The initial size is 35 by 15. The maximum size is 132 by 80.</p>
+<h3><a name="Period"></a>Period</h3>
+<p>The generation count can be changed by selecting <b>Options/Period</b> or by
+pressing 'F3':</p>
+<p><img border="0" src="manual/f3.gif" width="285" height="101"></p>
+<p>Initially the field is 2 generations 'deep'. The maximum is 19 generations.</p>
+<h3><a name="Symmetry"></a>Symmetry</h3>
+<p>A symmetry can be specified by selecting <b>Options/Symmetry</b> or by pressing 'F4':</p>
+<p><img border="0" src="manual/f4.gif" width="471" height="314"></p>
+<p>Diagonal, 90-degree and 8-fold symmetries are allowed only in a square
+field.</p>
+<p>It is best to select the symmetry before you start to fill the field with
+cells. When editing a field with a symmetry set, all corresponding cells are set
+the same way. Note, however, that block operations (shifts/flips) don't honor
+the symmetry setting -
+it's your responsibility to return the field back to a symmetric state before
+starting a search.</p>
+<p>Selected symmetry is displayed using symmetry markers.</p>
+<h3><a name="Translation"></a>Translation</h3>
+<p>Translations are used in spaceship/fuse searches, i.e. when the pattern
+is periodic and moves at the same time. Translation can be set by selecting <b>Options/Translation</b>
+or by pressing 'F5':</p>
+<p><img border="0" src="manual/f5.gif" width="386" height="334"></p>
+<p>Rotate 90/270 and diagonal flips are allowed only in a square field.</p>
+<p>The chosen translation is displayed using translation markers - the green and
+red arrows. You can imagine the red arrow placed in one generation successor of
+the last generation, while the green arrow shows how the same arrow looks like
+in generation 0.</p>
+<h2><a name="Search"></a>Search</h2>
+<h3><a name="SearchSettings"></a>Search settings</h3>
+<p>Basic search settings can be found by selecting <b>Options/Search settings </b>or
+by pressing 'F6':</p>
+<p><img border="0" src="manual/f6.gif" width="554" height="386"></p>
+<p><b>Life rules</b> - specify the rule under which the search will be done.
+Initially it's set to standard Life. Rules with B0 are not supported.</p>
+<p><b>Force an ON cell in column</b> - if set, only solutions with at least one ON cell in
+the specified column in generation 0 are accepted</p>
+<p><b>Force an ON cell in row</b> - the same for rows</p>
+<p><b>Limit ON cells in generation 0 to</b> - if set, only solutions with this number
+of ON cells or less in generation 0 are accepted</p>
+<p><b>Limit ON cells in each column to</b> - if set, maximum this number of
+cells are allowed to be ON in each column in generation 0</p>
+<p><b>Limit width of each column to</b> - if set, each column in generation 0
+may be this number of cells wide. The width of a column is the maximum distance between
+two ON cells
+in it. A column containing just one ON cell is 1 cell wide.</p>
+<p><b>ON cells must be within of ON cells in previous columns</b> - if set, for
+each ON cell in generation 0 there must be an ON cell up to 'n' columns to the
+left and 'n' rows up or down.</p>
+<p><b>Also find subperiods</b> - in a periodic search, subperiodic solutions are
+omitted if this field is not checked. The test for subperiodicity is made by
+comparing the generation 0 of the solution with all its other generations.</p>
+<p><b>Find parents only</b> - normally, a periodic search is performed, i.e. i.e. the last<br>
+generation is the predecessor of generation 0. If this option is checked, the program doesn't
+check what happens after last generation or before generation 0. This option
+also influences generation sorting - if unchecked, generation 0 is sorted as first.
+If checked, generation 0 is sorted as last.</p>
+<p><b>Combine solutions only</b> - when a search is running, solutions are
+displayed and saved and also a solution combination is calculated. The
+combination contains all cell states, which are the same in all solutions found
+so far. When the search ends normally (i.e. not by Reset), this combination is
+displayed. If this option is checked, individual solutions are not displayed or
+saved and the program just tries to find the combination, taking shortcuts where
+possible. Search for combination is never slower than normal search for all
+solutions, usually it is much faster.</p>
+<p><b>Sort to try all gens first</b> - if checked, all generations for given
+cell are sorted before another cell. If unchecked, whole generation is searched
+before the search continues to another generation.</p>
+<p><b>Diagonal search order</b> - if unchecked, the search goes by column by
+column starting from
+column 1. If checked, search goes diagonally taking upper left corner
+first.</p>
+<p><b>Knightship search order</b> - if checked, cells are sorted by
+2*row+column.</p>
+<p><b>Sort to find wide objects</b> - if unchecked, the outer cells in a column are
+searched before the inner cells. If checked, the inner cells are searched before
+the outter
+cells. If the search sets thems OFF first, this may lead to finding wider
+objects first.</p>
+<p><b>Sort to try middle columns first</b> - if unchecked, the search starts at
+column 1 and continues to the right. If checked, the search starts at the<br>
+middle column and continues on the columns to the left and right, alternating.</p>
+<p><b>First try cells near ON cells in previous column</b> - if checked, cell
+ordering is slightly twisted but I don't really understand how.</p>
+<p><b>Try ON cells if ON in an adjacent generation</b>- by default, all cells are tried in the OFF state first. With
+this box checked, cells are tried first in ON state if there is the ON state in
+the previous or the next generation. This setting should give preference to
+solutions with more stable cells.</p>
+<p><b>First try cells with the greatest impact</b> - 'smart' sort twisting. If
+this box is checked, the first N cells in sort order are tested for how many cells
+will be<br>
+forced to some state by setting it to ON or OFF. Then,<br>
+the cell that forces the most other cells is selected.</p>
+<p><b>Try ON cells first if they have greater impact</b> - applies in impact
+checking. If checked, cells are first tried in ON state if this state forces
+more cells to be set than the OFF state. If unchecked, the OFF state is tried
+first.</p>
+<p><b>Impact checking window</b> - sets how many of the cells at the top of
+the current search list are tested for impact (the 'N' value). The gray field shows
+the average window usage in the last 100.000 steps (usually smaller
+due to impact threshold).</p>
+<p><b>Impact checking threshold</b> - if a cell is found that forces this many
+cells to be set, the impact check is stopped and this cell is selected. The gray
+field shows the average impact in the last
+100.000 steps (usually lower but may be higher).</p>
+<p>The gray fields show how useful the impact checking values are. However, they
+are not updated when the dialog is open, so it is necessary to open/close the
+dialog to see how the values change over time. The Impact checking values can be
+changed during search.</p>
+<h3><a name="OutputSettings"></a>Output settings</h3>
+<p>Output settings can be found by selecting <b>Options/Output settings</b> or
+by
+pressing 'F7'.</p>
+<p><img border="0" src="manual/f7.gif" width="458" height="204"></p>
+<p><b>Stop after each calculation</b> - pauses the search and displays current
+status after setting a single cell and propagating its impact according to Life
+rules. Useful for debugging purposes or&nbsp; to see what's going on.</p>
+<p><b>Stop when an object is found</b> - pauses the search and displays current
+status after a solution is found. Doesn't work if the search setting 'combine solutions only'
+is set.</p>
+<p><b>Save found objects to file</b> - if checked, each solution found is
+written in text format to given file. Doesn't work if 'combine solutions only'
+search setting is set.</p>
+<p><b>All generations</b> - if checked, all generations of the solution are
+saved side-by-side. Otherwise, only generation 0 is saved.</p>
+<p><b>Update screen every</b> - sets how often current search progress is
+displayed.</p>
+<p><b>Dump to file</b> - if a number of calculations is specified, the search status is
+saved periodically to given file</p>
+<p><b>Save partial results every</b> - saves partial results to the
+same file as the solutions.</p>
+<h3><a name="SearchItself"></a>The Search Itself</h3>
+<p>Once the field is set up, you can start the search by selecting <b>Search/Prepare</b>
+or <b>Search/Start</b>. When starting a search, the field is first checked
+for consistency. All defined cells are accepted and all direct
+implications from Life rules are propagated. Then, each Blank cell (including
+Unchecked cells!) is tested for ON and OFF state. If only one state is
+possible, the cell is set so. If anything goes wrong, an appropriate error message
+is displayed. There are three possible messages:</p>
+<p><b>Inconsistent ON state for cell (r, c, g)</b></p>
+<p><b>Inconsistent OFF state for cell (r, c, g)</b></p>
+<p>These messages mean that the cell cannot be set this way.&nbsp;</p>
+<p><b>Inconsistent UNK state for cell (r, c, g)</b></p>
+<p>This message may appear during checking Blank cells for ON or OFF state and
+it means that given cell cannot be set - both the ON and OFF states lead to an
+inconsistency.</p>
+<p>Don't be fooled by the cell coordinates, though. The actual problem may be
+several cells away from the reported location - so if this happens, just
+double-check the definition.</p>
+<p><b>Search/Prepare</b>  just does the initial check, displays the<br>
+field status, and then pauses. This is useful to see how the
+definition gets propagated by the Life rules.</p>
+<p><b>Search/Start</b> does the check and immediately continues searching.</p>
+<p>While the search is running, the solutions and the current status are displayed according
+to <a href="#OutputSettings">output settings</a>. You can use the following
+commands:</p>
+<p><b>Search/Pause</b> - pauses the search and displays the current status.</p>
+<p><b>Search/Continue</b> - continues the paused search</p>
+<p><b>Search/Backup</b> - goes back one level in the search tree. This may lead to
+skipping solutions.</p>
+<p><b>Search/Backup 20</b> - goes back 20 levels in the search tree. This may lead to
+skipping solutions.</p>
+<p><b>Search/Clear combination</b> - clears the solution combination buffer.</p>
+<p><b>Search/Reset</b> - resets the search and allows you to edit the
+definition.</p>
+<p><b>Search/Copy result</b> - copies current state/solution to definition and
+stops the search. This<br>
+enables you to use the current state as the basis for another search.</p>
+<p><b>Search/Copy combination</b> - like 'Copy result', but copies the combination
+buffer instead of the current state.</p>
+<h2><a name="Saving"></a>Saving/Loading</h2>
+<p>It is possible to save a running search to a dump file.&nbsp;It is also possible to save an
+unfinished definition, but it is internally saved as a running
+search and so it mustn't contain any inconsistencies.</p>
+<p>Use <b>File/Save state</b> (Ctrl+S or L) to save the current status to a dump
+file. You should use the extension .wdf. The dump file is a plain text file, though.</p>
+<p>Use <b>File/Load state</b> (Ctrl+O or D) to load the status from a dump
+file.&nbsp;</p>
+<h2><a name="Keyboard"></a>Keyboard reference</h2>
+<table border="1" width="100%">
+  <tr>
+    <td align="center"><b>Ctrl</b></td>
+    <td align="center"><b>Shift</b></td>
+    <td align="center"><b>Key</b></td>
+    <td><b>Description</b></td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">a</td>
+    <td>Set the cell/selection to OFF <img border="0" src="manual/off.gif" width="15" height="15">
+    </td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">A</td>
+    <td>Set the cell/selection to OFF <img border="0" src="manual/off.gif" width="15" height="15">
+      in all generations</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">B</td>
+    <td>Back up the search one cell</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">c</td>
+    <td>Set the cell/selection to Blank <img border="0" src="manual/blank.gif" width="15" height="15"></td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">C</td>
+    <td>Set the cell/selection to Blank <img border="0" src="manual/blank.gif" width="15" height="15">
+      in all generations</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">C</td>
+    <td>Copy the displayed generation to the clipboard</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">d</td>
+    <td>Save the status to a dump file</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">E</td>
+    <td>Flip the field/selection in the current generation vertically</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">Shift</td>
+    <td align="center">E</td>
+    <td>Flip the field/selection in all generations vertically</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">f, F</td>
+    <td>Set the cell/selection to Frozen <img border="0" src="manual/frozen.gif" width="15" height="15">
+      in all generations</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">G</td>
+    <td>Start the search</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">H</td>
+    <td>Flip the field/selection in the current generation horizontally</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">Shift</td>
+    <td align="center">H</td>
+    <td>Flip the field/selection in all generations horizontally</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">i</td>
+    <td>Change the cell/selection in the current generation from Unchecked <img border="0" src="manual/unc.gif" width="15" height="15">
+      to Blank <img border="0" src="manual/blank.gif" width="15" height="15">,
+      leave other states as is</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">I</td>
+    <td>Change the cell/selection in all generations from Unchecked <img border="0" src="manual/unc.gif" width="15" height="15">
+      to Blank <img border="0" src="manual/blank.gif" width="15" height="15">,
+      leave other states as is</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">l (minor 'L')</td>
+    <td>Load the status from a dump file</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">n</td>
+    <td>Go to the next generation</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">o</td>
+    <td>Change the cell/selection in the current generation from Blank <img border="0" src="manual/blank.gif" width="15" height="15">
+      to Unchecked <img border="0" src="manual/unc.gif" width="15" height="15">,
+      leave other states as is</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">O</td>
+    <td>Change the cell/selection in all generations from Blank <img border="0" src="manual/blank.gif" width="15" height="15">
+      to Unchecked <img border="0" src="manual/unc.gif" width="15" height="15">,
+      leave other states as is</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">O</td>
+    <td>Load the status from a dump file</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">p</td>
+    <td>Go to the previous generation</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">P</td>
+    <td>Start the search, pause it right after the initial check</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">R</td>
+    <td>Reset the search</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">s</td>
+    <td>Set the cell/selection to ON <img border="0" src="manual/on.gif" width="15" height="15">
+    </td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">S</td>
+    <td>Set the cell/selection to ON <img border="0" src="manual/on.gif" width="15" height="15">
+      in all generations</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">S</td>
+    <td>Save the search status to a dump file</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">T</td>
+    <td>Transpose the field/selection in current generation</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">Shift</td>
+    <td align="center">T</td>
+    <td>Transpose the field/selection in all generations</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">x</td>
+    <td>Set the cell/selection to Unchecked <img border="0" src="manual/unc.gif" width="15" height="15">
+    </td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">X</td>
+    <td>Set the cell/selection to Unchecked <img border="0" src="manual/unc.gif" width="15" height="15">
+      in all generations</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">y</td>
+    <td>Back up the search 20 cells</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">,</td>
+    <td>Go to the previous generation</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">.</td>
+    <td>Go to the next generation</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">Arrow left</td>
+    <td>Go to the previous generation</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">Shift</td>
+    <td align="center">Arrow left</td>
+    <td>Rotate the field/selection in the current generation one cell left</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">Shift</td>
+    <td align="center">Arrow left</td>
+    <td>Rotate the field/selection in all generations one cell left</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">Shift</td>
+    <td align="center">Arrow up</td>
+    <td>Rotate the field/selection in the current generation one cell up</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">Shift</td>
+    <td align="center">Arrow up</td>
+    <td>Rotate the field/selection in all generations one cell up</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">Shift</td>
+    <td align="center">Arrow down</td>
+    <td>Rotate the field/selection in the current generation one cell down</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">Shift</td>
+    <td align="center">Arrow down</td>
+    <td>Rotate the field/selection in all generations one cell down</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">Arrow right</td>
+    <td>Go to the next generation</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">Shift</td>
+    <td align="center">Arrow right</td>
+    <td>Rotate the field/selection in the current generation one cell right</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">Shift</td>
+    <td align="center">Arrow right</td>
+    <td>Rotate the field/selection in all generations one cell right</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">Backspace</td>
+    <td>Hide selection</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">Delete</td>
+    <td>Change all cells in the current generation to Blank <img border="0" src="manual/blank.gif" width="15" height="15"></td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">Shift</td>
+    <td align="center">Delete</td>
+    <td>Change all cells in all generations to Blank <img border="0" src="manual/blank.gif" width="15" height="15"></td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">Escape</td>
+    <td>Pause the search</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">Page Up</td>
+    <td>Go to the previous generation</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">Shift</td>
+    <td align="center">Page Up</td>
+    <td>Rotate the field/selection in all generations one generation to past</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">Page Down</td>
+    <td>Go to the next generation</td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl</td>
+    <td align="center">Shift</td>
+    <td align="center">Page Down</td>
+    <td>Rotate the field/selection in all generations one generation to future</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">Space</td>
+    <td>Continue the search</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">F2</td>
+    <td>Display the <a href="#FieldSize">Rows and Columns</a> dialog</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">F3</td>
+    <td>Display the <a href="#Period">Period</a> dialog</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">F4</td>
+    <td>Display the <a href="#Symmetry">Symmetry</a> dialog</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">F5</td>
+    <td>Display the <a href="#Translation">Translation</a> dialog</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">F6</td>
+    <td>Display the <a href="#SearchSettings">Search settings</a> dialog</td>
+  </tr>
+  <tr>
+    <td align="center">&nbsp;</td>
+    <td align="center">&nbsp;</td>
+    <td align="center">F7</td>
+    <td>Display the <a href="#OutputSettings">Output settings</a> dialog</td>
+  </tr>
+</table>
+<h2><a name="KnownBugs"></a>Known bugs</h2>
+<p>When search has nothing to do (no blank cells are present), it reports 'no
+solution'. The same happens also when all blank cells are filled by initial
+check.</p>
+<p>If you pause or reset the search when the screen is being updated, program
+locks. If screen updates come too often, set <b>Options/Output settings/Stop
+after each calculation</b> to safely pause the search.</p>
+<p>Some editing is possible during search (changes in field size, period,
+symmetry etc) but it is bound to screw the search so don't try it.</p>
+<p>It is not possible to set a selection to ON by clicking the left mouse
+button.</p>
+<p>When clicking the right mouse button when a block of cells is selected, the
+block is set to reverse of the cell clicked, even though that cell was outside
+the selection.</p>
+<h2><a name="History"></a>Revision History</h2>
+<p>0.61</p>
+<p>Bugfix/maintenance release by Karel Suhajda:</p>
+<ul>
+  <li>fixed a memory leak appearing on consecutive consistency errors</li>
+  <li>fixed the broken 'near' cells check</li>
+  <li>fixed non-working Flip vertical function</li>
+  <li>new filename extension for dump files - 'wdf' instead of 'txt', the dump
+    file format remains intact</li>
+  <li>the loaded dump file name is remembered and offered as default for save</li>
+</ul>
+<p>0.60</p>
+<p>Changes by Karel Suhajda:</p>
+<ul>
+  <li>added the possibility of combining solutions</li>
+  <li>added the possibility of copying/clearing combination</li>
+  <li>added the Edit/Flip and the Edit/Transpose editing functions</li>
+  <li>changed dump file format</li>
+</ul>
+<p>0.50</p>
+<p>Changes by Karel Suhajda:</p>
+<ul>
+  <li>numerous interface fixes</li>
+  <li>added the Edit/Shift and the Edit/Clear editing functions</li>
+  <li>added the possibility of saving the definition when the search is not running or when
+    the search is in progress</li>
+  <li>changed/added accelerator keys</li>
+  <li>added the possibility of copying the result as the initial definition for
+    a further search</li>
+  <li>new 'smart' search ordering</li>
+  <li>removed message boxes on intermittent saves</li>
+  <li>changed handling of looped cells</li>
+  <li>huge changes to the code</li>
+  <li>changed dump file format</li>
+</ul>
+<p>0.40</p>
+<p>Jason Summers' port of David Bell's LIFESRC. Taken as 'initial' version
+because I'm unable to trace older changes.</p>
+
+<h2><a name="Credits"></a>Credits</h2>
+<p><b>John Conway</b> for Life</p>
+<p><b>David Bell</b> for LIFESRC</p>
+<p><b>Jason Summers</b> for initial port of LIFESRC and for hosting this program</p>
+<p><b>Gabriel Nivash</b> and <b>Dave Greene</b> for spell-checking my horrible
+english.</p>
+
+</body>
+
+</html>

@@ -314,7 +314,7 @@ void InitGameSettings(void)
 	saveoutputallgen=0;
 	stoponfound=1;
 	stoponstep=0;
-	strcpy(dumpfile,"dump.txt");
+	strcpy(dumpfile,"dump.wdf");
 	strcpy(rulestring,"B3/S23");
 
 	SetCenter();
@@ -1274,7 +1274,7 @@ DWORD WINAPI search_thread(LPVOID foo)
 			continue;
 		}
 
-		if ((curstatus == FOUND) && !allobjects && subperiods()) {
+		if ((curstatus == FOUND) && !allobjects && !parent && subperiods()) {
 			curstatus = OK;
 			continue;
 		}
@@ -1455,17 +1455,21 @@ BOOL prepare_search(BOOL load)
 	differentcombinedcells = 0;
 
 	if (load) {
-		if(!loadstate()) return FALSE;
+		if(!loadstate())
+		{
+			InvalidateRect(hwndMain,NULL,TRUE);
+			return FALSE;
+		}
 
 		InvalidateRect(hwndMain,NULL,TRUE);
 
-		printgen();
 		draw_gen_counter();
-		searchstate=1;
 	} else {
 		initcells();
 
-		if(!set_initial_cells()) {
+		if(!set_initial_cells()) 
+		{
+			record_malloc(0,NULL); // release allocated memory
 			return FALSE;   // there was probably an inconsistency in the initial cells
 		}
 
@@ -1613,7 +1617,6 @@ void flip_h(int fromgen, int togen)
 			}
 		}	
 	}
-	hide_selection();
 }
 
 void flip_v(int fromgen, int togen)
@@ -1642,12 +1645,11 @@ void flip_v(int fromgen, int togen)
 			for (c = fromcol; c <= tocol; ++c)
 			{
 				buffer = currfield[g][c][r];
-				currfield[g][c][r] = currfield[g][c][tocol + fromcol - r];
-				currfield[g][c][tocol + fromcol - r] = buffer;
+				currfield[g][c][r] = currfield[g][c][torow + fromrow - r];
+				currfield[g][c][torow + fromrow - r] = buffer;
 			}
 		}	
 	}
-	hide_selection();
 }
 
 void transpose(int fromgen, int togen)
@@ -1687,7 +1689,6 @@ void transpose(int fromgen, int togen)
 			}
 		}	
 	}
-	hide_selection();
 }
 
 void shift_gen(int fromgen, int togen, int gend, int cold, int rowd)
@@ -1972,14 +1973,14 @@ LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_SAVEGAME:
 			if (searchstate==0) {
 				if (prepare_search(FALSE)) {
-					dumpstate(NULL, TRUE);
+					dumpstate(NULL, FALSE);
 					reset_search();
 				}
 			} else if (searchstate==1) {
-				dumpstate(NULL, TRUE);
+				dumpstate(NULL, FALSE);
 			} else if (searchstate==2) {
 				pause_search();
-				dumpstate(NULL, TRUE);
+				dumpstate(NULL, FALSE);
 				resume_search();
 			}
 			return 0;

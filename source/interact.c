@@ -9,19 +9,11 @@
 #include "lifesrc.h"
 #include "wls.h"
 
-
 extern int origfield[GENMAX][COLMAX][ROWMAX];
-
-
-#define	VERSION	"3.5w"
-
 
 /*
  * Local data.
  */
-static	BOOL	nowait;		/* don't wait for commands after loading */
-static	BOOL	setall;		/* set all cells from initial file */
-static	BOOL	islife;		/* whether the rules are for standard Life */
 extern char	rulestring[20];	/* rule string for printouts */
 static	int	foundcount;	/* number of objects found */
 static int writecount; /* number of objects written to a file */
@@ -31,6 +23,8 @@ extern int saveoutput;
 extern int saveoutputallgen;
 extern int stoponfound;
 extern int origfield[GENMAX][COLMAX][ROWMAX];
+static char filename[MAX_PATH] = {'\0'};
+
 /*
  * Local procedures
  */
@@ -141,7 +135,7 @@ getbackup(char *cp)
 	printgen();
 }
 
-int getfilename_l(char *fn)
+BOOL getfilename_l()
 {
 	OPENFILENAME ofn;
 	HWND hWnd;
@@ -152,22 +146,22 @@ int getfilename_l(char *fn)
 
 	ofn.lStructSize=sizeof(OPENFILENAME);
 	ofn.hwndOwner=hWnd;
-	ofn.lpstrFilter="*.txt\0*.txt\0All files\0*.*\0\0";
+	ofn.lpstrFilter="WLS Dump Files (*.wdf)\0*.wdf\0Text Files (*.txt)\0*.txt\0All files\0*.*\0\0";
 	ofn.nFilterIndex=1;
 	ofn.lpstrTitle="Load state";
-	ofn.lpstrFile=fn;
+	ofn.lpstrFile=filename;
 	ofn.nMaxFile=MAX_PATH;
 	ofn.Flags=OFN_FILEMUSTEXIST|OFN_HIDEREADONLY;
 
-	if(GetOpenFileName(&ofn)) {
-		return 1;
+	if(GetOpenFileName(&ofn)) 
+	{
+		return TRUE;
 	}
-	strcpy(fn,"");
-	return 0;
+	return FALSE;
 }
 
 
-int getfilename_s(char *fn)
+BOOL getfilename_s()
 {
 	OPENFILENAME ofn;
 	HWND hWnd;
@@ -178,19 +172,19 @@ int getfilename_s(char *fn)
 
 	ofn.lStructSize=sizeof(OPENFILENAME);
 	ofn.hwndOwner=hWnd;
-	ofn.lpstrFilter="*.txt\0*.txt\0All files\0*.*\0\0";
+	ofn.lpstrFilter="WLS Dump Files (*.wdf)\0*.wdf\0Text Files (*.txt)\0*.txt\0All files\0*.*\0\0";
 	ofn.nFilterIndex=1;
 	ofn.lpstrTitle="Save state";
 	ofn.lpstrDefExt="txt";
-	ofn.lpstrFile=fn;
+	ofn.lpstrFile=filename;
 	ofn.nMaxFile=MAX_PATH;
-	ofn.Flags=OFN_FILEMUSTEXIST|OFN_HIDEREADONLY;
+	ofn.Flags=OFN_HIDEREADONLY|OFN_OVERWRITEPROMPT;
 
-	if(GetSaveFileName(&ofn)) {
-		return 1;
+	if(GetSaveFileName(&ofn)) 
+	{
+		return TRUE;
 	}
-	strcpy(fn,"");
-	return 0;
+	return FALSE;
 }
 
 /*
@@ -356,19 +350,19 @@ void dumpstate(char *file1, BOOL echo)
 	int	col;
 	int	gen;
 	int **	param;
-	char file[MAX_PATH];
 	char ind;
+	char *file = filename;
 
 	if(file1) {
-		strcpy(file,file1);
+		file = file1;
 	}
-	else {
-		strcpy(file,"dump.txt");
-		getfilename_s(file);
+	else 
+	{
+		if (!getfilename_s()) 
+		{
+			return;
+		}
 	}
-
-	if (*file == '\0')
-		return;
 
 	fp = fopen(file, "wt");
 
@@ -465,7 +459,12 @@ void dumpstate(char *file1, BOOL echo)
 		return;
 	}
 
-	if (echo) ttystatus("State dumped to \"%s\"\n", file);
+	if (echo) 
+	{
+		char buf[1000];
+		sprintf(buf, "State dumped to \"%s\"\n", file);
+		wlsStatus(buf);
+	}
 }
 
 
@@ -486,21 +485,17 @@ BOOL loadstate(void)
 	CELL *	cell;
 	int **	param;
 	char	buf[LINESIZE];
-	char file[MAX_PATH];
 	int ver;
 
 	STATUS status;
 
-	strcpy(file,"");
-	getfilename_l(file);
+	if (!getfilename_l()) return FALSE;
 
-	if(file[0]=='\0') return FALSE;
-
-	fp = fopen(file, "r");
+	fp = fopen(filename, "r");
 
 	if (fp == NULL)
 	{
-		ttystatus("Cannot open state file \"%s\"\n", file);
+		ttystatus("Cannot open state file \"%s\"\n", filename);
 
 		return FALSE;
 	}
@@ -514,7 +509,7 @@ BOOL loadstate(void)
 
 	if (buf[0] != 'V')
 	{
-		ttystatus("Missing version line in file \"%s\"\n", file);
+		ttystatus("Missing version line in file \"%s\"\n", filename);
 		fclose(fp);
 
 		return FALSE;
@@ -617,6 +612,7 @@ BOOL loadstate(void)
 	if (!set_initial_cells())
 	{
 		fclose(fp);
+		record_malloc(0,NULL); // free memory
 		return FALSE;
 	}
 
@@ -714,12 +710,17 @@ BOOL loadstate(void)
 
 	if (fclose(fp))
 	{
-		ttystatus("Error reading \"%s\"\n", file);
+		ttystatus("Error reading \"%s\"\n", filename);
 
 		return FALSE;
 	}
 
-	ttystatus("State loaded from \"%s\"\n", file);
+	{
+		char buf[1000];
+		sprintf(buf, "State loaded from \"%s\"\n", filename);
+
+		wlsStatus(buf);
+	}
 	return TRUE;
 }
 
@@ -879,8 +880,6 @@ setrules(cp)
 	}
 
 	*cp = '\0';
-
-	islife = (strcmp(rulestring, "B3/S23") == 0);
 
 	return TRUE;
 }

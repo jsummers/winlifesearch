@@ -428,6 +428,7 @@ rescell(CELL *cell)
 				--cell->rowinfo->oncount;
 				--cell->colinfo->oncount;
 				cell->colinfo->sumpos -= cell->row;
+				if (nearcols) adjustnear(cell, -1);
 				--g0oncellcount;
 				if (cell->colinfo->setcount == rowmax) --fullcolumns;
 				--cell->colinfo->setcount;

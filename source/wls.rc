@@ -190,15 +190,15 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,253,24,50,14
 END
 
-DLGABOUT DIALOG DISCARDABLE  0, 0, 186, 70
+DLGABOUT DIALOG DISCARDABLE  0, 0, 245, 71
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "About"
 FONT 8, "MS Sans Serif"
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,129,7,50,14
-    LTEXT           "WinLifeSearch v0.6\r\n\r\nA Windows port of David Bell's LIFESRC v3.5\r\n\r\nBy Jason Summers",
-                    IDC_STATIC,7,7,114,56
-    ICON            "ICONWLS",IDC_STATIC,143,33,20,20,SS_REALSIZEIMAGE
+    DEFPUSHBUTTON   "OK",IDOK,188,7,50,14
+    LTEXT           "WinLifeSearch v0.61\r\n\r\nA Windows port of David Bell's LIFESRC v3.5\r\n\r\nBy Jason Summers and Karel Suhajda",
+                    IDC_STATIC,7,7,171,57
+    ICON            "ICONWLS",IDC_STATIC,201,34,21,20,SS_REALSIZEIMAGE
 END
 
 DLGROWS DIALOG DISCARDABLE  0, 0, 186, 55
@@ -315,7 +315,7 @@ END
 DLGSEARCHSETTINGS DIALOGEX 0, 0, 365, 222
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Search settings"
-FONT 8, "MS Sans Serif", 0, 0, 0x1
+FONT 8, "MS Sans Serif"
 BEGIN
     RTEXT           "Lif&e rules:",IDC_STATIC,7,9,108,8
     EDITTEXT        IDC_RULESTRING,120,7,60,14,ES_AUTOHSCROLL
@@ -335,7 +335,7 @@ BEGIN
     LTEXT           "Limit &width of each column to:",IDC_STATIC,7,91,108,8,
                     0,WS_EX_RIGHT
     EDITTEXT        IDC_COLWIDTH,120,88,60,14,ES_AUTOHSCROLL
-    LTEXT           "ON cells must be with&in\r\nof ON cells in previous column",
+    LTEXT           "ON cells must be with&in\r\nof ON cells in previous columns",
                     IDC_STATIC,7,102,108,19,0,WS_EX_RIGHT
     EDITTEXT        IDC_NEARCOLS,120,104,60,14,ES_AUTOHSCROLL
     CONTROL         "Also find &subperiods",IDC_ALLOBJECTS,"Button",
@@ -399,9 +399,9 @@ BEGIN
     "DLGABOUT", DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 179
+        RIGHTMARGIN, 238
         TOPMARGIN, 7
-        BOTTOMMARGIN, 63
+        BOTTOMMARGIN, 64
     END
 
     "DLGROWS", DIALOG
@@ -536,7 +536,7 @@ BEGIN
     "T",            ID_TRANS_ALL,           VIRTKEY, SHIFT, CONTROL, 
                                                     NOINVERT
     VK_BACK,        ID_HIDESEL,             VIRTKEY, NOINVERT
-    VK_DELETE,      IDC_CLEARGEN,           VIRTKEY, SHIFT, NOINVERT
+    VK_DELETE,      IDC_CLEARGEN,           VIRTKEY, CONTROL, NOINVERT
     VK_DELETE,      IDC_CLEAR,              VIRTKEY, SHIFT, CONTROL, 
                                                     NOINVERT
     VK_DOWN,        IDC_SHIFTGDOWN,         VIRTKEY, SHIFT, NOINVERT
