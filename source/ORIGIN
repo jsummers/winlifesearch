@@ -1,0 +1,402 @@
+>> Commentary by dbell
+>> This is the original article included with the xlife 2.0 sources in
+>> which Dean Hickerson described how his life search program works.
+>> Note: His mail address is no longer valid (and he doesn't have one).
+>> Also, the 25 bit period 3 spaceship referred to below is the following:
+>> .............**
+>> .**...*...*....*
+>> *......**..****
+>> .***.**.*.**
+>> .....*.**
+>>
+Return-path: <HUL@PSUVM.PSU.EDU>
+X-Andrew-Authenticated-as: 0;andrew.cmu.edu;Network-Mail
+Received: from po3.andrew.cmu.edu via trymail
+          ID </afs/andrew.cmu.edu/usr14/jb7m/Mailbox/0Zft7HK00UkT8HJU8F>;
+          Sat, 13 Jan 90 15:38:45 -0500 (EST)
+Message-ID: <Added.AZft7Em00UkTQHJU5q@andrew.cmu.edu>
+Received: from PSUVM.PSU.EDU by po3.andrew.cmu.edu (5.54/3.15) id <AA04945> for jb7m+; Sat, 13 Jan 90 15:38:10 EST
+Received: from PSUVM.BITNET by PSUVM.PSU.EDU (IBM VM SMTP R1.2.1MX) with BSMTP id 0991; Sat, 13 Jan 90 15:38:55 EST
+Received: by PSUVM (Mailer R2.03B) id 3407; Sat, 13 Jan 90 15:38:54 EST
+Date:    Sat, 13 Jan 90 15:38 EST
+From: "Dean Hickerson" <HUL@PSUVM.PSU.EDU>
+Subject: Search program
+To: jb7m+@andrew.cmu.edu
+
+>  A number of time you have said that the patterns you were sending had been
+>  found by a search program. I was wondering if you would mind sending me a
+>  copy of it too look at.
+
+The program is written in 6502 assembly language and Applesoft BASIC and
+runs on an Apple IIe.  Unless you have a compatible machine, the program
+itself probably wouldn't help you much.  But here's a fairly detailed
+description of how it works.  I encourage you (or anyone else) to write a
+similar program for a faster machine; I'm sure there are things waiting to
+be found that my Apple is slow to find.
+
+If you really want to see the program itself, let me know and I'll try to
+find a way to send it.  (It's not easy, because of incompatible operating
+systems and file structures.)
+========================================================================
+General description of the Life search program  (9/6/89)
+
+     This is a general description of the program and some discussion of
+its behaviour.  A much more detailed description follows.
+
+     I tell the program the desired congruence period T of an object, a
+rectangle in which generations 0 to T must fit, and an isometry relating
+gen. 0 to gen. T.  The program creates a 3D array in which each cell is
+either on, off, or unknown; initially everything's unknown except for any
+initial conditions which I specify.  It then picks an unknown cell, chooses
+a value for it, and examines the consequences of its choice, working both
+forward and backward.  If it runs out of consequences, it picks another
+unknown cell and continues.  If it finds a contradiction, it backs up to
+its most recent choice, reverses it, marks it as a conclusion rather than a
+choice, and continues. Eventually it either runs out of unknown cells and
+reports that it's found something, or tries to back up past its first
+choice and reports that the object doesn't exist.  (Or it would if I let it
+run forever; more often I stop it after a while.)  I can have it display
+the array at any time; sometimes I can figure out something interesting
+from its partial results.  E.g. I built the 25 bit c/3 spaceship from parts
+it had found in previous searches; the program found it about an hour
+later.
+
+   One problem I sometimes have is that the program finds things with
+periods smaller than I want, like 1.  So I usually specify the value of
+some particular cell in enough phases to force it to have the desired
+period.  (Of course I may miss something interesting that way.)  Another
+problem is that after the program finds something which is smaller than the
+specified rectangle, it then finds the same thing with various stable
+objects around the unoccupied edges.  So I back it up 'by hand' far enough
+to get to something new.
+
+   I haven't really settled on the best order in which to select unknown
+cells.  I usually work in a rectangle which is wide but not very tall and
+proceed up the columns from left to right, either just in gen. 0 or doing
+all phases for each position before moving to the next.  I've tried some
+searches starting at the center of a square and spiralling
+outward, but the program tends to bog down when it's far from the center: a
+bad choice for a cell may not be detected until the spiral comes back
+around to it, so it will try many possibilities for the intervening cells
+of the spiral before it changes the bad cell.  Probably I should use a
+self-adjusting search order; when a problem is detected, the program should
+move nearby cells closer to the front of the search list.  My first
+implementation of this actually made the program slower, since cells which
+got moved to the front of the list stayed near there even when they were no
+longer a problem.  I have an idea for a better way to do it, but I haven't
+had time to implement it yet.
+
+   Another thing I'm still experimenting with is how to decide whether to
+turn an unknown cell on or off.  If I'm going to let the search run to
+completion it doesn't matter; both choices will be tried eventually.  But
+for incomplete searches some heuristics might help.  Usually I choose 'off'
+first, in the hope that an object of small population will be found.
+Another good choice is to make a location have the same value at time t as
+at other, already assigned, times; this tends to lead to billiard tables.
+
+   The program is most effective when the period is small; the forward and
+backward conclusions tend to wrap around the ends of time and meet, leading
+to more conclusions or contradictions.  For large periods, that doesn't
+happen much, so the program doesn't detect its bad choices soon enough to
+accomplish much.  The p5 fumarole and one other p5 are the only things
+I've found so far with a congruence period greater than 4.
+----------------------------------------------------------------------
+
+Detailed description of the Life search program  (9/24/89)
+
+     The program consists of two parts, an assembly language part which
+does the searching and a BASIC program which handles initialization,
+interpreting commands from the user, and display.  I'll talk mostly about
+the assembly language portion.
+
+     Three constants describe the size of the space being searched:
+
+          TP = time period, length of time until pattern is to reappear;
+          XM = width of rectangle to be searched;
+          YM = height of rectangle to be searched.
+
+The set of pairs (X,Y) with 0<=X<XM and 0<=Y<YM will be called "the
+rectangle".
+
+     There are 12 constants which describe how generation 0 is related to
+generation TP:  A, B, C, D, E, F, A', B', C', D', E', F'.  The cell with
+coordinates (X, Y) in generation 0 is mapped to the cell with coordinates
+(AX+BY+C, DX+EY+F) in generation TP.  The cell with coordinates (X, Y) in
+generation TP is mapped to the cell (A'X+B'Y+C', D'X+E'Y+F') in generation
+0.  The values of A thru F are specified by the user; the others are given
+by:
+    A' =  E/Z,   B' = -B/Z,   C' = (BF-CE)/Z,
+    D' = -D/Z,   E' =  A/Z,   F' = (CD-AF)/Z,
+where   Z = AE-BD = 1 or -1.  The mappings are supposed to be isometries,
+not general invertible linear maps, so there are severe restrictions on A,
+B, D, and E which I won't bother to write down.  (There is also a boolean
+variable, USEMAP, which is normally true.  If it is false, then the
+mappings are ignored, so the program can be used to search for predecessors
+of whatever the user puts in generation TP.)
+
+     The current information about generations 0 to TP is kept in a 3
+dimensional array CELL, with dimensions 0 to TP, 0 to XM-1, and 0 to YM-1.
+Each entry can have one of 3 values, 0=off, 1=on, or UNK=unknown.  (I use a
+whole byte for each entry, with UNK=$10.  (Here and later, a dollar sign
+indicates that a number is in base 16.)  This makes the computation of the
+neighborhood easy: just add the values of the 8 neighbors; the high nybble
+is the number of unknown neighbors, and the low nybble is the number which
+are on.) Initially the edges (all elements with X=0 or XM-1 or Y=0 or YM-1)
+are turned off, as are the cells in generation 0 which map outside the
+rectangle in generation TP and vice versa; everything else is initially
+unknown.  After this initialization, some user-specified cells may be
+turned on or off, by calling PROCEED (described later).
+
+     In addition to CELL, one other large array is used, the setting list.
+This is a list of quintuples (T, X, Y, VALUE, FREE) where 0<=T=TP, 0<=X<XM,
+0<=Y<YM, VALUE=0 or 1, and FREE=true or false.  Whenever an element of CELL
+is changed from UNK to 0 or 1, an entry is added to the list.  FREE is true
+if the change is a free choice, false if it's forced by some previous
+choice.  There are 3 pointers into the list:
+          STNG   points to the beginning;
+          NWSTNG points to the end; new entries are put here;
+          NXSTNG points to the next setting whose consequences are to
+                 be examined.
+
+     There are also two tables which are used to describe the Life
+transition rules.  Conceptually, an index into either table consists of a
+cell value (0, 1, or UNK) and 3 numbers which add up to 8, telling how many
+neighbors are 0, 1, and UNK; there are 135 (=3*45) possible indices.  In
+practice, I use a one byte 'neighborhood descriptor' to encode this, so
+each table is 256 bytes long, but only partially used.  To compute the
+neighborhood descriptor of a cell, add up the 8 neighbors.  If the AND of
+the sum and $88 is zero, then the neighborhood descriptor is twice the sum
+plus the cell.  If the AND is nonzero, the descriptor is the sum plus twice
+the cell plus $11.
+
+     The first table is called TRANSIT and tells what the cell should be in
+the next generation.  E.g. neighborhood descriptor $25 means that the
+cell is 1, 5 of its neighbors are 0, 2 are 1, and 1 is unknown,
+TRANSIT[$25] = 1.  Of course, most entries in TRANSIT are UNK, 73 to be
+exact.  (And 57 are 0 and 5 are 1.)
+
+     The second table is called IMPLIC and contains information about
+implications in the other direction.  If we know the neighborhood
+descriptor and the value of the cell in the next generation, we may be able
+to conclude that some unknown cells in this generation must be 0 or 1.
+Such conclusions exist only if the corresponding entry is UNK, so there are
+only 73 entries in IMPLIC.   There are 8 possible implications, each is
+given by one bit in the IMPLIC entry:
+
+     Bit       Meaning
+     $80       If new cell is 0 then current cell should be 0.
+     $40       If new cell is 0 then current cell should be 1.
+     $20       If new cell is 1 then current cell should be 0.
+     $10       If new cell is 1 then current cell should be 1.
+     $08       If new cell is 0 then all unknown neighbors should be 0.
+     $04       If new cell is 0 then all unknown neighbors should be 1.
+     $02       If new cell is 1 then all unknown neighbors should be 0.
+     $01       If new cell is 1 then all unknown neighbors should be 1.
+
+(In Life, bits $40 and $20 are never set, but they may occur for other
+transition rules.)  For example, bit $80 is set iff the current cell is
+unknown, exactly 2 of its neighbors are 1, and at most 1 of its neighbors
+is unknown, i.e. for neighborhood descriptors $14 and $34.
+
+     The two tables were created by a BASIC program and are now loaded from
+disk as part of the initialization.
+
+     The basic operation of the program is as follows: Suppose that CELL is
+fully consistent; i.e. every cell is consistent with its 9 parents and no
+currently unknown cells have their values forced.  (That is, forced
+directly, either by their parents or their children.)  In this situation,
+NXSTNG = NWSTNG.
+
+Step 0:  ('Pick an unknown cell')  If there are no unknown cells left,
+report that an object has been found, let the user display it, save it on
+disk, print it, or whatever; then go to step 2.  Otherwise, pick an unknown
+cell and a value for it.  Change it in CELL and add an entry to the setting
+list with FREE=true, updating NWSTNG.  Go to step 1.
+
+Step 1:  ('Examine consequences')  If NXSTNG = NWSTNG, then CELL is fully
+consistent; go to step 0.  Otherwise, get the values of T, X, Y, and VALUE
+pointed to by NXSTNG and increment NXSTNG.  The fact that CELL[T,X,Y] =
+VALUE may directly force some currently unknown cells to be 0 or 1; for
+each of these, set its value in CELL and add an entry to the setting list
+with FREE=false, incrementing NWSTNG.  Then go to step 1.  We may also
+detect a contradiction at this point; in that case go to step 2.  (The
+forcing in this step is of 4 types:  If T=0 or TP, the mapped cell in
+generation TP or 0 is forced.  Some of the parents of (T,X,Y) may be
+forced.  Some of the children of (T,X,Y) may be forced.  And some cells may
+be forced by additional constraints such as symmetry.)
+
+Step 2:  ('Back up'.  At this point, either a contradiction has been
+detected or we've found an object and wish to look for more.)  If NWSTNG =
+STNG, report that no more objects of the desired type exist and quit.
+Otherwise, decrement NWSTNG and get the values of T, X, Y, VALUE, and FREE
+pointed to by it.  If FREE = false, set CELL[T,X,Y] to UNK and go to step
+2.  If FREE = true, then either we've found that this free choice led to a
+contradiction or we've already found all objects in which the choice was
+valid.  So change CELL[T,X,Y] to 1-VALUE, change FREE to false, set NXSTNG
+to NWSTNG, increment NWSTNG, and go to step 1.
+
+     As described here, part of step 0 involves returning control to the
+BASIC part of the program.  But on my system it's not convenient to have a
+machine language routine call a BASIC routine, so I've rearranged things
+slightly.
+
+     I'll now describe the machine language routines. Unless otherwise
+indicated, the parameters T, X, Y, VALUE, and FREE are assumed to
+satisfy  0<=T<=TP,  0<=X<XM,  0<=Y<YM,  VALUE = 0, 1, or UNK,  FREE = true
+or false.
+
+     Many of these routines sometimes detect an error; they report this to
+the calling routine by setting the carry bit and storing a value in the
+variable ERRCODE to tell which error occurred.  (Calling these 'errors' is
+misleading, since they can occur during the normal course of events and
+some are even desirable.  But 'exceptional conditions' is too long, so I'll
+continue to call them errors.)
+
+LOOKUP(T,X,Y):  Return the address and value of CELL[T,X,Y]. (This routine
+gets called more often than any other, so should be fast.  I actually
+implemented it as an assembly language macro rather than as a subroutine.
+The duplicated code made the program a bit larger, but also made it about
+10% faster.  I also have faster versions for the special cases in which the
+cell being looked up is adjacent to the one previously looked up. This
+speeds up the neighborhood calculation in GETNBHD.)
+
+MAP(X,Y):  Return the coordinates of the cell in generation TP
+corresponding to the cell (0,X,Y).  Report an 'out of bounds' error if the
+mapped coordinates are not in the rectangle.
+
+INVMAP(X,Y):  Return the coordinates of the cell in generation 0
+corresponding to the cell (TP,X,Y). Report an 'out of bounds' error if the
+mapped coordinates are not in the rectangle.
+
+NWSET(T,X,Y,VALUE,FREE):  Store a quintuple at NWSTNG and increment NWSTNG.
+
+SETCELL(T,X,Y,VALUE,FREE):  (Should not be called with VALUE = UNK.)  Look
+up CELL[T,X,Y].  If it equals VALUE, do nothing.  If it equals 1-VALUE,
+report an 'inconsistency' error.  If it is unknown, set it to VALUE and
+call NWSET to add the quintuple to the setting list.
+
+GETNBHD(T,X,Y):  (Should not be called with T=0.)  Return the neighborhood
+descriptor for (T-1,X,Y); i.e. describing the parents of (T,X,Y).  Note: If
+(X,Y) is on the boundary of the rectangle, then GETNBHD assumes that the
+neighbors which are outside are 0.  There are some situations in which it
+would be better to assume they are UNK.
+
+CONSISFY(T,X,Y):  (Should not be called with T=0.  X and Y may be out of
+bounds, in which case the routine does nothing.)  Make (T,X,Y) fully
+consistent with its parents.  Specifically:  Compute the neighborhood
+descriptor of (T-1,X,Y), and look it up in TRANSIT and IMPLIC.  If the
+entry in TRANSIT is 0 or 1 and the value of CELL[T,X,Y] is 1 or 0,
+respectively, report an 'inconsistency' error.  Otherwise call SETCELL
+(with FREE=false) for any of (T,X,Y) or its parents which are currently
+unknown but are forced to be 0 or 1.
+
+CONSIS10(T,X,Y):  Call CONSISFY for (T,X,Y) (provided that T>0) and for
+each of its 9 children (provided that T<TP).  Report any 'inconsistency'
+error found by CONSISFY.
+
+APPLYMAP(T,X,Y,VALUE):  (Should not be called with VALUE = UNK.)  If USEMAP
+= false, do nothing.  Otherwise, if T = 0 or TP, call MAP or INVMAP.  If
+the mapped cell is out of bounds, do nothing.  Otherwise, call SETCELL for
+the mapped cell and VALUE, with FREE=false.  Report any 'inconsistency'
+error found by SETCELL.
+
+SYMM(T,X,Y,VALUE):  (Should not be called with VALUE = UNK.) This routine
+deals with symmetry, billiard tablicity, and other restrictions desired by
+the user.  Separate versions of it exist for different situations.  Each
+one looks at T, X, Y, and VALUE, decides if any other cells are forced, and
+calls SETCELL for them, reporting any 'inconsistency' errors.  (Suppose for
+example that we want a pattern to have 90 degree rotational symmetry.  Then
+SYMM could compute the coordinates of the cell obtained by rotating (X,Y)
+90 degrees about the center of symmetry and call SETCELL for it.  It is not
+necessary to do the same for the 180 and 270 degree
+rotations; the higher levels of the program will take care of that.)
+
+EXAMNEXT:  If NXSTNG = NWSTNG, report a 'full consistency achieved' error.
+Otherwise, get the values of T, X, Y, and VALUE pointed to by NXSTNG, and
+increment NXSTNG. Call APPLYMAP, SYMM, and CONSIS10, reporting any errors
+found by them.  (If one of the routines gives an error, it's not necessary
+to call the others.)
+
+PROCEED(T,X,Y,VALUE,FREE):  Call SETCELL, reporting an 'inconsistency'
+error if it finds one.  Otherwise, call EXAMNEXT repeatedly.  Eventually,
+it will report either an inconsistency or full consistency.  In the first
+case, report it.  In the second case, return without reporting an error.
+This routine is called whenever we either make a free choice for a cell or
+have backed up to a free choice and now want to try the other value there;
+it finds all the (direct or indirect) conclusions (or a contradiction) from
+the choice.  It can also be called from the BASIC program to initialize
+certain cells.  (Note: After BASIC has done such initialization, it can set
+NXSTNG and NWSTNG equal to STNG in order to save space; since we don't want
+to back up over the initialized cells, we don't need to remember them in
+the setting list.)
+
+BACKUP:  Undo all settings from NWSTNG back to (and including) the most
+recent free choice, changing their values in CELL back to UNK.  If we back
+up all the way to STNG, report an 'object does not exist' error. Otherwise,
+make NWSTNG and NXSTNG point to the free choice and return the values of T,
+X, Y, and VALUE from it.  (This corresponds to repeated application of Step
+2 in the program outline above.)
+
+GO(T,X,Y,VALUE,FREE):  [I ran out of good descriptive subroutine names.]
+Call PROCEED(T,X,Y,VALUE,FREE).  If it returns without an error, then full
+consistency has been achieved; return without an error.  Otherwise call
+BACKUP, reporting an 'object does not exist' error if BACKUP finds one.
+Otherwise, call PROCEED(T,X,Y,1-VALUE,false).  Continue calling PROCEED and
+BACKUP alternately until either full consistency is achieved or an 'object
+does not exist' error occurs. (This corresponds to repeated application of
+Steps 1 and 2 above.)
+
+GETUNK:  Select an unknown cell.  If none exist, report a no 'more unknown
+cells' error.  (This means that an object has been found.)  Otherwise,
+return the values of T, X, and Y.  I won't describe this routine in detail
+because I haven't determined the best way for it to make its choice.  We'd
+like to choose cells which are most likely to reveal any previous bad
+choices.  Choosing cells which are near recently chosen or forced cells is
+a good idea, but there's a danger that we'll get stuck in one region and
+not notice that something chosen long ago was bad.  Currently, I use a list
+of all cells set up by the BASIC program and just choose the first unknown
+one on the list.  But even assuming that we're going to do it that way,
+it's not clear how the list should be arranged.  Usually I proceed up the
+columns from left to right or down slope -1 diagonals from left to right.
+
+CHOOSE(T,X,Y):  Return a value to be assigned to the currently unknown cell
+(T,X,Y), either 0 or 1.  Again, I don't know the best way to do this.  For
+a complete search, it doesn't matter; both choices will eventually be
+tried.  For a partial search, it does.  I usually choose 0 first, hoping
+that a small object will be found.  Sometimes I choose 1 to prevent the
+empty object from being found.  Sometimes I look for an already chosen
+value of CELL[T',X,Y], for T' not equal to T, and give CELL[T,X,Y] the same
+value, hoping that a billiard table will be found.  I can specify which of
+these methods will be used initially, and can change it in the middle of a
+search.
+
+MAIN:   This is the top level machine language routine which is called from
+the BASIC program.  It searches until it either finds an object of the
+desired type, decides that there aren't any more, or is interrupted by the
+user.  Specifically, it does this:
+
+     Step 0: Call GETUNK.  If it finds an unknown cell (T,X,Y), go to
+             step 1.  Otherwise, we've already found an object and want
+             to look for another one.  So call BACKUP.  If it gives an
+             'object does not exist' error, report it. Otherwise,
+             change VALUE to 1-VALUE, set FREE = false, and go to
+             step 2.
+
+     Step 1: Call CHOOSE to select a VALUE for the unknown cell, set
+             FREE = true, and go to step 2.
+
+     Step 2: Call GO(T,X,Y,VALUE,FREE).  If it gives an 'object does not
+             exist' error, report it.  Otherwise, check to see if the
+             user has typed a key.  If so, return.  (The user can then
+             display the current contents of CELL to observe the
+             progress of the search, and make some changes if desired.
+             Calling MAIN again will continue the search.) If no key
+             has been typed, go to step 3.
+
+     Step 3: Call GETUNK.  If it finds an unknown cell (T,X,Y), go to
+             step 1.  Otherwise, report that an object has been found.
+
+     In addition to MAIN, the user can also call PROCEED and BACKUP; these
+are sometimes useful for guiding a search in a promising direction.
+===========================================================================
+END OF FILE
