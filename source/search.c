@@ -4,6 +4,9 @@
  * Based on the algorithms by Dean Hickerson that were
  * included with the "xlife 2.0" distribution.  Thanks!
  * Changes for arbitrary Life rules by Nathan S. Thompson.
+
+
+  ****** Heavily modified. Modifications not noted consistently.  -JES ******
  */
 
 /*
@@ -12,8 +15,21 @@
  */
 #define	EXTERN
 
-#include "lifesrc.h"
+// Uncommenting this line will disable certain features in an attempt
+// to make the search go a little faster. Maybe 10% faster or so...
+//#define FASTER
 
+
+#include <windows.h>
+#include "wls.h"
+#include "lifesrc.h"
+#include <search.h>
+
+
+#define SUMCOUNT 8
+
+extern int abortthread;
+extern int symmetry;
 
 /*
  * IMPLIC flag values.
@@ -75,7 +91,7 @@ static	void	inittransit PROTO((void));
 static	void	initimplic PROTO((void));
 static	void	initsearchorder PROTO((void));
 static	void	linkcell PROTO((CELL *));
-static	STATE	transition PROTO((STATE, int, int));
+static __inline	STATE	transition PROTO((STATE, int, int));
 static	STATE	choose PROTO((CELL *));
 static	FLAGS	implication PROTO((STATE, int, int));
 static	CELL *	symcell PROTO((CELL *));
@@ -87,11 +103,22 @@ static	STATUS	consistify PROTO((CELL *));
 static	STATUS	consistify10 PROTO((CELL *));
 static	STATUS	examinenext PROTO((void));
 static	BOOL	checkwidth PROTO((CELL *));
-static	int	getdesc PROTO((CELL *));
-static	int	sumtodesc PROTO((STATE, int));
-static	int	ordersortfunc PROTO((CELL **, CELL **));
+//static	int	getdesc PROTO((CELL *));
+//static	int	sumtodesc PROTO((STATE, int));
+//static	int	ordersortfunc PROTO((CELL **, CELL **));
 static	CELL *	(*getunknown) PROTO((void));
-static	STATE	nextstate PROTO((STATE, int));
+static	__inline STATE	nextstate PROTO((STATE, int));
+
+
+/*
+ * Return the descriptor value for a cell and the sum of its neighbors.
+ */
+static __inline int
+sumtodesc(STATE state, int sum)
+{
+//	return ((sum & 0x88) ? (sum + state * 2 + 0x11) : (sum * 2 + state));  // JES
+	return ((sum & 0x88) ? (sum + state * 2 + 0x11) : (sum * 2 + state));
+}
 
 
 /*
@@ -108,6 +135,15 @@ initcells()
 	CELL *	cell;
 	CELL *	cell2;
 
+	newcellcount=0;
+	auxcellcount=0;
+	newcells=NULL;
+	deadcell=NULL;
+	searchlist=NULL;
+	dummyrowinfo.oncount=0;
+	dummycolinfo.oncount=0;
+
+
 	if ((rowmax <= 0) || (rowmax > ROWMAX) ||
 		(colmax <= 0) || (colmax > COLMAX) ||
 		(genmax <= 0) || (genmax > GENMAX) ||
@@ -115,7 +151,7 @@ initcells()
 		(coltrans < -TRANSMAX) || (coltrans > TRANSMAX))
 	{
 		ttyclose();
-		fprintf(stderr, "ROW, COL, GEN, or TRANS out of range\n");
+		wlsError("ROW, COL, GEN, or TRANS out of range",0);
 		exit(1);
 	}
 
@@ -176,8 +212,9 @@ initcells()
 				 * this cell in the same loop as the
 				 * next symmetrical cell.
 				 */
-				if ((rowsym || colsym || pointsym ||
-					fwdsym || bwdsym) && !edge)
+//				if ((rowsym || colsym || pointsym ||
+//					fwdsym || bwdsym) && !edge)
+				if(symmetry)
 				{
 					loopcells(cell, symcell(cell));
 				}
@@ -196,10 +233,11 @@ initcells()
 		{
 			for (col = 0; col <= colmax+1; col++)
 			{
-				cell = findcell(row, col, genmax - 1);
+/*				cell = findcell(row, col, genmax - 1);
 				cell2 = mapcell(cell);
 				cell->future = cell2;
 				cell2->past = cell;
+				*/
 
 				cell = findcell(row, col, 0);
 				cell2 = mapcell(cell);
@@ -241,74 +279,22 @@ initcells()
 
 
 /*
- * Order the cells to be searched by building the search table list.
- * This list is built backwards from the intended search order.
- * The default is to do searches from the middle row outwards, and
- * from the left to the right columns.  The order can be changed though.
- */
-static void
-initsearchorder()
-{
-	int	row, col, gen;
-	int	count;
-	CELL *	cell;
-	CELL *	table[MAXCELLS];
-
-	/*
-	 * Make a table of cells that will be searched.
-	 * Ignore cells that are not relevant to the search due to symmetry.
-	 */
-	count = 0;
-
-	for (gen = 0; gen < genmax; gen++)
-		for (col = 1; col <= colmax; col++)
-			for (row = 1; row <= rowmax; row++)
-	{
-		if (rowsym && (col >= rowsym) && (row * 2 > rowmax + 1))
-			continue;
-
-		if (colsym && (row >= colsym) && (col * 2 > colmax + 1))
-			continue;
-
-		table[count++] = findcell(row, col, gen);
-	}
-
-	/*
-	 * Now sort the table based on our desired search order.
-	 */
-	qsort((char *) table, count, sizeof(CELL *), ordersortfunc);
-
-	/*
-	 * Finally build the search list from the table elements in the
-	 * final order.
-	 */
-	searchlist = NULL;
-
-	while (--count >= 0)
-	{
-		cell = table[count];
-		cell->search = searchlist;
-		searchlist = cell;
-	}
-	
-	fullsearchlist = searchlist;
-}
-
-
-/*
  * The sort routine for searching.
  */
 static int
-ordersortfunc(arg1, arg2)
+ordersortfunc(const void *xxx1, const void *xxx2)
+{
 	CELL **	arg1;
 	CELL **	arg2;
-{
 	CELL *	c1;
 	CELL *	c2;
 	int	midcol;
 	int	midrow;
 	int	dif1;
 	int	dif2;
+
+	arg1=(CELL**)xxx1;
+	arg2=(CELL**)xxx2;
 
 	c1 = *arg1;
 	c2 = *arg2;
@@ -325,6 +311,20 @@ ordersortfunc(arg1, arg2)
 		if (c1->gen > c2->gen)
 			return 1;
 	}
+
+	if(diagsort) {
+		if(c1->col+c1->row > c2->col+c2->row) return 1;
+		if(c1->col+c1->row < c2->col+c2->row) return -1;
+		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (orderwide)?1:(-1);  /* ??? */
+		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (orderwide)?(-1):1;
+	}
+	if(knightsort) {
+		if(c1->col*2+c1->row > c2->col*2+c2->row) return 1;
+		if(c1->col*2+c1->row < c2->col*2+c2->row) return -1;
+		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (orderwide)?1:(-1);
+		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (orderwide)?(-1):1;
+	}
+	
 
 	/*
 	 * Sort on the column number.
@@ -352,12 +352,15 @@ ordersortfunc(arg1, arg2)
 		if (dif1 > dif2)
 			return 1;
 	}
-	else
-	{
+	else {
+		/*
+		if(c1->row < c1->col) return -1;
+		if(c1->row > c1->col) return 1;
+		*/
 		if (c1->col < c2->col)
 			return -1;
 
-		if (c1->col > c2->col)
+		if (c1->col > c2->col) 
 			return 1;
 	}
 
@@ -401,6 +404,103 @@ ordersortfunc(arg1, arg2)
 
 
 /*
+ * Order the cells to be searched by building the search table list.
+ * This list is built backwards from the intended search order.
+ * The default is to do searches from the middle row outwards, and
+ * from the left to the right columns.  The order can be changed though.
+ */
+static void
+initsearchorder()
+{
+	int	row, col, gen;
+	int	count;
+	CELL *	cell;
+	CELL *	table[MAXCELLS];
+	int nrow,ncol;
+	/*
+	 * Make a table of cells that will be searched.
+	 * Ignore cells that are not relevant to the search due to symmetry.
+	 */
+	count = 0;
+
+	for (gen = 0; gen < genmax; gen++)
+		for (col = 1; col <= colmax; col++)
+			for (row = 1; row <= rowmax; row++)	{
+				
+				nrow=rowmax+1-row;
+				ncol=colmax+1-col;
+
+				switch(symmetry) {
+				case 1:
+					if(col>ncol) continue;
+					break;
+				case 2:
+					if(row<nrow) continue;
+					break;
+				case 3:
+					if(col>nrow) continue;
+					break;
+				case 4:
+					if(col>row) continue;
+					break;
+				case 5:
+					if(col>ncol) continue;
+					if(col==ncol && row>nrow) continue;
+					break;
+				case 6:
+					if(col>ncol || row>nrow) continue;
+					break;
+				case 7:
+					if(col>nrow || col>row) continue;
+					break;
+				case 8:
+					if(col==ncol && row==nrow) break;  // make sure we keep the center
+//					if(col<ncol || row<=nrow) continue;
+					if(col>ncol || row>=nrow) continue;
+					break;
+				case 9:
+//					if(col<row || row<nrow) continue;
+					if(col>row || row>nrow) continue;
+					break;
+				}
+				
+
+/*				if (rowsym && (row * 2 > rowmax + 1))
+					continue;
+
+				if (colsym && (col * 2 > colmax + 1))
+					continue;
+					*/
+
+				table[count++] = findcell(row, col, gen);
+
+			}
+
+	/*
+	 * Now sort the table based on our desired search order.
+	 */
+	qsort((char *) table, count, sizeof(CELL *), ordersortfunc);
+
+	/*
+	 * Finally build the search list from the table elements in the
+	 * final order.
+	 */
+	searchlist = NULL;
+
+	while (--count >= 0)
+	{
+		cell = table[count];
+		cell->search = searchlist;
+		searchlist = cell;
+	}
+	
+	fullsearchlist = searchlist;
+}
+
+
+
+
+/*
  * Set the state of a cell to the specified state.
  * The state is either ON or OFF.
  * Returns ERROR if the setting is inconsistent.
@@ -427,7 +527,7 @@ setcell(cell, state, free)
 			cell->row, cell->col, cell->gen,
 			(state == ON) ? "on" : "off");
 
-		return ERROR;
+		return ERROR1;
 	}
 
 	if (cell->gen == 0)
@@ -435,36 +535,40 @@ setcell(cell, state, free)
 		if (usecol && (colinfo[usecol].oncount == 0)
 			&& (colinfo[usecol].setcount == rowmax) && inited)
 		{
-			return ERROR;
+			return ERROR1;
 		}
 
 		if (state == ON)
 		{
+
+#ifndef FASTER
+
 			if (maxcount && (cellcount >= maxcount))
 			{
 				DPRINTF2("setcell %d %d 0 on exceeds maxcount\n",
 					cell->row, cell->col);
 
-				return ERROR;
+				return ERROR1;
 			}
 
-			if (nearcols && (cell->near <= 0) && (cell->col > 1)
+			if (nearcols && (cell->near1 <= 0) && (cell->col > 1)
 				&& inited)
 			{
-				return ERROR;
+				return ERROR1;
 			}
 
 			if (colcells && (cell->colinfo->oncount >= colcells)
 				&& inited)
 			{
-				return ERROR;
+				return ERROR1;
 			}
 
 			if (colwidth && inited && checkwidth(cell))
-				return ERROR;
+				return ERROR1;
 
 			if (nearcols)
 				adjustnear(cell, 1);
+#endif
 
 			cell->rowinfo->oncount++;
 			cell->colinfo->oncount++;
@@ -493,31 +597,31 @@ setcell(cell, state, free)
 /*
  * Calculate the current descriptor for a cell.
  */
-static int
+static __inline int
 getdesc(cell)
 	CELL *	cell;
 {
 	int	sum;
+	sum = cell->cul->state + cell->cu->state + cell->cur->state +
+	      cell->cdl->state + cell->cd->state + cell->cdr->state +
+	      cell->cl->state + cell->cr->state;
 
+	return ((sum & 0x88) ? (sum + cell->state * 2 + 0x11) :
+		(sum * 2 + cell->state));
+
+	/*
 	sum = cell->cul->state + cell->cu->state + cell->cur->state;
 	sum += cell->cdl->state + cell->cd->state + cell->cdr->state;
 	sum += cell->cl->state + cell->cr->state;
 
-	return ((sum & 0x88) ? (sum + cell->state * 2 + 0x11) :
+	return ((sum & 0x88) ? 
+		(sum + cell->state * 2 + 0x11) :        // JES
 		(sum * 2 + cell->state));
+*/
+
 }
 
 
-/*
- * Return the descriptor value for a cell and the sum of its neighbors.
- */
-static int
-sumtodesc(state, sum)
-	STATE	state;
-	int	sum;
-{
-	return ((sum & 0x88) ? (sum + state * 2 + 0x11) : (sum * 2 + state));
-}
 
 
 /*
@@ -555,8 +659,8 @@ consistify(cell)
 
 	if ((state != UNK) && (state != cell->state))
 	{
-		if (setcell(cell, state, FALSE) == ERROR)
-			return ERROR;
+		if (setcell(cell, state, FALSE) == ERROR1)
+			return ERROR1;
 	}
 
 	/*
@@ -574,13 +678,13 @@ consistify(cell)
 	if ((flags & N0IC0) && (cell->state == OFF) &&
 		(setcell(prevcell, OFF, FALSE) != OK))
 	{
-		return ERROR;
+		return ERROR1;
 	}
 
 	if ((flags & N1IC1) && (cell->state == ON) &&
 		(setcell(prevcell, ON, FALSE) != OK))
 	{
-		return ERROR;
+		return ERROR1;
 	}
 
 	state = UNK;
@@ -615,49 +719,49 @@ consistify(cell)
 	if ((prevcell->cul->state == UNK) &&
 		(setcell(prevcell->cul, state, FALSE) != OK))
 	{
-		return ERROR;
+		return ERROR1;
 	}
 
 	if ((prevcell->cu->state == UNK) &&
 		(setcell(prevcell->cu, state, FALSE) != OK))
 	{
-		return ERROR;
+		return ERROR1;
 	}
 
 	if ((prevcell->cur->state == UNK) &&
 		(setcell(prevcell->cur, state, FALSE) != OK))
 	{
-		return ERROR;
+		return ERROR1;
 	}
 
 	if ((prevcell->cl->state == UNK) &&
 		(setcell(prevcell->cl, state, FALSE) != OK))
 	{
-		return ERROR;
+		return ERROR1;
 	}
 
 	if ((prevcell->cr->state == UNK) &&
 		(setcell(prevcell->cr, state, FALSE) != OK))
 	{
-		return ERROR;
+		return ERROR1;
 	}
 
 	if ((prevcell->cdl->state == UNK) &&
 		(setcell(prevcell->cdl, state, FALSE) != OK))
 	{
-		return ERROR;
+		return ERROR1;
 	}
 
 	if ((prevcell->cd->state == UNK) &&
 		(setcell(prevcell->cd, state, FALSE) != OK))
 	{
-		return ERROR;
+		return ERROR1;
 	}
 
 	if ((prevcell->cdr->state == UNK) &&
 		(setcell(prevcell->cdr, state, FALSE) != OK))
 	{
-		return ERROR;
+		return ERROR1;
 	}
 
 	DPRINTF0("Implications successful\n");
@@ -675,36 +779,36 @@ consistify10(cell)
 	CELL *	cell;
 {
 	if (consistify(cell) != OK)
-		return ERROR;
+		return ERROR1;
 
 	cell = cell->future;
 
 	if (consistify(cell) != OK)
-		return ERROR;
+		return ERROR1;
 
 	if (consistify(cell->cul) != OK)
-		return ERROR;
+		return ERROR1;
 
 	if (consistify(cell->cu) != OK)
-		return ERROR;
+		return ERROR1;
 
 	if (consistify(cell->cur) != OK)
-		return ERROR;
+		return ERROR1;
 
 	if (consistify(cell->cl) != OK)
-		return ERROR;
+		return ERROR1;
 
 	if (consistify(cell->cr) != OK)
-		return ERROR;
+		return ERROR1;
 
 	if (consistify(cell->cdl) != OK)
-		return ERROR;
+		return ERROR1;
 
 	if (consistify(cell->cd) != OK)
-		return ERROR;
+		return ERROR1;
 
 	if (consistify(cell->cdr) != OK)
-		return ERROR;
+		return ERROR1;
 
 	return OK;
 }
@@ -737,7 +841,7 @@ examinenext()
 
 	if (cell->loop && (setcell(cell->loop, cell->state, FALSE) != OK))
 	{
-		return ERROR;
+		return ERROR1;
 	}
 
 	return consistify10(cell);
@@ -757,14 +861,14 @@ proceed(cell, state, free)
 	int	status;
 
 	if (setcell(cell, state, free) != OK)
-		return ERROR;
+		return ERROR1;
 
 	for (;;)
 	{
 		status = examinenext();
 
-		if (status == ERROR)
-			return ERROR;
+		if (status == ERROR1)
+			return ERROR1;
 
 		if (status == CONSISTENT)
 			return OK;
@@ -849,7 +953,7 @@ go(cell, state, free)
 		cell = backup();
 
 		if (cell == NULL_CELL)
-			return ERROR;
+			return ERROR1;
 
 		free = FALSE;
 		state = 1 - cell->state;
@@ -1002,20 +1106,23 @@ search()
 		cell = backup();
 
 		if (cell == NULL_CELL)
-			return ERROR;
+			return ERROR1;
 
 		free = FALSE;
 		state = 1 - cell->state;
 		cell->state = UNK;
 	}
-	else
-	{
+	else {
+#ifdef FASTER
+		state=OFF;
+#else
 		state = choose(cell);
+#endif
 		free = TRUE;
 	}
 
-	for (;;)
-	{
+	for (;;) {
+		if(abortthread) return OK;
 		/*
 		 * Set the state of the new cell.
 		 */
@@ -1037,6 +1144,7 @@ search()
 		 * columns count values up to date.
 		 */
 		needwrite = FALSE;
+//		needwrite1=FALSE;
 
 		if (outputcols &&
 			(fullcolumns >= outputlastcols + outputcols))
@@ -1053,8 +1161,9 @@ search()
 		 */
 		if (needwrite || (viewfreq && (++viewcount >= viewfreq)))
 		{
-			viewcount = 0;
+			showcount(viewcount);
 			printgen(curgen);
+			viewcount = 0;
 		}
 
 		/*
@@ -1068,8 +1177,8 @@ search()
 		/*
 		 * Check for commands.
 		 */
-		if (ttycheck())
-			getcommands();
+//		if (ttycheck())
+//			getcommands();
 
 		/*
 		 * Get the next unknown cell and choose its state.
@@ -1106,12 +1215,12 @@ adjustnear(cell, inc)
 		curcell = cell;
 
 		for (count = nearcols; count-- >= 0; curcell = curcell->cu)
-			curcell->near += inc;
+			curcell->near1 += inc;
 
 		curcell = cell->cd;
 
 		for (count = nearcols; count-- > 0; curcell = curcell->cd)
-			curcell->near += inc;
+			curcell->near1 += inc;
 	}
 }
 
@@ -1377,6 +1486,8 @@ loopcells(cell1, cell2)
  * pointer is good enough even for the case of both row and column symmetry.
  * Returns NULL_CELL if there is no symmetry.
  */
+
+
 static CELL *
 symcell(cell)
 	CELL *	cell;
@@ -1386,7 +1497,10 @@ symcell(cell)
 	int	nrow;
 	int	ncol;
 
-	if (!rowsym && !colsym && !pointsym && !fwdsym && !bwdsym)
+//	if (!rowsym && !colsym && !pointsym && !fwdsym && !bwdsym)
+//		return NULL_CELL;
+
+	if(!symmetry)
 		return NULL_CELL;
 
 	row = cell->row;
@@ -1394,50 +1508,91 @@ symcell(cell)
 	nrow = rowmax + 1 - row;
 	ncol = colmax + 1 - col;
 
-	/*
-	 * If this is point symmetry, then this is easy.
-	 */
-	if (pointsym)
+	if(symmetry==1)  // col sym
+		return findcell(row,ncol,cell->gen);
+
+	if(symmetry==2)  // row sym
+		return findcell(nrow,col,cell->gen);
+
+	if(symmetry==3)       // fwd diag
+		return findcell(ncol,nrow,cell->gen);
+
+	if(symmetry==4)       // bwd diag
+		return findcell(col,row,cell->gen);
+
+/*    special symmetry 
+	if(symmetry==4) {
+		if(col>=row)
+			return findcell(col,row-1,cell->gen);
+		else
+			return findcell(col+1,row,cell->gen);
+
+	}
+*/
+	if(symmetry==5)       // origin
 		return findcell(nrow, ncol, cell->gen);
 
-	/*
-	 * If there is symmetry on only one axis, then this is easy.
-	 */
-	if (!colsym)
-	{
-		if (col < rowsym)
-			return NULL_CELL;
+	if(symmetry==6) {
+		/*
+		 * Here is there is both row and column symmetry.
+		 * First see if the cell is in the middle row or middle column,
+		 * and if so, then this is easy.
+		 */
+		if ((nrow == row) || (ncol == col))
+			return findcell(nrow, ncol, cell->gen);
 
-		return findcell(nrow, col, cell->gen);
+		/*
+		 * The cell is really in one of the four quadrants, and therefore
+		 * has four cells making up the symmetry.  Link this cell to the
+		 * symmetrical cell in the next quadrant clockwise.
+		 */
+		if ((row < nrow) == (col < ncol))
+			return findcell(row, ncol, cell->gen);  // quadrant 2 or 4
+		else
+			return findcell(nrow, col, cell->gen);  // quadrant 1 or 3
 	}
 
-	if (!rowsym)
-	{
-		if (row < colsym)
-			return NULL_CELL;
+	if(symmetry==7) {  // diagonal 4-fold
+		// if on a diagonal...
+		if(row==col || row==ncol)
+			return findcell(nrow,ncol,cell->gen);
 
-		return findcell(row, ncol, cell->gen);
+		// Not on a diagonal.
+		if((col<row)==(col<nrow))
+			return findcell(col,row,cell->gen);
+		else
+			return findcell(ncol,nrow,cell->gen);
 	}
 
-	/*
-	 * Here is there is both row and column symmetry.
-	 * First see if the cell is in the middle row or middle column,
-	 * and if so, then this is easy.
-	 */
-	if ((nrow == row) || (ncol == col))
-		return findcell(nrow, ncol, cell->gen);
+	if(symmetry==8) {      // origin*4 symmetry 
+		// this is surprisingly simple
+			return findcell(ncol,row,cell->gen);
+	}
 
-	/*
-	 * The cell is really in one of the four quadrants, and therefore
-	 * has four cells making up the symmetry.  Link this cell to the
-	 * symmetrical cell in the next quadrant clockwise.
-	 */
-	if ((row < nrow) == (col < ncol))
-		return findcell(row, ncol, cell->gen);
-	else
-		return findcell(nrow, col, cell->gen);
+	if(symmetry==9) {    // octagonal, this is gonna be tough
+		// if on an axis
+		if(nrow==row || ncol==col)
+			return findcell(ncol,row,cell->gen);
+
+//			return findcell(nrow, ncol, cell->gen);
+		// if on a diagonal
+		if(row==col || row==ncol)
+			return findcell(ncol,row,cell->gen);
+//			return findcell(nrow,ncol,cell->gen);
+
+		if((col>nrow && row<nrow)||(col<nrow && row>nrow)) // octants 1,5
+			return findcell(nrow,col,cell->gen);  // flip rows
+		if((col<nrow && col>ncol)||(col>nrow && col<ncol)) // 2,6
+			return findcell(ncol,nrow,cell->gen);  // fwd diag
+		if((col>row && col<ncol)||(col<row && col>ncol))   // 3,7
+			return findcell(row,ncol,cell->gen);  // flip cols
+		if((col<row && row<nrow)||(col>row && row>nrow))   // 4,8
+			return findcell(col,row,cell->gen);   // bwd diag
+
+	}
+
+	return NULL_CELL;   // crash if we get here :)
 }
-
 
 /*
  * Link a cell to its eight neighbors in the same generation, and also
@@ -1566,9 +1721,11 @@ allocatecell()
 		if (newcells == NULL)
 		{
 			ttyclose();
-			fprintf(stderr, "Cannot allocate cell structure\n");
+			wlsError("Cannot allocate cell structure",0);
 			exit(1);
 		}
+
+		record_malloc(1,(void*)newcells);
 
 		newcellcount = ALLOCSIZE;
 	}
@@ -1612,7 +1769,7 @@ allocatecell()
  * Initialize the implication table.
  */
 static void
-initimplic()
+initimplic(void)
 {
 	STATE	state;
 	int	OFFcount;
@@ -1625,11 +1782,11 @@ initimplic()
 	{
 		state = states[i];
 
-		for (OFFcount = 8; OFFcount >= 0; OFFcount--)
+		for (OFFcount = SUMCOUNT; OFFcount >= 0; OFFcount--)
 		{
-			for (ONcount = 0; ONcount + OFFcount <= 8; ONcount++)
+			for (ONcount = 0; ONcount + OFFcount <= SUMCOUNT; ONcount++)
 			{
-				sum = ONcount + (8 - ONcount - OFFcount) * UNK;
+				sum = ONcount + (SUMCOUNT - ONcount - OFFcount) * UNK;
 				desc = sumtodesc(state, sum);
 
 				implic[desc] =
@@ -1657,12 +1814,12 @@ inittransit()
 	{
 		state = states[i];
 
-		for (OFFcount = 8; OFFcount >= 0; OFFcount--)
+		for (OFFcount = SUMCOUNT; OFFcount >= 0; OFFcount--)
 		{
-			for (ONcount = 0; ONcount + OFFcount <= 8; ONcount++)
+			for (ONcount = 0; ONcount + OFFcount <= SUMCOUNT; ONcount++)
 			{
-				sum = ONcount + (8 - ONcount - OFFcount) * UNK;
-				desc = sumtodesc(state, sum);
+				sum = ONcount + (SUMCOUNT - ONcount - OFFcount) * UNK;
+				desc = sumtodesc((STATE)state, sum);
 
 				transit[desc] =
 					transition(state, OFFcount, ONcount);
@@ -1675,7 +1832,7 @@ inittransit()
 /*
  * Return the next state if all neighbors are known.
  */
-static STATE
+static __inline STATE
 nextstate(state, ONcount)
 	STATE	state;
 	int	ONcount;
@@ -1704,7 +1861,7 @@ nextstate(state, ONcount)
  * Determine the transition of a cell depending on its known neighbor counts.
  * The unknown neighbor count is implicit since there are eight neighbors.
  */
-static STATE
+static __inline STATE
 transition(state, OFFcount, ONcount)
 	STATE	state;
 	int	OFFcount;
@@ -1717,7 +1874,7 @@ transition(state, OFFcount, ONcount)
 
  	on_always = TRUE;
 	off_always = TRUE;
-	UNKcount = 8 - OFFcount - ONcount;
+	UNKcount = SUMCOUNT - OFFcount - ONcount;      // JES
  
 	for (i = 0; i <= UNKcount; i++)
 	{
@@ -1761,7 +1918,7 @@ implication(state, OFFcount, ONcount)
 	int	UNKcount;
 	int	i;
 
-	UNKcount = 8 - OFFcount - ONcount;
+	UNKcount = SUMCOUNT - OFFcount - ONcount;     // JES
 	flags = 0;
 	
 	if (state == UNK)

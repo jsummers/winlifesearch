@@ -1,10 +1,14 @@
 /*
  * Dumb terminal output routine.
  * Does no cursor addressing stuff.
- */
 
-#include <signal.h>
+
+  ****** Heavily modified. Modifications not noted consistently.  -JES ******
+ */
+#include <windows.h>
+//#include <signal.h>
 #include <stdarg.h>
+#include "wls.h"
 #include "lifesrc.h"
 
 
@@ -20,7 +24,7 @@ static	void	gotinput PROTO((void));
 BOOL
 ttyopen()
 {
-	signal(SIGINT, gotinput);
+//	signal(SIGINT, gotinput);
 
 	return TRUE;
 }
@@ -29,8 +33,8 @@ ttyopen()
 static void
 gotinput()
 {
-	signal(SIGINT, gotinput);
-	inputready = TRUE;
+//	signal(SIGINT, gotinput);
+//	inputready = TRUE;
 }
 
 
@@ -50,12 +54,13 @@ ttyclose()
 BOOL
 ttycheck()
 {
-	BOOL	result;
-
-	result = inputready;
-	inputready = FALSE;
-
-	return result;
+//	BOOL	result;
+//
+//	result = inputready;
+//	inputready = FALSE;
+//
+//	return result;
+	return FALSE;
 }
 
 
@@ -73,7 +78,8 @@ ttyprintf(fmt)
 	va_start(ap, fmt);
 	vsprintf(buf, fmt, ap);
 	va_end(ap);
-	ttywrite(buf, strlen(buf));
+//	ttywrite(buf, strlen(buf));
+	wlsMessage(buf,0);
 }
 
 
@@ -82,8 +88,7 @@ ttyprintf(fmt)
  * The string length is limited to 256 characters.
  */
 void
-ttystatus(fmt)
-	char *	fmt;
+ttystatus(char *	fmt)
 {
 	va_list ap;
 	static char	buf[256];
@@ -91,7 +96,8 @@ ttystatus(fmt)
 	va_start(ap, fmt);
 	vsprintf(buf, fmt, ap);
 	va_end(ap);
-	ttywrite(buf, strlen(buf));
+//	ttywrite(buf, strlen(buf));
+	wlsMessage(buf,0);
 }
 
 
@@ -99,17 +105,15 @@ ttystatus(fmt)
  * Write the specified number of characters to the terminal.
  */
 void
-ttywrite(buf, count)
-	char *	buf;			/* buffer to write */
-	int	count;			/* number of characters */
+ttywrite(char *	buf, int count)
 {
-	int	ch;
-
-	while (count-- > 0)
-	{
-		ch = *buf++;
-		putchar(ch);
-	}
+//	int	ch;
+//
+//	while (count-- > 0)
+//	{
+//		ch = *buf++;
+//		putchar(ch);
+//	}
 }
 
 
@@ -128,7 +132,7 @@ ttyeeop()
 void
 ttyflush()
 {
-	fflush(stdout);
+//	fflush(stdout);
 }
 
 
@@ -139,11 +143,9 @@ ttyflush()
  * on end of file or error.
  */
 BOOL
-ttyread(prompt, buf, buflen)
-	char *	prompt;
-	char *	buf;
-	int	buflen;
+ttyread(char *prompt, char *buf, int buflen)
 {
+	/*
 	int	len;
 
 	fputs(prompt, stdout);
@@ -160,7 +162,7 @@ ttyread(prompt, buf, buflen)
 
 	if ((len >= 0) && (buf[len] == '\n'))
 		buf[len] = '\0';
-
+	*/
 	return TRUE;
 }
 
