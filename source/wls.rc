@@ -30,21 +30,46 @@ WLSMENU MENU DISCARDABLE
 BEGIN
     POPUP "&File"
     BEGIN
-        MENUITEM "&Open state...\tL",           IDC_OPENSTATE
-        MENUITEM "&Save state...\tD",           IDC_SAVEGAME
+        MENUITEM "&Open state...\tCtrl+O",      IDC_OPENSTATE
+        MENUITEM "&Save state...\tStrl+S",      IDC_SAVEGAME
         MENUITEM SEPARATOR
-        MENUITEM "E&xit",                       IDC_EXIT
+        MENUITEM "E&xit\tAlt+F4",               IDC_EXIT
     END
     POPUP "&Edit"
     BEGIN
         MENUITEM "&Copy\tCtrl+C",               IDC_EDITCOPY
-        MENUITEM "Clear &generation",           IDC_CLEARGEN
-        MENUITEM "Clea&r All",                  IDC_CLEAR
+        MENUITEM SEPARATOR
+        POPUP "&Shift"
+        BEGIN
+            POPUP "&Generation"
+            BEGIN
+                MENUITEM "&Up\tShift+Up",               IDC_SHIFTGUP
+                MENUITEM "&Down\tShift+Down",           IDC_SHIFTGDOWN
+                MENUITEM "&Left\tShift+Left",           IDCSHIFTGLEFT
+                MENUITEM "&Right\tShift+Right",         IDC_SHIFTGRIGHT
+            END
+            POPUP "&All generations"
+            BEGIN
+                MENUITEM "&Up\tCtrl+Shift+Up",          IDC_SHIFTAUP
+                MENUITEM "&Down\tCtrl+Shift+Down",      IDC_SHIFTADOWN
+                MENUITEM "&Left\tCtrl+Shift+Left",      IDC_SHIFTALEFT
+                MENUITEM "&Right\tCtrl+Shift+Right",    IDC_SHIFTARIGHT
+                MENUITEM "To &past\tCtrl+Shift+PgUp",   IDC_SHIFTAPAST
+                MENUITEM "To &future\tCtrl+Shift+PgDn", IDC_SHIFTAFUTURE
+            END
+        END
+        POPUP "Clea&r"
+        BEGIN
+            MENUITEM "&Generation\tCtrl+Del",       IDC_CLEARGEN
+            MENUITEM "&All generations\tCtrl+Shift+Del", IDC_CLEAR
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "Copy result to &definition",  IDC_COPYRESULT
     END
     POPUP "View"
     BEGIN
-        MENUITEM "&Next generation\tN",         IDC_NEXTGEN
-        MENUITEM "&Previous generation\tP",     IDC_PREVGEN
+        MENUITEM "&Next generation\tPgDn",      IDC_NEXTGEN
+        MENUITEM "&Previous generation\tPgUp",  IDC_PREVGEN
     END
     POPUP "&Options"
     BEGIN
@@ -107,49 +132,49 @@ STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Symmetry"
 FONT 8, "MS Sans Serif"
 BEGIN
-    CONTROL         "None",IDC_SYM0,"Button",BS_AUTORADIOBUTTON | WS_GROUP,
+    CONTROL         105,IDC_STATIC,"Static",SS_BITMAP,7,7,33,30
+    CONTROL         "&None",IDC_SYM0,"Button",BS_AUTORADIOBUTTON | WS_GROUP,
                     45,18,33,10
-    CONTROL         "Mirror-X",IDC_SYM1,"Button",BS_AUTORADIOBUTTON,45,50,40,
-                    10
-    CONTROL         "Mirror-Y",IDC_SYM2,"Button",BS_AUTORADIOBUTTON,45,83,40,
-                    10
-    CONTROL         "Diagonal-Forward",IDC_SYM3,"Button",BS_AUTORADIOBUTTON,
+    CONTROL         106,IDC_STATIC,"Static",SS_BITMAP,7,40,33,30
+    CONTROL         "Mirror-&X",IDC_SYM1,"Button",BS_AUTORADIOBUTTON,45,50,
+                    40,10
+    CONTROL         107,IDC_STATIC,"Static",SS_BITMAP,7,73,33,30
+    CONTROL         "Mirror-&Y",IDC_SYM2,"Button",BS_AUTORADIOBUTTON,45,83,
+                    40,10
+    CONTROL         108,IDC_STATIC,"Static",SS_BITMAP,7,106,33,30
+    CONTROL         "Diagonal-&Forward",IDC_SYM3,"Button",BS_AUTORADIOBUTTON,
                     45,116,71,10
-    CONTROL         "Diagonal-Backward",IDC_SYM4,"Button",BS_AUTORADIOBUTTON,
-                    45,149,78,10
-    CONTROL         "Origin",IDC_SYM5,"Button",BS_AUTORADIOBUTTON,178,17,34,
+    CONTROL         109,IDC_STATIC,"Static",SS_BITMAP,7,139,33,30
+    CONTROL         "Diagonal-&Backward",IDC_SYM4,"Button",
+                    BS_AUTORADIOBUTTON,45,149,78,10
+    CONTROL         110,IDC_STATIC,"Static",SS_BITMAP,140,7,33,30
+    CONTROL         "&Origin",IDC_SYM5,"Button",BS_AUTORADIOBUTTON,178,17,34,
                     10
-    CONTROL         "Mirror-Both",IDC_SYM6,"Button",BS_AUTORADIOBUTTON,178,
+    CONTROL         111,IDC_STATIC,"Static",SS_BITMAP,140,40,33,30
+    CONTROL         "&Mirror-Both",IDC_SYM6,"Button",BS_AUTORADIOBUTTON,178,
                     50,50,10
-    CONTROL         "Diagonal-Both",IDC_SYM7,"Button",BS_AUTORADIOBUTTON,178,
-                    83,61,10
-    CONTROL         "90 degree rotational",IDC_SYM8,"Button",
+    CONTROL         112,IDC_STATIC,"Static",SS_BITMAP,140,73,33,30
+    CONTROL         "&Diagonal-Both",IDC_SYM7,"Button",BS_AUTORADIOBUTTON,
+                    178,83,61,10
+    CONTROL         113,IDC_STATIC,"Static",SS_BITMAP,140,106,33,30
+    CONTROL         "90 degree &rotational",IDC_SYM8,"Button",
                     BS_AUTORADIOBUTTON,178,116,79,10
-    CONTROL         "8-fold",IDC_SYM9,"Button",BS_AUTORADIOBUTTON,178,149,33,
-                    10
+    CONTROL         114,IDC_STATIC,"Static",SS_BITMAP,140,139,33,30
+    CONTROL         "8-fo&ld",IDC_SYM9,"Button",BS_AUTORADIOBUTTON,178,149,
+                    33,10
     DEFPUSHBUTTON   "OK",IDOK,253,7,50,14,WS_GROUP
     PUSHBUTTON      "Cancel",IDCANCEL,253,24,50,14
-    CONTROL         105,IDC_STATIC,"Static",SS_BITMAP,7,7,33,30
-    CONTROL         106,IDC_STATIC,"Static",SS_BITMAP,7,40,33,30
-    CONTROL         107,IDC_STATIC,"Static",SS_BITMAP,7,73,33,30
-    CONTROL         108,IDC_STATIC,"Static",SS_BITMAP,7,106,33,30
-    CONTROL         109,IDC_STATIC,"Static",SS_BITMAP,7,139,33,30
-    CONTROL         110,IDC_STATIC,"Static",SS_BITMAP,140,7,33,30
-    CONTROL         111,IDC_STATIC,"Static",SS_BITMAP,140,40,33,30
-    CONTROL         112,IDC_STATIC,"Static",SS_BITMAP,140,73,33,30
-    CONTROL         113,IDC_STATIC,"Static",SS_BITMAP,140,106,33,30
-    CONTROL         114,IDC_STATIC,"Static",SS_BITMAP,140,139,33,30
 END
 
-DLGABOUT DIALOG DISCARDABLE  0, 0, 186, 70
+DLGABOUT DIALOG DISCARDABLE  0, 0, 217, 90
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "About"
 FONT 8, "MS Sans Serif"
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,129,7,50,14
-    LTEXT           "WinLifeSearch v0.4\r\n\r\nA Windows port of David Bell's LIFESRC v3.5\r\n\r\nBy Jason Summers",
-                    IDC_STATIC,7,7,114,56
-    ICON            "ICONWLS",IDC_STATIC,143,33,20,20,SS_REALSIZEIMAGE
+    DEFPUSHBUTTON   "OK",IDOK,160,7,50,14
+    LTEXT           "WinLifeSearch v0.5\r\n\r\nA Windows port of David Bell's LIFESRC v3.5\r\n\r\nBy Jason Summers\r\n\r\n""Try cells with greatest impact"" feature by Karel Suhajda",
+                    IDC_STATIC,7,7,150,76
+    ICON            "ICONWLS",IDC_STATIC,173,33,21,20,SS_REALSIZEIMAGE
 END
 
 DLGROWS DIALOG DISCARDABLE  0, 0, 186, 55
@@ -157,9 +182,9 @@ STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Rows and Columns"
 FONT 8, "MS Sans Serif"
 BEGIN
-    LTEXT           "Columns (X)",IDC_STATIC,7,7,38,8
+    LTEXT           "&Columns (X)",IDC_STATIC,7,7,38,8
     EDITTEXT        IDC_COLUMNS,57,7,40,14,ES_AUTOHSCROLL
-    LTEXT           "Rows (Y)",IDC_STATIC,7,24,30,8
+    LTEXT           "&Rows (Y)",IDC_STATIC,7,24,30,8
     EDITTEXT        IDC_ROWS,57,24,40,14,ES_AUTOHSCROLL
     DEFPUSHBUTTON   "OK",IDOK,129,7,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,129,24,50,14
@@ -234,82 +259,95 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,129,24,50,14
 END
 
-DLGSETTINGS DIALOG DISCARDABLE  0, 0, 310, 114
+DLGSETTINGS DIALOG DISCARDABLE  0, 0, 301, 110
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Output settings"
 FONT 8, "MS Sans Serif"
 BEGIN
-    LTEXT           "Update screen every",IDC_STATIC,7,7,67,8
-    EDITTEXT        IDC_VIEWFREQ,91,7,40,14,ES_AUTOHSCROLL
-    LTEXT           "calculations",IDC_STATIC,136,7,38,8
-    LTEXT           "Dump to file:",IDC_STATIC,7,31,40,8
-    EDITTEXT        IDC_DUMPFILE,54,28,51,14,ES_AUTOHSCROLL
-    LTEXT           "every",IDC_STATIC,113,30,18,8
-    EDITTEXT        IDC_DUMPFREQ,137,28,40,14,ES_AUTOHSCROLL
-    LTEXT           "calculations",IDC_STATIC,183,31,38,8
-    CONTROL         "Stop when an object is found",IDC_CHECK5,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,48,108,10
+    CONTROL         "Stop after each calculation",IDC_STOPONSTEP,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,10,101,10
+    CONTROL         "Stop when an object is found",IDC_STOPONFOUND,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,26,108,10
     CONTROL         "Save found objects to file:",IDC_OUTPUTFILEYN,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,63,98,10
-    EDITTEXT        IDC_OUTPUTFILE,105,61,58,14,ES_AUTOHSCROLL
-    LTEXT           "Save partial results every",IDC_STATIC,7,81,80,8
-    EDITTEXT        IDC_OUTPUTCOLS,104,79,40,14,ES_AUTOHSCROLL
-    LTEXT           "columns [incompatible with Fast symmetry]",IDC_STATIC,
-                    147,81,133,8
-    DEFPUSHBUTTON   "OK",IDOK,252,7,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,252,24,50,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,42,98,10
+    EDITTEXT        IDC_OUTPUTFILE,106,40,56,14,ES_AUTOHSCROLL
+    LTEXT           "Update screen every",IDC_STATIC,7,59,67,8
+    EDITTEXT        IDC_VIEWFREQ,106,56,56,14,ES_AUTOHSCROLL
+    LTEXT           "calculations",IDC_STATIC,170,59,38,8
+    LTEXT           "Dump to file:",IDC_STATIC,7,75,40,8
+    EDITTEXT        IDC_DUMPFILE,106,72,56,14,ES_AUTOHSCROLL
+    LTEXT           "every",IDC_STATIC,170,75,18,8
+    EDITTEXT        IDC_DUMPFREQ,193,72,56,14,ES_AUTOHSCROLL
+    LTEXT           "calculations",IDC_STATIC,255,75,38,8
+    LTEXT           "Save partial results every",IDC_STATIC,7,91,80,8
+    EDITTEXT        IDC_OUTPUTCOLS,106,88,56,14,ES_AUTOHSCROLL
+    LTEXT           "columns",IDC_STATIC,170,91,27,8
+    DEFPUSHBUTTON   "OK",IDOK,243,8,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,243,24,50,14
+    CONTROL         "All generations",IDC_OUTPUTALLGEN,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,170,42,62,10
 END
 
-DLGSEARCHSETTINGS DIALOGEX 0, 0, 308, 181
+DLGSEARCHSETTINGS DIALOGEX 0, 0, 365, 206
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Search settings"
-FONT 8, "MS Sans Serif"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
-    LTEXT           "Life rules:",IDC_STATIC,7,10,31,8
-    EDITTEXT        IDC_RULESTRING,45,7,67,14,ES_AUTOHSCROLL
-    PUSHBUTTON      "Standard life",IDC_CONWAY,122,7,50,14
-    LTEXT           "Force an ON cell in column",IDC_STATIC,7,31,112,8,0,
+    RTEXT           "Lif&e rules:",IDC_STATIC,7,9,108,8
+    EDITTEXT        IDC_RULESTRING,120,7,60,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "S&tandard life",IDC_CONWAY,185,7,50,14
+    LTEXT           "Force an ON cell in &column",IDC_STATIC,7,27,108,8,0,
                     WS_EX_RIGHT
-    EDITTEXT        IDC_USECOL,123,28,30,14,ES_AUTOHSCROLL
-    LTEXT           "Force an ON cell in row",IDC_STATIC,7,46,112,8,0,
+    EDITTEXT        IDC_USECOL,120,24,60,14,ES_AUTOHSCROLL
+    LTEXT           "Force an ON cell in &row",IDC_STATIC,7,43,108,8,0,
                     WS_EX_RIGHT
-    EDITTEXT        IDC_USEROW,123,44,30,14,ES_AUTOHSCROLL
-    LTEXT           "Limit ON cells in generation 0 to:",IDC_STATIC,7,64,112,
+    EDITTEXT        IDC_USEROW,120,40,60,14,ES_AUTOHSCROLL
+    LTEXT           "&Limit ON cells in generation 0 to:",IDC_STATIC,7,59,
+                    108,8,0,WS_EX_RIGHT
+    EDITTEXT        IDC_MAXCOUNT,120,56,60,14,ES_AUTOHSCROLL
+    LTEXT           "Limit ON cells in each col&umn to:",IDC_STATIC,7,75,108,
                     8,0,WS_EX_RIGHT
-    EDITTEXT        IDC_MAXCOUNT,123,62,30,14,ES_AUTOHSCROLL
-    LTEXT           "Limit ON cells in each column to:",IDC_STATIC,7,81,112,
-                    8,0,WS_EX_RIGHT
-    EDITTEXT        IDC_COLCELLS,123,78,30,14,ES_AUTOHSCROLL
-    LTEXT           "Limit width of each column to:",IDC_STATIC,7,97,112,8,0,
+    EDITTEXT        IDC_COLCELLS,120,72,60,14,ES_AUTOHSCROLL
+    LTEXT           "Limit &width of each column to:",IDC_STATIC,7,91,108,8,
+                    0,WS_EX_RIGHT
+    EDITTEXT        IDC_COLWIDTH,120,88,60,14,ES_AUTOHSCROLL
+    LTEXT           "ON cells must be with&in\r\nof ON cells in previous column",
+                    IDC_STATIC,7,102,108,19,0,WS_EX_RIGHT
+    EDITTEXT        IDC_NEARCOLS,120,104,60,14,ES_AUTOHSCROLL
+    CONTROL         "Also find &subperiods",IDC_ALLOBJECTS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,138,79,10
+    CONTROL         "Find &parents only",IDC_PARENT,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,7,154,69,10
+    CONTROL         "Sort to try all &gens first",IDC_ORDERGENS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,185,26,85,10
+    CONTROL         "&Diagonal sort order",IDC_DIAGSORT,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,185,42,76,10
+    CONTROL         "&Knightship sort order",IDC_KNIGHTSORT,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,185,58,80,10
+    CONTROL         "S&ort to find wide objects",IDC_ORDERWIDE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,185,74,91,10
+    CONTROL         "Sort to try &middle columns first",IDC_ORDERMIDDLE,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,185,90,109,10
+    CONTROL         "First try cells &near ON cells in the previous column",
+                    IDC_FOLLOW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,185,122,
+                    173,10
+    CONTROL         "Try ON cells first if ON in an &adjacent generation",
+                    IDC_FOLLOWGENS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,185,
+                    138,167,10
+    CONTROL         "First try cells with the greatest impact",IDC_SMART,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,185,154,131,10
+    LTEXT           "Impact checking window",IDC_STATIC,185,171,108,8,0,
                     WS_EX_RIGHT
-    EDITTEXT        IDC_COLWIDTH,123,94,30,14,ES_AUTOHSCROLL
-    LTEXT           "ON cells must be within:\r\nof ON cells in previous column",
-                    IDC_STATIC,7,113,112,19,0,WS_EX_RIGHT
-    EDITTEXT        IDC_NEARCOLS,123,111,30,14,ES_AUTOHSCROLL
-    CONTROL         "First try cells near ON cells in the previous column",
-                    IDC_FOLLOW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,138,
-                    171,10
-    CONTROL         "Try ON cells first if ON in an adjacent generation",
-                    IDC_FOLLOWGENS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,
-                    148,167,10
-    CONTROL         "Also find subperiods",IDC_ALLOBJECTS,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,168,45,79,10
-    CONTROL         "Find parents only",IDC_PARENT,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,168,56,69,10
-    CONTROL         "Sort to find wide objects",IDC_ORDERWIDE,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,168,76,91,10
-    CONTROL         "Sort to try all gens first",IDC_ORDERGENS,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,168,87,85,10
-    CONTROL         "Sort to try middle columns first",IDC_ORDERMIDDLE,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,168,98,109,10
-    CONTROL         "Diagonal sort order",IDC_DIAGSORT,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,168,109,76,10
-    CONTROL         "Knightship sort order",IDC_KNIGHTSORT,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,168,120,80,10
-    DEFPUSHBUTTON   "OK",IDOK,251,7,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,251,24,50,14
-    CONTROL         "Fast symmetry",IDC_FASTSYM,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,208,137,60,10
+    EDITTEXT        IDC_SMARTWINDOW,297,168,28,14,ES_AUTOHSCROLL
+    LTEXT           "Impact checking threshold",IDC_STATIC,185,187,108,8,0,
+                    WS_EX_RIGHT
+    EDITTEXT        IDC_SMARTTHRESHOLD,297,184,28,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,308,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,308,24,50,14
+    EDITTEXT        IDC_SMARTWINDOWSTAT,330,168,28,14,ES_AUTOHSCROLL | 
+                    ES_READONLY
+    EDITTEXT        IDC_SMARTTHRESHOLDSTAT,330,184,28,14,ES_AUTOHSCROLL | 
+                    ES_READONLY
 END
 
 
@@ -332,9 +370,9 @@ BEGIN
     "DLGABOUT", DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 179
+        RIGHTMARGIN, 210
         TOPMARGIN, 7
-        BOTTOMMARGIN, 63
+        BOTTOMMARGIN, 83
     END
 
     "DLGROWS", DIALOG
@@ -364,17 +402,42 @@ BEGIN
     "DLGSETTINGS", DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 302
+        RIGHTMARGIN, 293
+        VERTGUIDE, 106
+        VERTGUIDE, 162
+        VERTGUIDE, 170
         TOPMARGIN, 7
-        BOTTOMMARGIN, 108
+        BOTTOMMARGIN, 104
+        HORZGUIDE, 15
+        HORZGUIDE, 31
+        HORZGUIDE, 47
+        HORZGUIDE, 63
+        HORZGUIDE, 79
+        HORZGUIDE, 95
     END
 
     "DLGSEARCHSETTINGS", DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 301
+        RIGHTMARGIN, 358
+        VERTGUIDE, 115
+        VERTGUIDE, 120
+        VERTGUIDE, 180
+        VERTGUIDE, 185
         TOPMARGIN, 7
-        BOTTOMMARGIN, 174
+        BOTTOMMARGIN, 199
+        HORZGUIDE, 14
+        HORZGUIDE, 31
+        HORZGUIDE, 47
+        HORZGUIDE, 63
+        HORZGUIDE, 79
+        HORZGUIDE, 95
+        HORZGUIDE, 111
+        HORZGUIDE, 127
+        HORZGUIDE, 143
+        HORZGUIDE, 159
+        HORZGUIDE, 175
+        HORZGUIDE, 191
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -428,8 +491,16 @@ BEGIN
     "G",            IDC_SEARCHSTART,        VIRTKEY, CONTROL, NOINVERT
     "L",            IDC_OPENSTATE,          VIRTKEY, NOINVERT
     "N",            IDC_NEXTGEN,            VIRTKEY, NOINVERT
+    "O",            IDC_OPENSTATE,          VIRTKEY, CONTROL, NOINVERT
     "P",            IDC_PREVGEN,            VIRTKEY, NOINVERT
     "R",            IDC_SEARCHRESET,        VIRTKEY, CONTROL, NOINVERT
+    "S",            IDC_SAVEGAME,           VIRTKEY, CONTROL, NOINVERT
+    VK_DELETE,      IDC_CLEARGEN,           VIRTKEY, SHIFT, NOINVERT
+    VK_DELETE,      IDC_CLEAR,              VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_DOWN,        IDC_SHIFTGDOWN,         VIRTKEY, SHIFT, NOINVERT
+    VK_DOWN,        IDC_SHIFTADOWN,         VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
     VK_ESCAPE,      IDC_SEARCHPAUSE,        VIRTKEY, NOINVERT
     VK_F2,          IDC_ROWS,               VIRTKEY, NOINVERT
     VK_F3,          IDC_PERIOD,             VIRTKEY, NOINVERT
@@ -437,9 +508,72 @@ BEGIN
     VK_F5,          IDC_TRANSLATE,          VIRTKEY, NOINVERT
     VK_F6,          IDC_SEARCHSETTINGS,     VIRTKEY, NOINVERT
     VK_F7,          IDC_OUTPUTSETTINGS,     VIRTKEY, NOINVERT
+    VK_LEFT,        IDC_PREVGEN,            VIRTKEY, NOINVERT
+    VK_LEFT,        IDC_SHIFTGLEFT,         VIRTKEY, SHIFT, NOINVERT
+    VK_LEFT,        IDC_SHIFTALEFT,         VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_NEXT,        IDC_NEXTGEN,            VIRTKEY, NOINVERT
+    VK_NEXT,        IDC_SHIFTAFUTURE,       VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_PRIOR,       IDC_PREVGEN,            VIRTKEY, NOINVERT
+    VK_PRIOR,       IDC_SHIFTAPAST,         VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_RIGHT,       IDC_NEXTGEN,            VIRTKEY, NOINVERT
+    VK_RIGHT,       IDC_SHIFTGRIGHT,        VIRTKEY, SHIFT, NOINVERT
+    VK_RIGHT,       IDC_SHIFTARIGHT,        VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
     VK_SPACE,       IDC_SEARCHRESUME,       VIRTKEY, NOINVERT
+    VK_UP,          IDC_SHIFTGUP,           VIRTKEY, SHIFT, NOINVERT
+    VK_UP,          IDC_SHIFTAUP,           VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
     "Y",            IDC_SEARCHBACKUP2,      VIRTKEY, NOINVERT
 END
+
+
+#ifndef _MAC
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 0,5,0,1
+ PRODUCTVERSION 0,5,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "Comments", "\0"
+            VALUE "CompanyName", "\0"
+            VALUE "FileDescription", "wls\0"
+            VALUE "FileVersion", "0, 5, 0, 1\0"
+            VALUE "InternalName", "wls\0"
+            VALUE "LegalCopyright", "\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", "wls.exe\0"
+            VALUE "PrivateBuild", "\0"
+            VALUE "ProductName", "WinLifeSearch\0"
+            VALUE "ProductVersion", "0, 5, 0, 1\0"
+            VALUE "SpecialBuild", "\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+#endif    // !_MAC
 
 #endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////

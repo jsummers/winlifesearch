@@ -55,9 +55,12 @@
 #define IDC_PARENT                      1040
 #define IDC_CONWAY                      1041
 #define IDC_CHECK5                      1042
+#define IDC_STOPONFOUND                 1042
 #define IDC_OUTPUTFILEYN                1043
 #define IDC_EDIT6                       1044
 #define IDC_MAXCOUNT                    1044
+#define IDC_STOPONSTEP                  1044
+#define IDC_OUTPUTALLGEN                1045
 #define IDC_EDIT7                       1047
 #define IDC_COLCELLS                    1047
 #define IDC_EDIT8                       1049
@@ -66,13 +69,18 @@
 #define IDC_NEARCOLS                    1051
 #define IDC_FOLLOW                      1052
 #define IDC_FOLLOWGENS                  1053
+#define IDC_SMART                       1054
 #define IDC_DUMPFREQ                    1055
+#define IDC_SMARTWINDOW                 1055
+#define IDC_SMARTTHRESHOLD              1056
 #define IDC_VIEWFREQ                    1057
 #define IDC_DIAGSORT                    1058
 #define IDC_ORDERWIDE                   1059
 #define IDC_ORDERGENS                   1060
 #define IDC_ORDERMIDDLE                 1061
 #define IDC_OUTPUTCOLS                  1062
+#define IDC_SMARTWINDOWSTAT             1063
+#define IDC_SMARTTHRESHOLDSTAT          1064
 #define IDC_CHECK1                      1065
 #define IDC_FASTSYM                     1065
 #define IDC_RADIO1                      1066
@@ -102,13 +110,25 @@
 #define IDC_EDITCOPY                    40026
 #define IDC_TEST                        40027
 #define IDC_SEARCHBACKUP2               40028
+#define IDC_COPYRESULT                  40029
+#define IDC_SHIFTGUP                    40032
+#define IDC_SHIFTGDOWN                  40033
+#define IDCSHIFTGLEFT                   40034
+#define IDC_SHIFTGRIGHT                 40035
+#define IDC_SHIFTGLEFT                  40036
+#define IDC_SHIFTAUP                    40037
+#define IDC_SHIFTADOWN                  40038
+#define IDC_SHIFTALEFT                  40039
+#define IDC_SHIFTARIGHT                 40040
+#define IDC_SHIFTAPAST                  40041
+#define IDC_SHIFTAFUTURE                40042
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        134
-#define _APS_NEXT_COMMAND_VALUE         40029
+#define _APS_NEXT_COMMAND_VALUE         40043
 #define _APS_NEXT_CONTROL_VALUE         1075
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
