@@ -28,7 +28,7 @@
 
 #define SUMCOUNT 8
 
-extern int abortthread;
+extern volatile int abortthread;
 extern int symmetry;
 
 /*
@@ -602,22 +602,44 @@ getdesc(cell)
 	CELL *	cell;
 {
 	int	sum;
+/*
+	switch(cell->specsym) {
+	case 0:	sum = cell->cul->state + cell->cu->state + cell->cur->state +
+	      cell->cdl->state + cell->cd->state + cell->cdr->state +
+	      cell->cl->state + cell->cr->state;
+		break;
+
+	case 1:  // orthogonal, odd symmetry
+
+		sum = 2*(cell->cdl->state + cell->cd->state + cell->cdr->state) +
+			  cell->cl->state + cell->cr->state;
+		break;
+	case 2:      // orthogonal, even symmetry      ????
+		sum = cell->cdl->state + cell->cd->state + cell->cdr->state +
+			  2*(cell->cl->state + cell->cr->state)
+			  +cell->state;
+		break;
+
+
+	default:
+		// should never get here
+		exit(1);
+
+	}
+	if(cell->row==1) {
+		sum = 2*(cell->cdl->state + cell->cd->state + cell->cdr->state) +
+			  cell->cl->state + cell->cr->state;
+	}
+	else {
+*/
 	sum = cell->cul->state + cell->cu->state + cell->cur->state +
 	      cell->cdl->state + cell->cd->state + cell->cdr->state +
 	      cell->cl->state + cell->cr->state;
+/*	} */
+
 
 	return ((sum & 0x88) ? (sum + cell->state * 2 + 0x11) :
 		(sum * 2 + cell->state));
-
-	/*
-	sum = cell->cul->state + cell->cu->state + cell->cur->state;
-	sum += cell->cdl->state + cell->cd->state + cell->cdr->state;
-	sum += cell->cl->state + cell->cr->state;
-
-	return ((sum & 0x88) ? 
-		(sum + cell->state * 2 + 0x11) :        // JES
-		(sum * 2 + cell->state));
-*/
 
 }
 
@@ -630,9 +652,7 @@ getdesc(cell)
  * make sure that the previous generation can validly produce the
  * current cell.  Returns ERROR if the cell is inconsistent.
  */
-static STATUS
-consistify(cell)
-	CELL *	cell;
+static STATUS consistify(CELL *cell)
 {
 	CELL *	prevcell;
 	int	desc;
@@ -643,8 +663,10 @@ consistify(cell)
 	 * If we are searching for parents and this is generation 0, then
 	 * the cell is consistent with respect to the previous generation.
 	 */
+#ifndef FASTER
 	if (parent && (cell->gen == 0))
 		return OK;
+#endif
 
 	/*
 	 * First check the transit table entry for the previous
@@ -716,53 +738,33 @@ consistify(cell)
 		prevcell->row, prevcell->col, prevcell->gen,
 		((state == ON) ? "on" : "off"));
 
-	if ((prevcell->cul->state == UNK) &&
-		(setcell(prevcell->cul, state, FALSE) != OK))
-	{
-		return ERROR1;
-	}
+//	if(cell->specsym==0) {
+		if ((prevcell->cul->state == UNK) &&
+			(setcell(prevcell->cul, state, FALSE) != OK)) return ERROR1;
 
-	if ((prevcell->cu->state == UNK) &&
-		(setcell(prevcell->cu, state, FALSE) != OK))
-	{
-		return ERROR1;
-	}
+		if ((prevcell->cu->state == UNK) &&
+			(setcell(prevcell->cu, state, FALSE) != OK)) return ERROR1;
 
-	if ((prevcell->cur->state == UNK) &&
-		(setcell(prevcell->cur, state, FALSE) != OK))
-	{
-		return ERROR1;
-	}
+		if ((prevcell->cur->state == UNK) &&
+			(setcell(prevcell->cur, state, FALSE) != OK)) return ERROR1;
+//	}
+
+
 
 	if ((prevcell->cl->state == UNK) &&
-		(setcell(prevcell->cl, state, FALSE) != OK))
-	{
-		return ERROR1;
-	}
+		(setcell(prevcell->cl, state, FALSE) != OK)) return ERROR1;
 
 	if ((prevcell->cr->state == UNK) &&
-		(setcell(prevcell->cr, state, FALSE) != OK))
-	{
-		return ERROR1;
-	}
+		(setcell(prevcell->cr, state, FALSE) != OK)) return ERROR1;
 
 	if ((prevcell->cdl->state == UNK) &&
-		(setcell(prevcell->cdl, state, FALSE) != OK))
-	{
-		return ERROR1;
-	}
+		(setcell(prevcell->cdl, state, FALSE) != OK)) return ERROR1;
 
 	if ((prevcell->cd->state == UNK) &&
-		(setcell(prevcell->cd, state, FALSE) != OK))
-	{
-		return ERROR1;
-	}
+		(setcell(prevcell->cd, state, FALSE) != OK)) return ERROR1;
 
 	if ((prevcell->cdr->state == UNK) &&
-		(setcell(prevcell->cdr, state, FALSE) != OK))
-	{
-		return ERROR1;
-	}
+		(setcell(prevcell->cdr, state, FALSE) != OK)) return ERROR1;
 
 	DPRINTF0("Implications successful\n");
 
@@ -786,29 +788,17 @@ consistify10(cell)
 	if (consistify(cell) != OK)
 		return ERROR1;
 
-	if (consistify(cell->cul) != OK)
-		return ERROR1;
+//	if(cell->specsym==0) {
+		if (consistify(cell->cul) != OK) return ERROR1;
+		if (consistify(cell->cu) != OK) return ERROR1;
+		if (consistify(cell->cur) != OK) return ERROR1;
+//	}
 
-	if (consistify(cell->cu) != OK)
-		return ERROR1;
-
-	if (consistify(cell->cur) != OK)
-		return ERROR1;
-
-	if (consistify(cell->cl) != OK)
-		return ERROR1;
-
-	if (consistify(cell->cr) != OK)
-		return ERROR1;
-
-	if (consistify(cell->cdl) != OK)
-		return ERROR1;
-
-	if (consistify(cell->cd) != OK)
-		return ERROR1;
-
-	if (consistify(cell->cdr) != OK)
-		return ERROR1;
+	if (consistify(cell->cl) != OK) return ERROR1;
+	if (consistify(cell->cr) != OK) return ERROR1;
+	if (consistify(cell->cdl) != OK) return ERROR1;
+	if (consistify(cell->cd) != OK) return ERROR1;
+	if (consistify(cell->cdr) != OK) return ERROR1;
 
 	return OK;
 }
@@ -1404,13 +1394,12 @@ mapcell(cell)
  * Symmetry uses this feature, and so does setting stable cells.
  * If any cells in the loop are frozen, then they all are.
  */
-void
-loopcells(cell1, cell2)
-	CELL *	cell1;
-	CELL *	cell2;
+void loopcells(CELL *cell1, CELL *cell2)
 {
 	CELL *	cell;
 	BOOL	frozen;
+
+	if(cell2==NULL_CELL) return;
 
 	/*
 	 * Check simple cases of equality, or of either cell
@@ -1488,9 +1477,7 @@ loopcells(cell1, cell2)
  */
 
 
-static CELL *
-symcell(cell)
-	CELL *	cell;
+static CELL *symcell(CELL *cell)
 {
 	int	row;
 	int	col;
@@ -1511,14 +1498,44 @@ symcell(cell)
 	if(symmetry==1)  // col sym
 		return findcell(row,ncol,cell->gen);
 
-	if(symmetry==2)  // row sym
-		return findcell(nrow,col,cell->gen);
+	if(symmetry==2) { // row sym
+		if(fastsym) {
+			if(rowmax%2) {    // odd sym
+
+				if(abs(nrow-row)==2) {
+					return findcell(nrow,col,cell->gen);
+				}
+				if(row>nrow && cell->gen==0) cell->colinfo->setcount++;
+
+				return NULL_CELL;
+			}
+			else {       // even sym
+				if(abs(nrow-row)==1) {
+					return findcell(nrow,col,cell->gen);
+				}
+				if(nrow>row && cell->gen==0) cell->colinfo->setcount++;
+				return NULL_CELL;
+			}
+
+		}
+		else {
+			return findcell(nrow,col,cell->gen);
+		}
+	}
 
 	if(symmetry==3)       // fwd diag
 		return findcell(ncol,nrow,cell->gen);
 
-	if(symmetry==4)       // bwd diag
+	if(symmetry==4)    {   // bwd diag
+		if(fastsym) {
+			if(abs(col-row)==1)
+				return findcell(col,row,cell->gen);
+			if(abs(col-row)==2)
+				return findcell(col,row,cell->gen);
+			return NULL_CELL;
+		}
 		return findcell(col,row,cell->gen);
+	}
 
 /*    special symmetry 
 	if(symmetry==4) {
@@ -1760,6 +1777,8 @@ allocatecell()
 	cell->cd = deadcell;
 	cell->cdr = deadcell;
 	cell->loop = NULL;
+
+	cell->specsym=0;
 
 	return cell;
 }

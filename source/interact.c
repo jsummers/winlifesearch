@@ -570,7 +570,7 @@ STATUS loadstate(char *file1)
 	}
 
 	cp = &buf[1];
-
+/*
 	if (getnum(&cp, 0) != DUMPVERSION)
 	{
 		ttystatus("Unknown version in state file \"%s\"\n", file);
@@ -578,6 +578,7 @@ STATUS loadstate(char *file1)
 
 		return ERROR1;
 	}
+*/
 
 /**********************************************  load starting state */
 	/* warning no error checking at all! */

@@ -74,6 +74,7 @@
 #define IDC_ORDERMIDDLE                 1061
 #define IDC_OUTPUTCOLS                  1062
 #define IDC_CHECK1                      1065
+#define IDC_FASTSYM                     1065
 #define IDC_RADIO1                      1066
 #define IDC_TAB1                        1067
 #define IDC_KNIGHTSORT                  1074

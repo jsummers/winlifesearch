@@ -1,7 +1,7 @@
 WinLifeSearch - A Windows port of David Bell's LIFESRC program.
 
 By Jason Summers
-9 Jan 2000
+v0.4 - 1 Jul 2002
 
 Requires Windows 95/98/NT/whatever
 
@@ -59,6 +59,17 @@ Increasing columns has usually little or no effect.
 The fastest direction to search for spaceships is usually to set the X 
 translation to -1 (or -2 as appropriate).
 
+Version 0.4 has a new option (in Search Settings) named "Fast symmetry".
+It is usually ON, and can speed up some symmetric searches considerably.
+However, it is flawed in several ways. It is only implemented for mirror-Y
+and backward-diagonal symmetry types. It causes half of your search
+region to be mostly blank. If you copy a patter to your Life program,
+you'll have to manually duplicate it to create the other half. Worse,
+it is the top half that is blank -- I know the other half would be better,
+but for some reason I wasn't able to get that to work. It also screws up
+so of the internal cell-counting logic, and ends up breaking the "Save
+Partial Results Every X Generations" feature, and maybe other things.
+
 
 -------------------------------
 
@@ -69,7 +80,7 @@ This port has a few improvements over lifesrc:
 - More symmetry options
 - More translation options
 - Diagonal and "knightship" sort order
-
+- "Fast symmetry" option.
 
 And a number of de-improvements and broken things. Off the top of my head:
 
@@ -91,12 +102,6 @@ Other notes:
 
 Cells that are the same in all generations will be drawn with a thin border. 
 At the lower left is a control that shows which generation being displayed.
-
-If you have a "wheel" mouse, you should be able to switch generations using 
-the wheel. You will probably think it seems backwards, though. If you have 
-"universal scrolling" turned on, it does not seem to work right and 
-sometimes disables keyboard input. I have no idea why. Configure wls.exe as 
-an exception to universal scrolling.
 
 You can access the menus while a search is running, but if you change 
 settings at that time, it will probably screw up the search. However, it is 
@@ -143,5 +148,5 @@ interested in bug report concerning the interface (unless it's really
 serious), or feature suggestions concerning the interface (unless it's 
 really simple). I already know how to fix lots of things, I'm just too lazy 
 to do it :-). Suggestions that would increase the search speed, though, 
-would be very welcome.
+would be welcome.
 

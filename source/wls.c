@@ -3,15 +3,16 @@
 // By Jason Summers
 //
 // !!!! PLEASE NOTE !!!!
-// Unlike the original lifesrc, this port is full incomplete, full
+// Unlike the original lifesrc, this port is incomplete, full
 // of bugs, and has many serious design problems. If you want to
-// make a good port, you would be well advised to start over, rather
+// make a good port, you might consider starting over, rather
 // than try to fix up this mess.     -JES
 // 
 
 
 #include <windows.h>
 #include <stdio.h>
+#include <process.h>
 #include <assert.h>
 #include "resource.h"
 #include "wls.h"
@@ -69,7 +70,7 @@ typedef struct {
 //} translate_type;
 
 
-int abortthread;
+volatile int abortthread;
 HANDLE hthread;
 //int threadstate=0;
 int searchstate=0;
@@ -338,7 +339,8 @@ void InitGameSettings(void)
 	ordermiddle=FALSE;
 	diagsort=0;
 	knightsort=0;
-	viewfreq=75000;
+	fastsym=1;
+	viewfreq=100000;
 	strcpy(outputfile,"output.txt");
 	saveoutput=0;
 	strcpy(dumpfile,"dump.txt");
@@ -347,7 +349,7 @@ void InitGameSettings(void)
 	SetCenter();
 }
 
-void set_main_scrollbars(void)
+void set_main_scrollbars(int redraw)
 {
 	SCROLLINFO si;
 	RECT r;
@@ -358,8 +360,8 @@ void set_main_scrollbars(void)
 	if(scrollpos.x<0) scrollpos.x=0;
 	if(scrollpos.y<0) scrollpos.y=0;
 
-	if(colmax*cellwidth<=r.right) scrollpos.x=0;
-	if(rowmax*cellheight<=r.bottom) scrollpos.y=0;
+	if(colmax*cellwidth<=r.right && scrollpos.x!=0) { scrollpos.x=0; redraw=1; }
+	if(rowmax*cellheight<=r.bottom && scrollpos.y!=0) { scrollpos.y=0; redraw=1; }
 
 	si.cbSize=sizeof(SCROLLINFO);
 	si.fMask=SIF_ALL;
@@ -378,8 +380,7 @@ void set_main_scrollbars(void)
 	hDC=GetDC(hwndMain);
 	SetViewportOrgEx(hDC,-scrollpos.x,-scrollpos.y,NULL);
 	ReleaseDC(hwndMain,hDC);
-	InvalidateRect(hwndMain,NULL,TRUE);
-
+	if(redraw) InvalidateRect(hwndMain,NULL,TRUE);
 }
 
 
@@ -439,7 +440,7 @@ BOOL InitApp(HANDLE hInstance, int nCmdShow)
 	);
 	if (!hwndToolbar) return (FALSE);
 
-	set_main_scrollbars();
+	set_main_scrollbars(1);
 	/* Make the window visible; update its client area; and return "success" */
 
 	ShowWindow(hwndFrame, nCmdShow);		/* Show the window */
@@ -799,10 +800,10 @@ int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 	HDC hDC;
 	int vkey;
 	int tmp;
-
-
 	int lastval;
 	int allgens=0;
+	int newval;
+	newval = -1;
 
 	xp+=(WORD)scrollpos.x;
 	yp+=(WORD)scrollpos.y;
@@ -892,8 +893,8 @@ int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 		if(wParam & MK_SHIFT) allgens=1;
 		if(x==startcell.x && y==startcell.y) {
 			selectstate=0;
-			if(currfield[curgen][x][y]==1) currfield[curgen][x][y]=2;
-			else currfield[curgen][x][y]=1;
+			if(currfield[curgen][x][y]==1) newval=2; //currfield[curgen][x][y]=2;
+			else newval=1;  //currfield[curgen][x][y]=1;
 			//Symmetricalize(hDC,x,y,allgens);
 		}
 		else if(selectstate==1) {
@@ -906,8 +907,8 @@ int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 
 	case WM_RBUTTONDOWN:     // toggle off/unchecked
 		if(wParam & MK_SHIFT) allgens=1;
-		if(currfield[curgen][x][y]==0) currfield[curgen][x][y]=2;
-		else currfield[curgen][x][y]=0;
+		if(currfield[curgen][x][y]==0) newval=2; //currfield[curgen][x][y]=2;
+		else newval=0; //currfield[curgen][x][y]=0;
 		break;
 
 
@@ -918,19 +919,24 @@ int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 			allgens=1;
 
 		if(vkey=='C' || vkey=='c') {
-			currfield[curgen][x][y]=2;
+			//currfield[curgen][x][y]=2;
+			newval=2;
 		}
 		else if(vkey=='X' || vkey=='x') {
-			currfield[curgen][x][y]=3;
+			//currfield[curgen][x][y]=3;
+			newval=3;
 		}
 		else if(vkey=='A' || vkey=='a') {
-			currfield[curgen][x][y]=0;
+			//currfield[curgen][x][y]=0;
+			newval=0;
 		}
 		else if(vkey=='S' || vkey=='s') {
-			currfield[curgen][x][y]=1;
+			newval=1;
+			//currfield[curgen][x][y]=1;
 		}
 		else if(vkey=='F' || vkey=='f') {
-			currfield[curgen][x][y]=4;
+			//currfield[curgen][x][y]=4;
+			newval=4;
 			allgens=1;
 		}
 		else {
@@ -955,14 +961,26 @@ int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 	SelectOff(hDC);
 
 	if(tmp==2) {
-		for(i=selectrect.left;i<=selectrect.right;i++) {
-			for(j=selectrect.top;j<=selectrect.bottom;j++) {
-				currfield[curgen][i][j]=currfield[curgen][x][y];
-				Symmetricalize(hDC,i,j,allgens);
+		if(newval>=0) {
+			for(i=selectrect.left;i<=selectrect.right;i++) {
+				for(j=selectrect.top;j<=selectrect.bottom;j++) {
+					currfield[curgen][i][j]=newval;
+					Symmetricalize(hDC,i,j,allgens);
+				}
 			}
 		}
+
+//		else {  // remove this??
+//			for(i=selectrect.left;i<=selectrect.right;i++) {
+//				for(j=selectrect.top;j<=selectrect.bottom;j++) {
+//					currfield[curgen][i][j]=currfield[curgen][x][y];
+//					Symmetricalize(hDC,i,j,allgens);
+//				}
+//			}
+//		}
 	}
 	else {
+		if(newval>=0) currfield[curgen][x][y]=newval;
 		Symmetricalize(hDC,x,y,allgens);
 	}
 
@@ -1158,7 +1176,8 @@ DWORD WINAPI search_thread(LPVOID foo)
 	}
 done:
 	searchstate=1;
-	ExitThread(0);
+	//ExitThread(0);
+	_endthreadex(0);
 	return 0;
 }
 
@@ -1177,7 +1196,10 @@ void resume_search(void)
 	abortthread=0;
 
 	searchstate=2;
-	hthread=CreateThread(NULL,0,search_thread,(LPVOID)0,0,&threadid);
+	//hthread=CreateThread(NULL,0,search_thread,(LPVOID)0,0,&threadid);
+	hthread=(HANDLE)_beginthreadex(NULL,0,search_thread,(void*)0,0,&threadid);
+
+
 	if(hthread==NULL) {
 		wlsError("Unable to create search thread",0);
 		searchstate=1;
@@ -1389,28 +1411,50 @@ void copytoclipboard(void)
 	DWORD size;
 	HGLOBAL hClip;
 	LPVOID lpClip;
+	char buf[100],buf2[10];
 	char *s;
 	int i,j;
+	int offset;
 
-	size=8+(colmax+2)*rowmax+1;
+	if(searchstate==0) {
+		// bornrules/liverules may not be set up yet
+		// probably we could call setrules().
+		sprintf(buf,"#P 0 0\r\n");
+	}
+	else {
+		// unfortunately the rulestring is in the wrong format for life32
+		sprintf(buf,"#P 0 0\r\n#R S");
+		for(i=0;i<=8;i++) {
+			if(liverules[i]) {sprintf(buf2,"%d",i); strcat(buf,buf2);}
+		}
+		strcat(buf,"/B");
+		for(i=0;i<=8;i++) {
+			if(bornrules[i]) {sprintf(buf2,"%d",i); strcat(buf,buf2);}
+		}
+		strcat(buf,"\r\n");
+	}
+
+	offset=strlen(buf);
+
+	size=offset+(colmax+2)*rowmax+1;
 	hClip=GlobalAlloc(GMEM_MOVEABLE|GMEM_DDESHARE,size);
 
 	lpClip=GlobalLock(hClip);
 	s=(char*)lpClip;
 
-	sprintf(s,"#P 0 0\r\n");
-	
+	strcpy(s,buf);
+
 	for(j=0;j<rowmax;j++) {
 		for(i=0;i<colmax;i++) {
 			if(currfield[curgen][i][j]==1)
-				s[8+(colmax+2)*j+i]='*';
+				s[offset+(colmax+2)*j+i]='*';
 			else
-				s[8+(colmax+2)*j+i]='.';
+				s[offset+(colmax+2)*j+i]='.';
 		}
-		s[8+(colmax+2)*j+colmax]='\r';
-		s[8+(colmax+2)*j+colmax+1]='\n';
+		s[offset+(colmax+2)*j+colmax]='\r';
+		s[offset+(colmax+2)*j+colmax+1]='\n';
 	}
-	s[8+(colmax+2)*rowmax]='\0';
+	s[offset+(colmax+2)*rowmax]='\0';
 
 	OpenClipboard(NULL);
 	EmptyClipboard();
@@ -1479,6 +1523,8 @@ LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESET,searchstate!=0?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHPAUSE,searchstate==2?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESUME,searchstate==1?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP,searchstate==1?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP2,searchstate==1?MF_ENABLED:MF_GRAYED);
 		return 0;
 
 	case WM_CHAR:
@@ -1577,7 +1623,7 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	switch(msg) {
 //	case WM_CREATE:
-//		set_main_scrollbars();
+//		set_main_scrollbars(1);
 //		return 0;
 	case WM_PAINT:
 		PaintWindow(hWnd);
@@ -1588,10 +1634,15 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case SB_LINERIGHT: scrollpos.x+=cellwidth; break;
 		case SB_PAGELEFT: scrollpos.x-=cellwidth*4; break;
 		case SB_PAGERIGHT: scrollpos.x+=cellwidth*4; break;
-		case SB_THUMBPOSITION: scrollpos.x=HIWORD(wParam); break;
-		case SB_THUMBTRACK: scrollpos.x=HIWORD(wParam); break;
+		//case SB_THUMBPOSITION: scrollpos.x=HIWORD(wParam); break;
+		case SB_THUMBTRACK:
+			if(HIWORD(wParam)==scrollpos.x) return 0;
+			scrollpos.x=HIWORD(wParam);
+			break;
+		default:
+			return 0;
 		}
-		set_main_scrollbars();
+		set_main_scrollbars(1);
 		return 0;
 	case WM_VSCROLL:
 		switch(id) {
@@ -1599,13 +1650,18 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case SB_LINERIGHT: scrollpos.y+=cellheight; break;
 		case SB_PAGELEFT: scrollpos.y-=cellheight*4; break;
 		case SB_PAGERIGHT: scrollpos.y+=cellheight*4; break;
-		case SB_THUMBPOSITION: scrollpos.y=HIWORD(wParam); break;
-		case SB_THUMBTRACK: scrollpos.y=HIWORD(wParam); break;
+		//case SB_THUMBPOSITION: scrollpos.y=HIWORD(wParam); break;
+		case SB_THUMBTRACK:
+			if(HIWORD(wParam)==scrollpos.y) return 0;
+			scrollpos.y=HIWORD(wParam);
+			break;
+		default:
+			return 0;
 		}
-		set_main_scrollbars();
+		set_main_scrollbars(1);
 		return 0;
 	case WM_SIZE:
-		set_main_scrollbars();
+		set_main_scrollbars(0);
 		return 0;
 	case WM_LBUTTONDOWN:
 	case WM_RBUTTONDOWN:
@@ -1756,7 +1812,8 @@ BOOL CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				}
 			}
 
-			InvalidateRect(hwndMain,NULL,TRUE);
+			//InvalidateRect(hwndMain,NULL,TRUE);
+			set_main_scrollbars(1);
 			// fall through
 		case IDCANCEL:
 			EndDialog(hWnd, TRUE);
@@ -1854,6 +1911,7 @@ BOOL CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		CheckDlgButton(hWnd,IDC_ORDERMIDDLE,ordermiddle);
 		CheckDlgButton(hWnd,IDC_DIAGSORT,diagsort);
 		CheckDlgButton(hWnd,IDC_KNIGHTSORT,knightsort);
+		CheckDlgButton(hWnd,IDC_FASTSYM,fastsym);
 		CheckDlgButton(hWnd,IDC_ALLOBJECTS,allobjects);
 		CheckDlgButton(hWnd,IDC_PARENT,parent);
 		CheckDlgButton(hWnd,IDC_FOLLOW,follow);
@@ -1878,6 +1936,7 @@ BOOL CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			ordermiddle=IsDlgButtonChecked(hWnd,IDC_ORDERMIDDLE)?1:0;
 			diagsort=   IsDlgButtonChecked(hWnd,IDC_DIAGSORT   )?1:0;
 			knightsort= IsDlgButtonChecked(hWnd,IDC_KNIGHTSORT )?1:0;
+			fastsym=    IsDlgButtonChecked(hWnd,IDC_FASTSYM )?1:0;
 			allobjects= IsDlgButtonChecked(hWnd,IDC_ALLOBJECTS )?1:0;
 			parent=     IsDlgButtonChecked(hWnd,IDC_PARENT     )?1:0;
 			follow=     IsDlgButtonChecked(hWnd,IDC_FOLLOW     )?1:0;

@@ -24,8 +24,8 @@
  */
 #define	ROWMAX		80	/* maximum rows for search rectangle */
 #define	COLMAX		132	/* maximum columns for search rectangle */
-#define	GENMAX		8	/* maximum number of generations */
-#define	TRANSMAX	4	/* largest translation value allowed */
+#define	GENMAX		10	/* maximum number of generations */
+#define	TRANSMAX	8	/* largest translation value allowed */
 
 
 /*
@@ -142,10 +142,12 @@ struct cell
 	short	gen;		/* generation number of this cell */
 	short	row;		/* row of this cell */
 	short	col;		/* column of this cell */
+	short	near1;		/* count of cells this cell is near */
+
 
 // JES
-//	short	near;		/* count of cells this cell is near */
-	short	near1;		/* count of cells this cell is near */
+	int specsym;
+
 
 	CELL *	search;		/* cell next to be searched for setting */
 	CELL *	past;		/* cell in the past at this location */
@@ -212,6 +214,7 @@ EXTERN	BOOL	followgens;	/* try to follow setting of other gens */
 
 EXTERN  int  diagsort;       /* JES - optimize for diagonal objects */
 EXTERN  int  knightsort;     /* JES */
+EXTERN  int  fastsym;        /* JES */
 EXTERN  int  symmetry;       /* JES */
 EXTERN  int  trans_rotate;   /* JES */
 EXTERN  int  trans_flip;     /* JES */
