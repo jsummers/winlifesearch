@@ -10,6 +10,7 @@
 // 
 
 
+#define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include <stdio.h>
 #include <process.h>
@@ -449,7 +450,7 @@ BOOL InitApp(HANDLE hInstance, int nCmdShow)
 }
 
 /****************************/
-int WINAPI WinMain(HANDLE hInstance, HANDLE hPrevInstance, LPSTR lpCmdLine,
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
 						  int nCmdShow)
 {
 	MSG msg;	/* message */

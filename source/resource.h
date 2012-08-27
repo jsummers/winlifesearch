@@ -2,6 +2,7 @@
 // Microsoft Developer Studio generated include file.
 // Used by wls.rc
 //
+#define IDC_STATIC                      -1
 #define IDB_SYM0                        105
 #define IDB_SYM1                        106
 #define IDB_SYM2                        107

@@ -5,6 +5,7 @@
 
   ****** Heavily modified. Modifications not noted consistently.  -JES ******
  */
+#define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 //#include <signal.h>
 #include <stdarg.h>
