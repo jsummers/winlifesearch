@@ -8,10 +8,12 @@
 #include "wls-config.h"
 #define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
+#include <tchar.h>
 //#include <signal.h>
 #include <stdarg.h>
 #include "wls.h"
 #include "lifesrc.h"
+#include <strsafe.h>
 
 
 static	BOOL	inputready;		/* TRUE if input now ready */
@@ -71,14 +73,14 @@ ttycheck()
  * The string length is limited to 256 characters.
  */
 void
-ttyprintf(fmt)
-	char *	fmt;
+ttyprintf(TCHAR * fmt, ...)
 {
 	va_list ap;
-	static char	buf[256];
+	TCHAR buf[256];
 
 	va_start(ap, fmt);
-	vsprintf(buf, fmt, ap);
+	StringCbVPrintf(buf, sizeof(buf), fmt, ap);
+		//vsprintf(buf, fmt, ap);
 	va_end(ap);
 //	ttywrite(buf, strlen(buf));
 	wlsMessage(buf,0);
@@ -90,13 +92,13 @@ ttyprintf(fmt)
  * The string length is limited to 256 characters.
  */
 void
-ttystatus(char * fmt, ...)
+ttystatus(TCHAR * fmt, ...)
 {
 	va_list ap;
-	static char	buf[256];
+	TCHAR buf[256];
 
 	va_start(ap, fmt);
-	vsprintf(buf, fmt, ap);
+	StringCbVPrintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
 //	ttywrite(buf, strlen(buf));
 	wlsMessage(buf,0);

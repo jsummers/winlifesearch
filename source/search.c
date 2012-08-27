@@ -10,6 +10,11 @@
  */
 
 #include "wls-config.h"
+
+#include <windows.h>
+#include <tchar.h>
+#include <search.h>
+
 /*
  * Define this as a null value so as to define the global variables
  * defined in lifesrc.h here.
@@ -20,11 +25,8 @@
 // to make the search go a little faster. Maybe 10% faster or so...
 //#define FASTER
 
-
-#include <windows.h>
 #include "wls.h"
 #include "lifesrc.h"
-#include <search.h>
 
 
 #define SUMCOUNT 8
@@ -152,7 +154,7 @@ initcells()
 		(coltrans < -TRANSMAX) || (coltrans > TRANSMAX))
 	{
 		ttyclose();
-		wlsError("ROW, COL, GEN, or TRANS out of range",0);
+		wlsError(_T("ROW, COL, GEN, or TRANS out of range"),0);
 		exit(1);
 	}
 
@@ -1739,7 +1741,7 @@ allocatecell()
 		if (newcells == NULL)
 		{
 			ttyclose();
-			wlsError("Cannot allocate cell structure",0);
+			wlsError(_T("Cannot allocate cell structure"),0);
 			exit(1);
 		}
 

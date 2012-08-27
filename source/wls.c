@@ -31,6 +31,7 @@
 #include "wls-config.h"
 #define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
+#include <tchar.h>
 #include <stdio.h>
 #include <process.h>
 #include <assert.h>
@@ -38,6 +39,7 @@
 #include "wls.h"
 
 #include "lifesrc.h"
+#include <strsafe.h>
 
 
 #define cellheight 15
@@ -48,7 +50,7 @@
 // #define maxgens    8
 #define TOOLBARHEIGHT 24
 
-char rulestring[20];
+TCHAR rulestring[20];
 int saveoutput;
 
 
@@ -128,36 +130,36 @@ static int symmap[] = {
 };
 
 
-void wlsError(char *m,int n)
+void wlsError(TCHAR *m,int n)
 {
-	char s[80];
-	if(n) sprintf(s,"%s (%d)",m,n);
-	else sprintf(s,"%s",m);
-	MessageBox(hwndFrame,s,"Error",MB_OK|MB_ICONWARNING);
+	TCHAR s[80];
+	if(n) StringCbPrintf(s,sizeof(s),_T("%s (%d)"),m,n);
+	else StringCbCopy(s,sizeof(s),m);
+	MessageBox(hwndFrame,s,_T("Error"),MB_OK|MB_ICONWARNING);
 }
 
-void wlsWarning(char *m,int n)
+void wlsWarning(TCHAR *m,int n)
 {
-	char s[80];
-	if(n) sprintf(s,"%s (%d)",m,n);
-	else sprintf(s,"%s",m);
-	MessageBox(hwndFrame,s,"Warning",MB_OK|MB_ICONWARNING);
+	TCHAR s[80];
+	if(n) StringCbPrintf(s,sizeof(s),_T("%s (%d)"),m,n);
+	else StringCbCopy(s,sizeof(s),m);
+	MessageBox(hwndFrame,s,_T("Warning"),MB_OK|MB_ICONWARNING);
 }
 
-void wlsMessage(char *m,int n)
+void wlsMessage(TCHAR *m,int n)
 {
-	char s[180];
-	if(n) sprintf(s,"%s (%d)",m,n);
-	else sprintf(s,"%s",m);
-	MessageBox(hwndFrame,s,"Message",MB_OK|MB_ICONINFORMATION);
+	TCHAR s[180];
+	if(n) StringCbPrintf(s,sizeof(s),_T("%s (%d)"),m,n);
+	else StringCbCopy(s,sizeof(s),m);
+	MessageBox(hwndFrame,s,_T("Message"),MB_OK|MB_ICONINFORMATION);
 }
 
-int wlsQuery(char *m,int n)
+int wlsQuery(TCHAR *m,int n)
 {
-	char s[180];
-	if(n) sprintf(s,"%s (%d)",m,n);
-	else sprintf(s,"%s",m);
-	if(MessageBox(hwndFrame,s,"Query",MB_OKCANCEL|MB_ICONQUESTION)
+	TCHAR s[180];
+	if(n) StringCbPrintf(s,sizeof(s),_T("%s (%d)"),m,n);
+	else StringCbCopy(s,sizeof(s),m);
+	if(MessageBox(hwndFrame,s,_T("Query"),MB_OKCANCEL|MB_ICONQUESTION)
 		==IDCANCEL)
 		return 0;
 	return 1;
@@ -166,7 +168,7 @@ int wlsQuery(char *m,int n)
 
 static HWND hwndStatus=NULL;
 
-void wlsStatus(char *msg)
+void wlsStatus(TCHAR *msg)
 {
 	if(hwndStatus)
 		SetWindowText(hwndStatus,msg);
@@ -196,21 +198,21 @@ static BOOL RegisterClasses(HANDLE hInstance)
 	HICON iconWLS;
 
 	wc.style = 0;
-	wc.lpfnWndProc = (WNDPROC)WndProcFrame;
+	wc.lpfnWndProc = WndProcFrame;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = hInstance;
-	iconWLS = LoadIcon(hInstance,"ICONWLS");
+	iconWLS = LoadIcon(hInstance,_T("ICONWLS"));
 	wc.hIcon = iconWLS;
 //	wc.hIcon=NULL;
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hbrBackground = GetStockObject(WHITE_BRUSH);
-	wc.lpszMenuName =  "WLSMenu";
-	wc.lpszClassName = "WLSCLASSFRAME";
+	wc.lpszMenuName =  _T("WLSMenu");
+	wc.lpszClassName = _T("WLSCLASSFRAME");
 	RegisterClass(&wc);
 
 	wc.style = CS_OWNDC;
-	wc.lpfnWndProc = (WNDPROC)WndProcMain;
+	wc.lpfnWndProc = WndProcMain;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = hInstance;
@@ -218,11 +220,11 @@ static BOOL RegisterClasses(HANDLE hInstance)
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hbrBackground = GetStockObject(WHITE_BRUSH);
 	wc.lpszMenuName =  NULL;
-	wc.lpszClassName = "WLSCLASSMAIN";
+	wc.lpszClassName = _T("WLSCLASSMAIN");
 	RegisterClass(&wc);
 	
 	wc.style = 0;
-	wc.lpfnWndProc = (WNDPROC)WndProcToolbar;
+	wc.lpfnWndProc = WndProcToolbar;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = hInstance;
@@ -230,7 +232,7 @@ static BOOL RegisterClasses(HANDLE hInstance)
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hbrBackground = GetStockObject(LTGRAY_BRUSH);
 	wc.lpszMenuName =  NULL;
-	wc.lpszClassName = "WLSCLASSTOOLBAR";
+	wc.lpszClassName = _T("WLSCLASSTOOLBAR");
 	RegisterClass(&wc);
 
 	return 1;
@@ -356,10 +358,10 @@ static void InitGameSettings(void)
 	knightsort=0;
 	fastsym=1;
 	viewfreq=1000000;
-	strcpy(outputfile,"output.txt");
+	StringCchCopy(outputfile,80,_T("output.txt"));
 	saveoutput=0;
-	strcpy(dumpfile,"dump.txt");
-	strcpy(rulestring,"B3/S23");
+	StringCchCopy(dumpfile,80,_T("dump.txt"));
+	StringCchCopy(rulestring,20,_T("B3/S23"));
 
 	SetCenter();
 }
@@ -409,8 +411,8 @@ static BOOL InitApp(HANDLE hInstance, int nCmdShow)
 
 	/* Create a main window for this application instance.	*/
 	hwndFrame = CreateWindow(
-		"WLSCLASSFRAME",
-		"WinLifeSearch",
+		_T("WLSCLASSFRAME"),
+		_T("WinLifeSearch"),
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,	/* horizontal position */
 		CW_USEDEFAULT,	/* vertical position */
@@ -426,8 +428,8 @@ static BOOL InitApp(HANDLE hInstance, int nCmdShow)
 	GetClientRect(hwndFrame,&r);
 	// create the main window pane (a child window)
 	hwndMain = CreateWindow(
-		"WLSCLASSMAIN",
-		"WinLifeSearch - main window",
+		_T("WLSCLASSMAIN"),
+		_T("WinLifeSearch - main window"),
 		WS_CHILD|WS_VISIBLE|WS_HSCROLL|WS_VSCROLL,
 		0,	/* horizontal position */
 		0,	/* vertical position */
@@ -441,8 +443,8 @@ static BOOL InitApp(HANDLE hInstance, int nCmdShow)
 	if (!hwndMain) return (FALSE);
 
 	hwndToolbar = CreateWindow(
-		"WLSCLASSTOOLBAR",
-		"WinLifeSearch - toolbar",
+		_T("WLSCLASSTOOLBAR"),
+		_T("WinLifeSearch - toolbar"),
 		WS_CHILD|WS_VISIBLE,
 		0,	/* horizontal position */
 		r.bottom-TOOLBARHEIGHT,	/* vertical position */
@@ -472,7 +474,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	hInst = hInstance;
 
-	hAccTable=LoadAccelerators(hInst,"WLSACCEL");
+	hAccTable=LoadAccelerators(hInst,_T("WLSACCEL"));
 
 	RegisterClasses(hInstance);
 
@@ -1008,7 +1010,7 @@ static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 // copy my format to dbells format...
 static int set_initial_cells(void)
 {
-	char buf[80];
+	TCHAR buf[80];
 	int i,j,g;
 
 	for(g=0;g<genmax;g++) 
@@ -1017,14 +1019,14 @@ static int set_initial_cells(void)
 				switch(origfield[g][i][j]) {
 				case 0:  // forced off
 					if(proceed(findcell(j+1,i+1,g),OFF,FALSE)!=OK) {
-						sprintf(buf,"Inconsistent OFF state for cell (col %d,row %d,gen %d)",i+1,j+1,g);
+						StringCbPrintf(buf,sizeof(buf),_T("Inconsistent OFF state for cell (col %d,row %d,gen %d)"),i+1,j+1,g);
 						wlsMessage(buf,0);
 						return 0;
 					}
 					break;
 				case 1:  // forced on
 					if(proceed(findcell(j+1,i+1,g),ON,FALSE)!=OK) {
-						sprintf(buf,"Inconsistent ON state for cell (col %d,row %d,gen %d)",i+1,j+1,g);
+						StringCbPrintf(buf,sizeof(buf),_T("Inconsistent ON state for cell (col %d,row %d,gen %d)"),i+1,j+1,g);
 						wlsMessage(buf,0);
 						return 0;
 					}
@@ -1045,7 +1047,7 @@ static int set_initial_cells(void)
 
 static void draw_gen_counter(void)
 {
-	char buf[80];
+	TCHAR buf[80];
 	SCROLLINFO si;
 
 	si.cbSize=sizeof(SCROLLINFO);
@@ -1058,19 +1060,19 @@ static void draw_gen_counter(void)
 
 	SetScrollInfo(hwndGenScroll,SB_CTL,&si,TRUE);
 
-	sprintf(buf,"%d",curgen);
+	StringCbPrintf(buf,sizeof(buf),_T("%d"),curgen);
 	SetWindowText(hwndGen,buf);
 }
 
 void showcount(int c)
 {
-	static char buf[40];
+	TCHAR buf[40];
 	static int tot=0;
 
 	if(c<0) tot=0;
 	else tot+=c;
 
-	sprintf(buf,"WinLifeSearch [%d]",tot);
+	StringCbPrintf(buf,sizeof(buf),_T("WinLifeSearch [%d]"),tot);
 	SetWindowText(hwndFrame,buf);
 }
 
@@ -1109,7 +1111,7 @@ static void pause_search(void);  // forward decl
 static DWORD WINAPI search_thread(LPVOID foo)
 {
 //	int i,j,k;
-	char buf[180];
+	TCHAR buf[180];
 
 	/*
 	 * Initial commands are complete, now look for the object.
@@ -1154,7 +1156,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			if (!quiet) {
 				printgen(0);
 //				ttystatus("Object %ld found.\n", ++foundcount);
-				sprintf(buf,"Object %ld found.\n", ++foundcount);
+				StringCbPrintf(buf,sizeof(buf),_T("Object %ld found."), ++foundcount);
 				wlsStatus(buf);
 			}
 
@@ -1166,7 +1168,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 
 		if (foundcount == 0) {
 			ttyclose();
-			wlsWarning( "No objects found",0);
+			wlsWarning(_T("No objects found"),0);
 			goto done;
 		}
 
@@ -1175,8 +1177,8 @@ static DWORD WINAPI search_thread(LPVOID foo)
 		if (!quiet) {
 //			sprintf(buf,"Search completed, file \"%s\" contains %ld object%s\n",
 //				outputfile, foundcount, (foundcount == 1) ? "" : "s");
-			sprintf(buf,"Search completed:  %ld object%s found",
-				foundcount, (foundcount == 1) ? "" : "s");
+			StringCbPrintf(buf,sizeof(buf),_T("Search completed: %ld object%s found"),
+				foundcount, (foundcount == 1) ? _T("") : _T("s"));
 			wlsMessage(buf,0);
 		}
 
@@ -1194,11 +1196,11 @@ static void resume_search(void)
 {
 	DWORD threadid;
 
-	SetWindowText(hwndFrame,"WinLifeSearch");
-	wlsStatus("Searching...");
+	SetWindowText(hwndFrame,_T("WinLifeSearch"));
+	wlsStatus(_T("Searching..."));
 
 	if(searchstate!=1) {
-		wlsError("No search is paused",0);
+		wlsError(_T("No search is paused"),0);
 		return;
 	}
 	abortthread=0;
@@ -1209,23 +1211,23 @@ static void resume_search(void)
 
 
 	if(hthread==NULL) {
-		wlsError("Unable to create search thread",0);
+		wlsError(_T("Unable to create search thread"),0);
 		searchstate=1;
 	}
 	else {
-		SetWindowText(hwndFrame,"WinLifeSearch");
+		SetWindowText(hwndFrame,_T("WinLifeSearch"));
 		SetThreadPriority(hthread,THREAD_PRIORITY_BELOW_NORMAL);
 	}
 
 }
 
-static void start_search(char *statefile)
+static void start_search(TCHAR *statefile)
 {
 	int i,j,k;
 //	CELL *cell;
 
 	if(searchstate!=0) {
-		wlsError("A search is already running",0);
+		wlsError(_T("A search is already running"),0);
 		return;
 	}
 
@@ -1239,7 +1241,7 @@ static void start_search(char *statefile)
 
 	if (!setrules(rulestring))
 	{
-		wlsError("Cannot set Life rules!",0);
+		wlsError(_T("Cannot set Life rules!"),0);
 		return; //exit(1);
 	}
 
@@ -1312,7 +1314,7 @@ static void pause_search(void)
 	DWORD exitcode;
 
 	if(searchstate!=2) {
-		wlsError("No search is running",0);
+		wlsError(_T("No search is running"),0);
 		return;
 	}
 ///	threadstate=1;
@@ -1328,7 +1330,7 @@ static void pause_search(void)
 	CloseHandle(hthread);
 	searchstate=1;
 
-	SetWindowText(hwndFrame,"WinLifeSearch - Paused");
+	SetWindowText(hwndFrame,_T("WinLifeSearch - Paused"));
 
 }
 
@@ -1339,7 +1341,7 @@ static void reset_search(void)
 	int i,j,k;
 
 	if(searchstate==0) {
-		wlsError("No search in progress",0);
+		wlsError(_T("No search in progress"),0);
 		goto here;
 	}
 
@@ -1370,8 +1372,8 @@ static void reset_search(void)
 here:
 	InvalidateRect(hwndMain,NULL,TRUE);
 
-	SetWindowText(hwndFrame,"WinLifeSearch");
-	wlsStatus("");
+	SetWindowText(hwndFrame,_T("WinLifeSearch"));
+	wlsStatus(_T(""));
 
 //	wlsMessage("Stopped",0);
 }
@@ -1383,7 +1385,7 @@ static void open_state(void)
 
 	if(searchstate!=0) reset_search();
 
-	start_search("");
+	start_search(_T(""));
 
 	//InvalidateRect(hwndMain,NULL,TRUE);
 }
@@ -1419,38 +1421,38 @@ static void copytoclipboard(void)
 	DWORD size;
 	HGLOBAL hClip;
 	LPVOID lpClip;
-	char buf[100],buf2[10];
-	char *s;
+	TCHAR buf[100],buf2[10];
+	TCHAR *s;
 	int i,j;
 	int offset;
 
 	if(searchstate==0) {
 		// bornrules/liverules may not be set up yet
 		// probably we could call setrules().
-		sprintf(buf,"#P 0 0\r\n");
+		StringCbCopy(buf,sizeof(buf),_T("#P 0 0\r\n"));
 	}
 	else {
 		// unfortunately the rulestring is in the wrong format for life32
-		sprintf(buf,"#P 0 0\r\n#R S");
+		StringCbCopy(buf,sizeof(buf),_T("#P 0 0\r\n#R S"));
 		for(i=0;i<=8;i++) {
-			if(liverules[i]) {sprintf(buf2,"%d",i); strcat(buf,buf2);}
+			if(liverules[i]) {StringCbPrintf(buf2,sizeof(buf2),_T("%d"),i); StringCbCat(buf,sizeof(buf),buf2);}
 		}
-		strcat(buf,"/B");
+		StringCbCat(buf,sizeof(buf),_T("/B"));
 		for(i=0;i<=8;i++) {
-			if(bornrules[i]) {sprintf(buf2,"%d",i); strcat(buf,buf2);}
+			if(bornrules[i]) {StringCbPrintf(buf2,sizeof(buf2),_T("%d"),i); StringCbCat(buf,sizeof(buf),buf2);}
 		}
-		strcat(buf,"\r\n");
+		StringCbCat(buf,sizeof(buf),_T("\r\n"));
 	}
 
-	offset=strlen(buf);
+	offset=lstrlen(buf);
 
-	size=offset+(colmax+2)*rowmax+1;
+	size=(offset+(colmax+2)*rowmax+1)*sizeof(TCHAR);
 	hClip=GlobalAlloc(GMEM_MOVEABLE|GMEM_DDESHARE,size);
 
 	lpClip=GlobalLock(hClip);
-	s=(char*)lpClip;
+	s=(TCHAR*)lpClip;
 
-	strcpy(s,buf);
+	StringCbCopy(s,size,buf);
 
 	for(j=0;j<rowmax;j++) {
 		for(i=0;i<colmax;i++) {
@@ -1466,7 +1468,11 @@ static void copytoclipboard(void)
 
 	OpenClipboard(NULL);
 	EmptyClipboard();
+#ifdef UNICODE
+	SetClipboardData(CF_UNICODETEXT,hClip);
+#else
 	SetClipboardData(CF_TEXT,hClip);
+#endif
 	CloseClipboard();
 }
 
@@ -1561,25 +1567,25 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			return 0;
 #endif
 		case IDC_ABOUT:
-			DialogBox(hInst,"DLGABOUT",hWnd,DlgProcAbout);
+			DialogBox(hInst,_T("DLGABOUT"),hWnd,DlgProcAbout);
 			return 0;
 		case IDC_ROWS:
-			DialogBox(hInst,"DLGROWS",hWnd,DlgProcRows);
+			DialogBox(hInst,_T("DLGROWS"),hWnd,DlgProcRows);
 			return 0;
 		case IDC_PERIOD:
-			DialogBox(hInst,"DLGPERIOD",hWnd,DlgProcPeriod);
+			DialogBox(hInst,_T("DLGPERIOD"),hWnd,DlgProcPeriod);
 			return 0;
 		case IDC_SYMMETRY:
-			DialogBox(hInst,"DLGSYMMETRY",hWnd,DlgProcSymmetry);
+			DialogBox(hInst,_T("DLGSYMMETRY"),hWnd,DlgProcSymmetry);
 			return 0;
 		case IDC_TRANSLATE:
-			DialogBox(hInst,"DLGTRANSLATE",hWnd,DlgProcTranslate);
+			DialogBox(hInst,_T("DLGTRANSLATE"),hWnd,DlgProcTranslate);
 			return 0;
 		case IDC_OUTPUTSETTINGS:
-			DialogBox(hInst,"DLGSETTINGS",hWnd,DlgProcOutput);
+			DialogBox(hInst,_T("DLGSETTINGS"),hWnd,DlgProcOutput);
 			return 0;
 		case IDC_SEARCHSETTINGS:
-			DialogBox(hInst,"DLGSEARCHSETTINGS",hWnd,DlgProcSearch);
+			DialogBox(hInst,_T("DLGSEARCHSETTINGS"),hWnd,DlgProcSearch);
 			return 0;
 		case IDC_SEARCHSTART:
 			start_search(NULL);
@@ -1738,20 +1744,20 @@ static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 
 
 	case WM_CREATE:
-		hwndGen=CreateWindow("Static","0",
+		hwndGen=CreateWindow(_T("Static"),_T("0"),
 			WS_CHILD|WS_VISIBLE|WS_BORDER,
 			1,1,40,TOOLBARHEIGHT-2,
 			hWnd,NULL,hInst,NULL);
-		hwndGenScroll=CreateWindow("Scrollbar","wls_gen_scrollbar",
+		hwndGenScroll=CreateWindow(_T("Scrollbar"),_T("wls_gen_scrollbar"),
 			WS_CHILD|WS_VISIBLE|SBS_HORZ,
 			41,1,80,TOOLBARHEIGHT-2,
 			hWnd,NULL,hInst,NULL);
-		hwndStatus=CreateWindow("Static","",
+		hwndStatus=CreateWindow(_T("Static"),_T(""),
 			WS_CHILD|WS_VISIBLE|WS_BORDER,
 			120,1,800,TOOLBARHEIGHT-2,
 			hWnd,NULL,hInst,NULL);
 #ifdef _DEBUG
-			wlsStatus("DEBUG BUILD");
+			wlsStatus(_T("DEBUG BUILD"));
 #endif
 
 			draw_gen_counter();
@@ -1806,9 +1812,9 @@ static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 			// put these in a separate Validate function
 			if(colmax!=rowmax) {
 				if(symmap[symmetry] & 0x66) {
-					MessageBox(hWnd,"Current symmetry requires that rows and "
-						"columns be equal. Your symmetry setting has been altered.",
-						"Warning",MB_OK|MB_ICONWARNING);
+					MessageBox(hWnd,_T("Current symmetry requires that rows and ")
+						_T("columns be equal. Your symmetry setting has been altered."),
+						_T("Warning"),MB_OK|MB_ICONWARNING);
 					switch(symmetry) {
 					case 3: case 4: symmetry=0; break;
 					case 7: case 8: symmetry=5; break;
@@ -1819,9 +1825,9 @@ static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
 			if(colmax != rowmax) {
 				if(trans_rotate==1 || trans_rotate==3) {
-					MessageBox(hWnd,"Current rotation setting requires that rows and "
-						"columns be equal. Your translation setting has been altered.",
-						"Warning",MB_OK|MB_ICONWARNING);
+					MessageBox(hWnd,_T("Current rotation setting requires that rows and ")
+						_T("columns be equal. Your translation setting has been altered."),
+						_T("Warning"),MB_OK|MB_ICONWARNING);
 					trans_rotate--;
 				}
 			}
@@ -1841,13 +1847,13 @@ static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 static INT_PTR CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
-	char buf[80];
+	TCHAR buf[80];
 
 	id=LOWORD(wParam);
 
 	switch (msg) {
 	case WM_INITDIALOG:
-		sprintf(buf,"Enter a period from 1 to %d",GENMAX);
+		StringCbPrintf(buf,sizeof(buf),_T("Enter a period from 1 to %d"),GENMAX);
 		SetDlgItemText(hWnd,IDC_PERIODTEXT,buf);
 		SetDlgItemInt(hWnd,IDC_PERIOD1,genmax,FALSE);
 		return 1;
@@ -1968,7 +1974,7 @@ static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 			EndDialog(hWnd, TRUE);
 			return 1;
 		case IDC_CONWAY:
-			SetDlgItemText(hWnd,IDC_RULESTRING,"B3/S23");
+			SetDlgItemText(hWnd,IDC_RULESTRING,_T("B3/S23"));
 			return 1;
 		}
 	}

@@ -229,8 +229,8 @@ EXTERN	long	viewfreq;	/* how often to view results */
 EXTERN	long	viewcount;	/* counter for viewing */
 //EXTERN	char *	dumpfile;	/* dump file name */
 //EXTERN	char *	outputfile;	/* file to output results to */
-EXTERN  char dumpfile[80];
-EXTERN  char outputfile[80];
+EXTERN  TCHAR dumpfile[80];
+EXTERN  TCHAR outputfile[80];
 
 /*
  * Data about all of the cells.
@@ -253,8 +253,8 @@ EXTERN	int	fullcolumns;	/* columns in gen 0 which are fully set */
 void	getcommands PROTO((void));
 void	initcells PROTO((void));
 void	printgen PROTO((int));
-void	writegen PROTO((char *, BOOL));
-void	dumpstate PROTO((char *));
+void	writegen PROTO((TCHAR *, BOOL));
+void	dumpstate PROTO((TCHAR *));
 void	adjustnear PROTO((CELL *, int));
 STATUS	search PROTO((void));
 STATUS	proceed PROTO((CELL *, STATE, BOOL));
@@ -268,8 +268,8 @@ void	loopcells PROTO((CELL *, CELL *));
 BOOL	ttyopen PROTO((void));
 BOOL	ttycheck PROTO((void));
 BOOL	ttyread PROTO((char *, char *, int));
-void	ttyprintf PROTO((char *, ...));
-void	ttystatus PROTO((char *, ...));
+void	ttyprintf PROTO((TCHAR *, ...));
+void	ttystatus PROTO((TCHAR *, ...));
 void	ttywrite PROTO((char *, int));
 void	ttyhome PROTO((void));
 void	ttyeeop PROTO((void));
@@ -279,8 +279,15 @@ void	ttyclose PROTO((void));
 //JES
 void	excludecone PROTO((int, int, int));
 void	freezecell PROTO((int, int));
-BOOL	setrules PROTO((char *));
-STATUS  loadstate(char *file);
+
+BOOL	setrules(TCHAR *);
+#ifdef UNICODE
+BOOL	setrulesA(char *);
+#else
+#define setrulesT setrules
+#endif
+
+STATUS  loadstate(TCHAR *file);
 void     getbackup(char *cp);
 
 

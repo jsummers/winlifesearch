@@ -8,11 +8,10 @@
 #include "wls-config.h"
 #define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
+#include <tchar.h>
 #include "lifesrc.h"
 #include "wls.h"
-
-
-extern int origfield[GENMAX][COLMAX][ROWMAX];
+#include <strsafe.h>
 
 
 #define	VERSION	"3.5w"
@@ -24,7 +23,7 @@ extern int origfield[GENMAX][COLMAX][ROWMAX];
 static	BOOL	nowait;		/* don't wait for commands after loading */
 static	BOOL	setall;		/* set all cells from initial file */
 static	BOOL	islife;		/* whether the rules are for standard Life */
-extern char	rulestring[20];	/* rule string for printouts */
+extern  TCHAR   rulestring[20]; /* rule string for printouts */
 static	long	foundcount;	/* number of objects found */
 static	char *	initfile;	/* file containing initial cells */
 static	char *	loadfile;	/* file to load state from */
@@ -41,10 +40,10 @@ extern int origfield[GENMAX][COLMAX][ROWMAX];
 //static	void	getfreeze PROTO((char *));
 
 //static	STATUS	loadstate PROTO((char *));
-static	STATUS	readfile PROTO((char *));
+//static	STATUS	readfile PROTO((TCHAR *));
 static	BOOL	confirm PROTO((char *));
 static	long	getnum PROTO((char **, int));
-static	char *	getstr PROTO((char *, char *));
+//static	char *	getstr PROTO((char *, char *));
 
 
 /*
@@ -153,7 +152,7 @@ getbackup(char *cp)
 
 	if ((count <= 0) || *cp)
 	{
-		ttystatus("Must back up at least one cell\n");
+		ttystatus(_T("Must back up at least one cell\n"));
 
 		return;
 	}
@@ -165,7 +164,7 @@ getbackup(char *cp)
 		if (cell == NULL_CELL)
 		{
 			printgen(curgen);
-			ttystatus("Backed up over all possibilities\n");
+			ttystatus(_T("Backed up over all possibilities\n"));
 
 			return;
 		}
@@ -180,7 +179,7 @@ getbackup(char *cp)
 		if (go(cell, state, FALSE) != OK)
 		{
 			printgen(curgen);
-			ttystatus("Backed up over all possibilities\n");
+			ttystatus(_T("Backed up over all possibilities\n"));
 
 			return;
 		}
@@ -189,7 +188,7 @@ getbackup(char *cp)
 	printgen(curgen);
 }
 
-int getfilename_l(char *fn)
+static int getfilename_l(TCHAR *fn)
 {
 	OPENFILENAME ofn;
 	HWND hWnd;
@@ -200,9 +199,9 @@ int getfilename_l(char *fn)
 
 	ofn.lStructSize=sizeof(OPENFILENAME);
 	ofn.hwndOwner=hWnd;
-	ofn.lpstrFilter="*.txt\0*.txt\0All files\0*.*\0\0";
+	ofn.lpstrFilter=_T("*.txt\0*.txt\0All files\0*.*\0\0");
 	ofn.nFilterIndex=1;
-	ofn.lpstrTitle="Load state";
+	ofn.lpstrTitle=_T("Load state");
 	ofn.lpstrFile=fn;
 	ofn.nMaxFile=MAX_PATH;
 	ofn.Flags=OFN_FILEMUSTEXIST|OFN_HIDEREADONLY;
@@ -210,12 +209,12 @@ int getfilename_l(char *fn)
 	if(GetOpenFileName(&ofn)) {
 		return 1;
 	}
-	strcpy(fn,"");
+	StringCchCopy(fn,MAX_PATH,_T(""));
 	return 0;
 }
 
 
-int getfilename_s(char *fn)
+static int getfilename_s(TCHAR *fn)
 {
 	OPENFILENAME ofn;
 	HWND hWnd;
@@ -226,10 +225,10 @@ int getfilename_s(char *fn)
 
 	ofn.lStructSize=sizeof(OPENFILENAME);
 	ofn.hwndOwner=hWnd;
-	ofn.lpstrFilter="*.txt\0*.txt\0All files\0*.*\0\0";
+	ofn.lpstrFilter=_T("*.txt\0*.txt\0All files\0*.*\0\0");
 	ofn.nFilterIndex=1;
-	ofn.lpstrTitle="Save state";
-	ofn.lpstrDefExt="txt";
+	ofn.lpstrTitle=_T("Save state");
+	ofn.lpstrDefExt=_T("txt");
 	ofn.lpstrFile=fn;
 	ofn.nMaxFile=MAX_PATH;
 	ofn.Flags=OFN_FILEMUSTEXIST|OFN_HIDEREADONLY;
@@ -237,7 +236,7 @@ int getfilename_s(char *fn)
 	if(GetSaveFileName(&ofn)) {
 		return 1;
 	}
-	strcpy(fn,"");
+	StringCchCopy(fn,MAX_PATH,_T(""));
 	return 0;
 }
 
@@ -247,7 +246,7 @@ int getfilename_s(char *fn)
  * If no file is specified, it is asked for.
  * Filename of "." means write to stdout.
  */
-void writegen(char *file1, BOOL append)
+void writegen(TCHAR *file1, BOOL append)
 /*	char *	file;		 file name (or NULL) */
 /*	BOOL	append;		 TRUE to append instead of create */
 {
@@ -257,18 +256,18 @@ void writegen(char *file1, BOOL append)
 	int	col;
 	int	ch;
 	int	minrow, maxrow, mincol, maxcol;
-	char buf[80];
-	char file[MAX_PATH];
+	TCHAR buf[80];
+	TCHAR file[MAX_PATH];
 	static int writecount=0;
 
 	if(!saveoutput && !outputcols) return;
 
 //	file = getstr(file, "Write object to file: ");
 	if(file1) {
-		strcpy(file,file1);
+		StringCchCopy(file,MAX_PATH,file1);
 	}
 	else {
-		strcpy(file,"");
+		StringCchCopy(file,MAX_PATH,_T(""));
 		getfilename_s(file);
 	}
 
@@ -277,12 +276,12 @@ void writegen(char *file1, BOOL append)
 
 	fp = stdout;
 
-	if (strcmp(file, "."))
-		fp = fopen(file, append ? "a" : "w");
+	if (_tcscmp(file, _T(".")))
+		fp = _tfopen(file, append ? _T("a") : _T("w"));
 
 	if (fp == NULL)
 	{
-		ttystatus("Cannot create \"%s\"\n", file);
+		ttystatus(_T("Cannot create \"%s\"\n"), file);
 
 		return;
 	}
@@ -346,7 +345,7 @@ void writegen(char *file1, BOOL append)
 						(cell->choose ? '?' : 'X');
 						break;
 				default:
-					ttystatus("Bad cell state");
+					ttystatus(_T("Bad cell state"));
 					fclose(fp);
 
 					return;
@@ -363,14 +362,14 @@ void writegen(char *file1, BOOL append)
 
 	if ((fp != stdout) && fclose(fp))
 	{
-		ttystatus("Error writing \"%s\"\n", file);
+		ttystatus(_T("Error writing \"%s\"\n"), file);
 
 		return;
 	}
 
 	writecount++;
 	if (fp != stdout) {
-		sprintf(buf,"\"%s\" written (%d)",file,writecount);
+		StringCbPrintf(buf,sizeof(buf),_T("\"%s\" written (%d)"),file,writecount);
 		wlsStatus(buf);
 	}
 
@@ -382,7 +381,7 @@ void writegen(char *file1, BOOL append)
  * Dump the current state of the search in the specified file.
  * If no file is specified, it is asked for.
  */
-void dumpstate(char *file1)
+void dumpstate(TCHAR *file1)
 {
 	FILE *	fp;
 	CELL **	set;
@@ -393,25 +392,25 @@ void dumpstate(char *file1)
 	int **	param;
 	int g;
 	int x,y,z;
-	char file[MAX_PATH];
+	TCHAR file[MAX_PATH];
 
 	//file = getstr(file, "Dump state to file: ");
 	if(file1) {
-		strcpy(file,file1);
+		StringCchCopy(file,MAX_PATH,file1);
 	}
 	else {
-		strcpy(file,"dump.txt");
+		StringCchCopy(file,MAX_PATH,_T("dump.txt"));
 		getfilename_s(file);
 	}
 
 	if (*file == '\0')
 		return;
 
-	fp = fopen(file, "wt");
+	fp = _tfopen(file, _T("w"));
 
 	if (fp == NULL)
 	{
-		ttystatus("Cannot create \"%s\"\n", file);
+		ttystatus(_T("Cannot create \"%s\"\n"), file);
 
 		return;
 	}
@@ -509,12 +508,12 @@ void dumpstate(char *file1)
 
 	if (fclose(fp))
 	{
-		ttystatus("Error writing \"%s\"\n", file);
+		ttystatus(_T("Error writing \"%s\"\n"), file);
 
 		return;
 	}
 
-	ttystatus("State dumped to \"%s\"\n", file);
+	ttystatus(_T("State dumped to \"%s\"\n"), file);
 	quitok = TRUE;
 }
 
@@ -524,7 +523,7 @@ void dumpstate(char *file1)
  * Warning: Almost no checks are made for validity of the state.
  * Returns OK on success, ERROR1 on failure.
  */
-STATUS loadstate(char *file1)
+STATUS loadstate(TCHAR *file1)
 {
 	FILE *	fp;
 	char *	cp;
@@ -538,24 +537,24 @@ STATUS loadstate(char *file1)
 	int **	param;
 	char	buf[LINESIZE];
 	int g,val;
-	char file[MAX_PATH];
+	TCHAR file[MAX_PATH];
 
 	int x1,y1,z1,x,y,z;
 
 	//file = getstr(file, "Load state from file: ");
-	strcpy(file,"");
-	if(file1) strcpy(file,file1);
+	StringCchCopy(file,MAX_PATH,_T(""));
+	if(file1) StringCchCopy(file,MAX_PATH,file1);
 	getfilename_l(file);
 
 	//if (*file == '\0')
 	//	return OK;
 	if(file[0]=='\0') return ERROR1;
 
-	fp = fopen(file, "r");
+	fp = _tfopen(file, _T("r"));
 
 	if (fp == NULL)
 	{
-		ttystatus("Cannot open state file \"%s\"\n", file);
+		ttystatus(_T("Cannot open state file \"%s\"\n"), file);
 
 		return ERROR1;
 	}
@@ -565,7 +564,7 @@ STATUS loadstate(char *file1)
 
 	if (buf[0] != 'V')
 	{
-		ttystatus("Missing version line in file \"%s\"\n", file);
+		ttystatus(_T("Missing version line in file \"%s\"\n"), file);
 		fclose(fp);
 
 		return ERROR1;
@@ -625,9 +624,9 @@ STATUS loadstate(char *file1)
 		while (isblank(*cp))
 			cp++;
 
-		if (!setrules(cp))
+		if (!setrulesA(cp))
 		{
-			ttystatus("Bad Life rules in state file\n");
+			ttystatus(_T("Bad Life rules in state file\n"));
 			fclose(fp);
 
 			return ERROR1;
@@ -642,7 +641,7 @@ STATUS loadstate(char *file1)
 	 */
 	if (buf[0] != 'P')
 	{
-		ttystatus("Missing parameter line in state file\n");
+		ttystatus(_T("Missing parameter line in state file\n"));
 		fclose(fp);
 
 		return ERROR1;
@@ -683,7 +682,7 @@ STATUS loadstate(char *file1)
 		if (setcell(cell, state, free) != OK)
 		{
 			ttystatus(
-				"Inconsistently setting cell at r%d c%d g%d \n",
+				_T("Inconsistently setting cell at r%d c%d g%d \n"),
 				row, col, gen);
 
 			fclose(fp);
@@ -739,7 +738,7 @@ STATUS loadstate(char *file1)
 
 	if (buf[0] != 'T')
 	{
-		ttystatus("Missing table line in state file\n");
+		ttystatus(_T("Missing table line in state file\n"));
 		fclose(fp);
 
 		return ERROR1;
@@ -753,7 +752,7 @@ STATUS loadstate(char *file1)
 
 	if (buf[0] != 'E')
 	{
-		ttystatus("Missing end of file line in state file\n");
+		ttystatus(_T("Missing end of file line in state file\n"));
 		fclose(fp);
 
 		return ERROR1;
@@ -761,25 +760,26 @@ STATUS loadstate(char *file1)
 
 	if (fclose(fp))
 	{
-		ttystatus("Error reading \"%s\"\n", file);
+		ttystatus(_T("Error reading \"%s\"\n"), file);
 
 		return ERROR1;
 	}
 
-	ttystatus("State loaded from \"%s\"\n", file);
+	ttystatus(_T("State loaded from \"%s\"\n"), file);
 	quitok = TRUE;
 
 	return OK;
 }
 
 
+#if 0
 /*
  * Read a file containing initial settings for either gen 0 or the last gen.
  * If setall is TRUE, both the ON and the OFF cells will be set.
  * Returns OK on success, ERROR1 on error.
  */
 static STATUS
-readfile(char *file)
+readfile(TCHAR *file)
 {
 	FILE *	fp;
 	char *	cp;
@@ -795,11 +795,11 @@ readfile(char *file)
 	if (*file == '\0')
 		return OK;
 
-	fp = fopen(file, "r");
+	fp = _tfopen(file, _T("r"));
 
 	if (fp == NULL)
 	{
-		ttystatus("Cannot open \"%s\"\n", file);
+		ttystatus(_T("Cannot open \"%s\"\n"), file);
 
 		return ERROR1;
 	}
@@ -847,7 +847,7 @@ readfile(char *file)
 					break;
 
 				default:
-					ttystatus("Bad file format in line %d\n",
+					ttystatus(_T("Bad file format in line %d\n"),
 						row);
 					fclose(fp);
 
@@ -857,7 +857,7 @@ readfile(char *file)
 			if (proceed(findcell(row, col, gen), state, FALSE)
 				!= OK)
 			{
-				ttystatus("Inconsistent state for cell %d %d\n",
+				ttystatus(_T("Inconsistent state for cell %d %d\n"),
 					row, col);
 				fclose(fp);
 
@@ -868,15 +868,16 @@ readfile(char *file)
 
 	if (fclose(fp))
 	{
-		ttystatus("Error reading \"%s\"\n", file);
+		ttystatus(_T("Error reading \"%s\"\n"), file);
 
 		return ERROR1;
 	}
 
 	return OK;
 }
+#endif
 
-
+#if 0
 /*
  * Check a string for being NULL, and if so, ask the user to specify a
  * value for it.  Returned string may be static and thus is overwritten
@@ -906,6 +907,7 @@ getstr(char *str, char *prompt)
 
 	return str;
 }
+#endif
 
 
 /*
@@ -983,8 +985,7 @@ getnum(char **cpp, int defnum)
  * or a hex number in the Wolfram encoding.
  */
 BOOL
-setrules(cp)
-	char *	cp;
+setrules(TCHAR *cp)
 {
 	int		i;
 	unsigned int	bits;
@@ -1002,7 +1003,7 @@ setrules(cp)
 	 * See if the string contains a comma or a slash.
 	 * If not, then assume Wolfram's hex format.
 	 */
-	if ((strchr(cp, ',') == NULL) && (strchr(cp, '/') == NULL))
+	if ((_tcschr(cp, ',') == NULL) && (_tcschr(cp, '/') == NULL))
 	{
 		bits = 0;
 
@@ -1085,11 +1086,21 @@ setrules(cp)
 
 	*cp = '\0';
 
-	islife = (strcmp(rulestring, "B3/S23") == 0);
+	islife = (_tcscmp(rulestring, _T("B3/S23")) == 0);
 
 	return TRUE;
 }
 
+BOOL setrulesA(char *rulestringA)
+{
+#ifdef UNICODE
+	WCHAR rulestringW[20];
+	StringCbPrintfW(rulestringW,sizeof(rulestringW),_T("%S"),rulestringA);
+	return setrules(rulestringW);
+#else
+	return setrules(rulestringA);
+#endif
+}
 
 
 /* END CODE */
