@@ -9,6 +9,7 @@
   ****** Heavily modified. Modifications not noted consistently.  -JES ******
  */
 
+#include "wls-config.h"
 /*
  * Define this as a null value so as to define the global variables
  * defined in lifesrc.h here.

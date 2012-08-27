@@ -208,6 +208,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\source\wls-config.h"
+				>
+			</File>
+			<File
 				RelativePath="..\source\wls.h"
 				>
 			</File>
