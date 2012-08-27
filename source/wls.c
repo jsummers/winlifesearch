@@ -35,27 +35,27 @@ int saveoutput;
 
 
 
-HINSTANCE hInst;
-HWND hwndFrame,hwndMain,hwndToolbar;
-HWND hwndGen,hwndGenScroll;
+static HINSTANCE hInst;
+static HWND hwndFrame,hwndMain,hwndToolbar;
+static HWND hwndGen,hwndGenScroll;
 
-LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK DlgProcTest(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK DlgProcTest(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 
-int selectstate=0;
-POINT startcell, endcell;
-RECT selectrect;
-int inverted=0;
+static int selectstate=0;
+static POINT startcell, endcell;
+static RECT selectrect;
+static int inverted=0;
 
 typedef struct {
 	HPEN celloutline,cell_off,axes,arrow1,arrow2,unchecked;
@@ -71,26 +71,23 @@ typedef struct {
 
 
 volatile int abortthread;
-HANDLE hthread;
+static HANDLE hthread;
 //int threadstate=0;
-int searchstate=0;
-int foundcount;
+static int searchstate=0;
+static int foundcount;
 
-pens_type pens;
-brushes_type brushes;
+static pens_type pens;
+static brushes_type brushes;
 //translate_type translate;
 
 //int trans_rotate, trans_flip, trans_x, trans_y;
 //int symmetry;
 
-int colmax,rowmax;
-int centerx,centery,centerxodd,centeryodd;
-int genmax;
+static int centerx,centery,centerxodd,centeryodd;
 int origfield[GENMAX][COLMAX][ROWMAX];
-int currfield[GENMAX][COLMAX][ROWMAX];
-POINT scrollpos;
+static int currfield[GENMAX][COLMAX][ROWMAX];
+static POINT scrollpos;
 
-// This is self-explanatory, right?
 
 /* \2 | 1/    
    3 \|/ 0
@@ -98,7 +95,7 @@ POINT scrollpos;
    4 /|\ 7
    /5 | 6\  */
 
-int symmap[] = { 
+static int symmap[] = { 
 			// 76543210
 	0x01,	// 00000001  no symmetry
 	0x09,	// 00001001  mirror-x
@@ -149,7 +146,7 @@ int wlsQuery(char *m,int n)
 }
 
 
-HWND hwndStatus=NULL;
+static HWND hwndStatus=NULL;
 
 void wlsStatus(char *msg)
 {
@@ -176,7 +173,7 @@ void record_malloc(int func,void *m)
 }
 
 
-BOOL RegisterClasses(HANDLE hInstance)
+static BOOL RegisterClasses(HANDLE hInstance)
 {   WNDCLASS  wc;
 	HICON iconWLS;
 
@@ -227,7 +224,7 @@ BOOL RegisterClasses(HANDLE hInstance)
  * (it will be 0, 1, 3, or 7.)
  *
  */
-POINT *GetSymmetricCells(int x,int y,int *num)
+static POINT *GetSymmetricCells(int x,int y,int *num)
 {
 	static POINT pt[7];
 	int s,n;
@@ -293,7 +290,7 @@ POINT *GetSymmetricCells(int x,int y,int *num)
 }
 
 // A stupid function
-void SetCenter(void)
+static void SetCenter(void)
 {
 	centerx= colmax/2;
 	centery= rowmax/2;
@@ -301,7 +298,7 @@ void SetCenter(void)
 	centeryodd= rowmax%2;
 }
 
-void InitGameSettings(void)
+static void InitGameSettings(void)
 {
 	int i,j,k;
 
@@ -349,7 +346,7 @@ void InitGameSettings(void)
 	SetCenter();
 }
 
-void set_main_scrollbars(int redraw)
+static void set_main_scrollbars(int redraw)
 {
 	SCROLLINFO si;
 	RECT r;
@@ -384,7 +381,7 @@ void set_main_scrollbars(int redraw)
 }
 
 
-BOOL InitApp(HANDLE hInstance, int nCmdShow)
+static BOOL InitApp(HANDLE hInstance, int nCmdShow)
 {
 	RECT r;
 
@@ -449,7 +446,7 @@ BOOL InitApp(HANDLE hInstance, int nCmdShow)
 }
 
 /****************************/
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
+int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
 						  int nCmdShow)
 {
 	MSG msg;	/* message */
@@ -474,7 +471,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 }
 
 
-void DrawGuides(HDC hDC)
+static void DrawGuides(HDC hDC)
 {
 	int centerpx,centerpy;
 	int px1,py1,px2,py2,px3,py3;
@@ -590,7 +587,7 @@ void DrawGuides(HDC hDC)
 
 
 // pen & brush must already be selected
-void ClearCell(HDC hDC,int x,int y, int dblsize)
+static void ClearCell(HDC hDC,int x,int y, int dblsize)
 {
 	Rectangle(hDC,x*cellwidth+1,y*cellheight+1,
 	    (x+1)*cellwidth,(y+1)*cellheight);
@@ -601,8 +598,7 @@ void ClearCell(HDC hDC,int x,int y, int dblsize)
 }
 
 
-
-void DrawCell(HDC hDC,int x,int y)
+static void DrawCell(HDC hDC,int x,int y)
 {
 	int allsame=1;
 	int tmp;
@@ -658,7 +654,7 @@ void DrawCell(HDC hDC,int x,int y)
 
 // set and paint all cells symmetrical to the given cell
 // (including the given cell)
-void Symmetricalize(HDC hDC,int x,int y,int allgens)
+static void Symmetricalize(HDC hDC,int x,int y,int allgens)
 {
 
 	POINT *pts;
@@ -683,7 +679,7 @@ void Symmetricalize(HDC hDC,int x,int y,int allgens)
 }
 
 
-void InvertCells(HDC hDC1)
+static void InvertCells(HDC hDC1)
 {
 	RECT r;
 	HDC hDC;
@@ -719,7 +715,7 @@ void InvertCells(HDC hDC1)
 }
 
 
-void SelectOff(HDC hDC)
+static void SelectOff(HDC hDC)
 {
 	if(selectstate<1) return;
 
@@ -734,7 +730,7 @@ void SelectOff(HDC hDC)
 }
 
 
-void DrawWindow(HDC hDC)
+static void DrawWindow(HDC hDC)
 {
 	int i,j;
 	for(i=0;i<colmax;i++) {
@@ -749,7 +745,7 @@ void DrawWindow(HDC hDC)
 	}
 }
 
-void PaintWindow(HWND hWnd)
+static void PaintWindow(HWND hWnd)
 {
 	HDC hdc;
 	HPEN hOldPen;
@@ -768,7 +764,7 @@ void PaintWindow(HWND hWnd)
 }
 
 
-void FixFrozenCells(void)
+static void FixFrozenCells(void)
 {
 	int x,y,z;
 
@@ -791,7 +787,7 @@ void FixFrozenCells(void)
 
 
 //returns 0 if processed
-int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
+static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 {
 	int x,y;
 	int i,j;
@@ -867,8 +863,6 @@ int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 			selectrect.bottom=startcell.y;
 		}
 
-
-
 		inverted=1;
 		ReleaseDC(hwndMain,hDC);
 		
@@ -885,7 +879,6 @@ int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 		endcell.x=x;
 		endcell.y=y;
 		return 0;
-		
 
 	case WM_LBUTTONUP:
 		if(wParam & MK_SHIFT) allgens=1;
@@ -995,7 +988,7 @@ int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 }
 
 // copy my format to dbells format...
-int set_initial_cells(void)
+static int set_initial_cells(void)
 {
 	char buf[80];
 	int i,j,g;
@@ -1032,7 +1025,7 @@ int set_initial_cells(void)
 
 }
 
-void draw_gen_counter(void)
+static void draw_gen_counter(void)
 {
 	char buf[80];
 	SCROLLINFO si;
@@ -1064,7 +1057,6 @@ void showcount(int c)
 }
 
 
-
 void printgen(int gen)
 {
 	int i,j,g;
@@ -1094,9 +1086,9 @@ void printgen(int gen)
 }
 
 
-void pause_search(void);  // forward decl
+static void pause_search(void);  // forward decl
 
-DWORD WINAPI search_thread(LPVOID foo)
+static DWORD WINAPI search_thread(LPVOID foo)
 {
 //	int i,j,k;
 	char buf[180];
@@ -1180,7 +1172,7 @@ done:
 }
 
 
-void resume_search(void)
+static void resume_search(void)
 {
 	DWORD threadid;
 
@@ -1209,7 +1201,7 @@ void resume_search(void)
 
 }
 
-void start_search(char *statefile)
+static void start_search(char *statefile)
 {
 	int i,j,k;
 //	CELL *cell;
@@ -1297,7 +1289,7 @@ void start_search(char *statefile)
 }
 
 
-void pause_search(void)
+static void pause_search(void)
 {
 	DWORD exitcode;
 
@@ -1323,7 +1315,7 @@ void pause_search(void)
 }
 
 
-void reset_search(void)
+static void reset_search(void)
 {
 //	HDC hDC;
 	int i,j,k;
@@ -1366,7 +1358,7 @@ here:
 //	wlsMessage("Stopped",0);
 }
 
-void open_state(void)
+static void open_state(void)
 {
 	// get filename
 	// ...
@@ -1379,7 +1371,7 @@ void open_state(void)
 }
 
 
-void gen_changeby(int delta)
+static void gen_changeby(int delta)
 {
 	if(genmax<2) return;
 	curgen+=delta;
@@ -1391,20 +1383,20 @@ void gen_changeby(int delta)
 }
 
 
-void clear_gen(int g)
+static void clear_gen(int g)
 {	int i,j;
 	for(i=0;i<COLMAX;i++)
 		for(j=0;j<ROWMAX;j++)
 			currfield[g][i][j]=2;
 }
 
-void clear_all(void)
+static void clear_all(void)
 {	int g;
 	for(g=0;g<GENMAX;g++)
 		clear_gen(g);
 }
 
-void copytoclipboard(void)
+static void copytoclipboard(void)
 {
 	DWORD size;
 	HGLOBAL hClip;
@@ -1474,11 +1466,11 @@ static void handle_MouseWheel(HWND hWnd, WPARAM wParam)
 }
 
 /****************************************************************************/
-LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 	POINT pt;
-	int rv;
+	//int rv;
 
 	id=LOWORD(wParam);
 
@@ -1545,9 +1537,11 @@ LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_EXIT:
 			DestroyWindow(hWnd);
 			return 0;
+#if 0
 		case IDC_TEST:
 			rv=DialogBox(hInst,"DLGTABS",hWnd,DlgProcTest);
 			return 0;
+#endif
 		case IDC_ABOUT:
 			DialogBox(hInst,"DLGABOUT",hWnd,DlgProcAbout);
 			return 0;
@@ -1622,8 +1616,7 @@ LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 
-
-LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 	id=LOWORD(wParam);
@@ -1688,11 +1681,7 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 
-
-
-
-
-LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	HWND htmp;
 	WORD id; //,code;
@@ -1755,7 +1744,7 @@ LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 	return (DefWindowProc(hWnd, msg, wParam, lParam));
 }
 
-BOOL CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 	id=LOWORD(wParam);
@@ -1774,7 +1763,7 @@ BOOL CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return 0;		// Didn't process a message
 }
 
-BOOL CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 	id=LOWORD(wParam);
@@ -1831,7 +1820,7 @@ BOOL CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 
-BOOL CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 	char buf[80];
@@ -1864,7 +1853,7 @@ BOOL CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return 0;		// Didn't process a message
 }
 
-BOOL CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 //	char buf[80];
@@ -1904,7 +1893,7 @@ BOOL CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return 0;		// Didn't process a message
 }
 
-BOOL CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 //	char buf[80];
@@ -1968,7 +1957,7 @@ BOOL CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return 0;		// Didn't process a message
 }
 
-BOOL CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 	int item;
@@ -2025,7 +2014,7 @@ BOOL CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 
-BOOL CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 	int item;
@@ -2086,10 +2075,8 @@ BOOL CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 	return 0;		// Didn't process a message
 }
 
-
-
-
-BOOL CALLBACK DlgProcTest(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+#if 0
+static INT_PTR CALLBACK DlgProcTest(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 	id=LOWORD(wParam);
@@ -2107,4 +2094,4 @@ BOOL CALLBACK DlgProcTest(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	}
 	return 0;
 }
-
+#endif

@@ -9,14 +9,7 @@
 
 #include <ctype.h>        //JES, for isdigit()
 
-/*
- * Use prototypes if available.
- */
-#ifdef	__STDC__
 #define	PROTO(a)	a
-#else
-#define	PROTO(a)	()
-#endif
 
 
 /*
@@ -74,15 +67,9 @@
 //#define	isdigit(ch)	(((ch) >= '0') && ((ch) <= '9'))  //JES
 #define	isblank(ch)	(((ch) == ' ') || ((ch) == '\t'))
 
-
-//typedef	int		BOOL;            //JES
-typedef	char		PACKED_BOOL;
-typedef	unsigned char	STATE;
-typedef	unsigned int	STATUS;
-
-
-//#define	FALSE		((BOOL) 0)     //JES
-//#define	TRUE		((BOOL) 1)     //JES
+typedef	unsigned int  PACKED_BOOL;
+typedef	unsigned int  STATE;
+typedef	unsigned int  STATUS;
 
 
 /*
@@ -90,8 +77,6 @@ typedef	unsigned int	STATUS;
  */
 #define	OK		((STATUS) 0)
 
-// JES
-//#define	ERROR		((STATUS) 1)
 #define	ERROR1		((STATUS) 1)
 
 #define	CONSISTENT	((STATUS) 2)
@@ -265,31 +250,31 @@ EXTERN	int	fullcolumns;	/* columns in gen 0 which are fully set */
  */
 
 
-extern	void	getcommands PROTO((void));
-extern	void	initcells PROTO((void));
-extern	void	printgen PROTO((int));
-extern	void	writegen PROTO((char *, BOOL));
-extern	void	dumpstate PROTO((char *));
-extern	void	adjustnear PROTO((CELL *, int));
-extern	STATUS	search PROTO((void));
-extern	STATUS	proceed PROTO((CELL *, STATE, BOOL));
-extern	STATUS	go PROTO((CELL *, STATE, BOOL));
-extern	STATUS	setcell PROTO((CELL *, STATE, BOOL));
-extern	CELL *	findcell PROTO((int, int, int));
-extern	CELL *	backup PROTO((void));
-extern	BOOL	subperiods PROTO((void));
-extern	void	loopcells PROTO((CELL *, CELL *));
+void	getcommands PROTO((void));
+void	initcells PROTO((void));
+void	printgen PROTO((int));
+void	writegen PROTO((char *, BOOL));
+void	dumpstate PROTO((char *));
+void	adjustnear PROTO((CELL *, int));
+STATUS	search PROTO((void));
+STATUS	proceed PROTO((CELL *, STATE, BOOL));
+STATUS	go PROTO((CELL *, STATE, BOOL));
+STATUS	setcell PROTO((CELL *, STATE, BOOL));
+CELL *	findcell PROTO((int, int, int));
+CELL *	backup PROTO((void));
+BOOL	subperiods PROTO((void));
+void	loopcells PROTO((CELL *, CELL *));
 
-extern	BOOL	ttyopen PROTO((void));
-extern	BOOL	ttycheck PROTO((void));
-extern	BOOL	ttyread PROTO((char *, char *, int));
-extern	void	ttyprintf PROTO((char *, ...));
-extern	void	ttystatus PROTO((char *, ...));
-extern	void	ttywrite PROTO((char *, int));
-extern	void	ttyhome PROTO((void));
-extern	void	ttyeeop PROTO((void));
-extern	void	ttyflush PROTO((void));
-extern	void	ttyclose PROTO((void));
+BOOL	ttyopen PROTO((void));
+BOOL	ttycheck PROTO((void));
+BOOL	ttyread PROTO((char *, char *, int));
+void	ttyprintf PROTO((char *, ...));
+void	ttystatus PROTO((char *, ...));
+void	ttywrite PROTO((char *, int));
+void	ttyhome PROTO((void));
+void	ttyeeop PROTO((void));
+void	ttyflush PROTO((void));
+void	ttyclose PROTO((void));
 
 //JES
 void	excludecone PROTO((int, int, int));
