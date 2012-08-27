@@ -341,7 +341,7 @@ void InitGameSettings(void)
 	diagsort=0;
 	knightsort=0;
 	fastsym=1;
-	viewfreq=100000;
+	viewfreq=1000000;
 	strcpy(outputfile,"output.txt");
 	saveoutput=0;
 	strcpy(dumpfile,"dump.txt");
