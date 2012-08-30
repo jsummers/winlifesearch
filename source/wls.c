@@ -29,7 +29,6 @@
 #endif
 
 #include "wls-config.h"
-#define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include <tchar.h>
 #include <stdio.h>
@@ -51,9 +50,6 @@
 #define TOOLBARHEIGHT 24
 
 struct globals_struct g;
-
-TCHAR rulestring[20];
-int saveoutput;
 
 
 
@@ -87,10 +83,6 @@ typedef struct {
 	HBRUSH cell,cell_on;
 } brushes_type;
 
-//typedef struct {
-//	int rotate,flip,x,y;
-//} translate_type;
-
 
 volatile int abortthread;
 static HANDLE hthread;
@@ -100,13 +92,8 @@ static int foundcount;
 
 static pens_type pens;
 static brushes_type brushes;
-//translate_type translate;
-
-//int trans_rotate, trans_flip, trans_x, trans_y;
-//int symmetry;
 
 static int centerx,centery,centerxodd,centeryodd;
-int origfield[GENMAX][COLMAX][ROWMAX];
 static int currfield[GENMAX][COLMAX][ROWMAX];
 static POINT scrollpos;
 
@@ -327,7 +314,7 @@ static void InitGameSettings(void)
 	for(k=0;k<GENMAX;k++) 
 		for(i=0;i<COLMAX;i++)
 			for(j=0;j<ROWMAX;j++) {
-				origfield[k][i][j]=2;       // set all cells to "don't care"
+				g.origfield[k][i][j]=2;       // set all cells to "don't care"
 				currfield[k][i][j]=2;
 			}
 
@@ -361,9 +348,9 @@ static void InitGameSettings(void)
 	g.fastsym=1;
 	g.viewfreq=1000000;
 	StringCchCopy(g.outputfile,80,_T("output.txt"));
-	saveoutput=0;
+	g.saveoutput=0;
 	StringCchCopy(g.dumpfile,80,_T("dump.txt"));
-	StringCchCopy(rulestring,20,_T("B3/S23"));
+	StringCchCopy(g.rulestring,20,_T("B3/S23"));
 
 	SetCenter();
 }
@@ -1020,7 +1007,7 @@ static int set_initial_cells(void)
 	for(g1=0;g1<g.genmax;g1++) 
 		for(i=0;i<g.colmax;i++)
 			for(j=0;j<g.rowmax;j++) {
-				switch(origfield[g1][i][j]) {
+				switch(g.origfield[g1][i][j]) {
 				case 0:  // forced off
 					if(proceed(findcell(j+1,i+1,g1),OFF,FALSE)!=OK) {
 						StringCbPrintf(buf,sizeof(buf),_T("Inconsistent OFF state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
@@ -1127,7 +1114,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 
 		if(abortthread) goto done;
 
-		if ((g.curstatus == FOUND) && g.userow && (rowinfo[g.userow].oncount == 0)) {
+		if ((g.curstatus == FOUND) && g.userow && (g.rowinfo[g.userow].oncount == 0)) {
 			g.curstatus = OK;
 			continue;
 		}
@@ -1241,9 +1228,9 @@ static void start_search(TCHAR *statefile)
 	for(k=0;k<GENMAX;k++) 
 		for(i=0;i<COLMAX;i++)
 			for(j=0;j<ROWMAX;j++)
-				origfield[k][i][j]=currfield[k][i][j];
+				g.origfield[k][i][j]=currfield[k][i][j];
 
-	if (!setrules(rulestring))
+	if (!setrules(g.rulestring))
 	{
 		wlsError(_T("Cannot set Life rules!"),0);
 		return; //exit(1);
@@ -1259,17 +1246,17 @@ static void start_search(TCHAR *statefile)
 
 	// init some things that the orig code doesn't bother to init
 	for(i=0;i<COLMAX;i++) {
-		colinfo[i].oncount=0;
-		colinfo[i].setcount=0;
-		colinfo[i].sumpos=0;
+		g.colinfo[i].oncount=0;
+		g.colinfo[i].setcount=0;
+		g.colinfo[i].sumpos=0;
 	}
-	for(i=0;i<ROWMAX;i++) rowinfo[i].oncount=0;
-	newset=NULL;
-	nextset=NULL;
-	baseset=NULL;
-	fullsearchlist=NULL;
+	for(i=0;i<ROWMAX;i++) g.rowinfo[i].oncount=0;
+	g.newset=NULL;
+	g.nextset=NULL;
+	g.baseset=NULL;
+	g.fullsearchlist=NULL;
 	g.outputlastcols=0;
-	fullcolumns=0;
+	g.fullcolumns=0;
 	g.curstatus=OK;
 
 	if(statefile) {
@@ -1297,7 +1284,7 @@ static void start_search(TCHAR *statefile)
 		g.inited=FALSE;
 
 		initcells();
-		baseset = nextset;
+		g.baseset = g.nextset;
 
 		g.inited = TRUE;
 
@@ -1371,7 +1358,7 @@ static void reset_search(void)
 	for(k=0;k<GENMAX;k++) 
 		for(i=0;i<COLMAX;i++)
 			for(j=0;j<ROWMAX;j++)
-				currfield[k][i][j]=origfield[k][i][j];
+				currfield[k][i][j]=g.origfield[k][i][j];
 
 here:
 	InvalidateRect(hwndMain,NULL,TRUE);
@@ -1893,7 +1880,7 @@ static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 		SetDlgItemInt(hWnd,IDC_VIEWFREQ,g.viewfreq,FALSE);
 		SetDlgItemText(hWnd,IDC_DUMPFILE,g.dumpfile);
 		SetDlgItemInt(hWnd,IDC_DUMPFREQ,g.dumpfreq,FALSE);
-		CheckDlgButton(hWnd,IDC_OUTPUTFILEYN,saveoutput?BST_CHECKED:BST_UNCHECKED);
+		CheckDlgButton(hWnd,IDC_OUTPUTFILEYN,g.saveoutput?BST_CHECKED:BST_UNCHECKED);
 		SetDlgItemText(hWnd,IDC_OUTPUTFILE,g.outputfile);
 		SetDlgItemInt(hWnd,IDC_OUTPUTCOLS,g.outputcols,FALSE);
 //		EnableWindow(GetDlgItem(hWnd,IDC_VIEWFREQ),FALSE);
@@ -1909,7 +1896,7 @@ static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 			g.viewfreq=GetDlgItemInt(hWnd,IDC_VIEWFREQ,NULL,FALSE);
 			g.dumpfreq=GetDlgItemInt(hWnd,IDC_DUMPFREQ,NULL,FALSE);
 			GetDlgItemText(hWnd,IDC_DUMPFILE,g.dumpfile,79);
-			saveoutput=(IsDlgButtonChecked(hWnd,IDC_OUTPUTFILEYN)==BST_CHECKED);
+			g.saveoutput=(IsDlgButtonChecked(hWnd,IDC_OUTPUTFILEYN)==BST_CHECKED);
 			GetDlgItemText(hWnd,IDC_OUTPUTFILE,g.outputfile,79);
 			g.outputcols=GetDlgItemInt(hWnd,IDC_OUTPUTCOLS,NULL,FALSE);
 			// fall through
@@ -1948,7 +1935,7 @@ static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 		SetDlgItemInt(hWnd,IDC_COLCELLS,g.colcells,TRUE);
 		SetDlgItemInt(hWnd,IDC_COLWIDTH,g.colwidth,TRUE);
 
-		SetDlgItemText(hWnd,IDC_RULESTRING,rulestring);
+		SetDlgItemText(hWnd,IDC_RULESTRING,g.rulestring);
 		return 1;
 
 	case WM_COMMAND:
@@ -1971,7 +1958,7 @@ static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 			g.maxcount=GetDlgItemInt(hWnd,IDC_MAXCOUNT,NULL,TRUE);
 			g.colcells=GetDlgItemInt(hWnd,IDC_COLCELLS,NULL,TRUE);
 			g.colwidth=GetDlgItemInt(hWnd,IDC_COLWIDTH,NULL,TRUE);
-			GetDlgItemText(hWnd,IDC_RULESTRING,rulestring,50);
+			GetDlgItemText(hWnd,IDC_RULESTRING,g.rulestring,50);
 
 			// fall through
 		case IDCANCEL:

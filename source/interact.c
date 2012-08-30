@@ -24,12 +24,9 @@ extern struct globals_struct g;
 static	BOOL	nowait;		/* don't wait for commands after loading */
 static	BOOL	setall;		/* set all cells from initial file */
 static	BOOL	islife;		/* whether the rules are for standard Life */
-extern  TCHAR   rulestring[20]; /* rule string for printouts */
 static	long	foundcount;	/* number of objects found */
 static	char *	initfile;	/* file containing initial cells */
 static	char *	loadfile;	/* file to load state from */
-extern int saveoutput;
-extern int origfield[GENMAX][COLMAX][ROWMAX];
 /*
  * Local procedures
  */
@@ -261,7 +258,7 @@ void writegen(TCHAR *file1, BOOL append)
 	TCHAR file[MAX_PATH];
 	static int writecount=0;
 
-	if(!saveoutput && !g.outputcols) return;
+	if(!g.saveoutput && !g.outputcols) return;
 
 //	file = getstr(file, "Write object to file: ");
 	if(file1) {
@@ -427,7 +424,7 @@ void dumpstate(TCHAR *file1)
 	for(z=0;z<g.genmax;z++) {
 		for(y=0;y<g.rowmax;y++) {
 			for(x=0;x<g.colmax;x++) {
-				fprintf(fp,"%d ",origfield[z][x][y]);
+				fprintf(fp,"%d ",g.origfield[z][x][y]);
 			}
 			fprintf(fp,"\n");
 		}
@@ -440,7 +437,7 @@ void dumpstate(TCHAR *file1)
 	 * Dump out the life rule if it is not the normal one.
 	 */
 	if (!islife)
-		fprintf(fp, "R %s\n", rulestring);
+		fprintf(fp, "R %s\n", g.rulestring);
 
 	/*
 	 * Dump out the parameter values.
@@ -455,9 +452,9 @@ void dumpstate(TCHAR *file1)
 	/*
 	 * Dump out those cells which have a setting.
 	 */
-	set = settable;
+	set = g.settable;
 
-	while (set != nextset)
+	while (set != g.nextset)
 	{
 		cell = *set++;
 
@@ -497,14 +494,14 @@ void dumpstate(TCHAR *file1)
 	for(g1=0;g1<g.genmax;g1++)
 		for(row=0;row<g.rowmax;row++)
 			for(col=0;col<g.colmax;col++) {
-				fprintf(fp, "O %d %d %d %d\n",g1,row,col,origfield[g1][row][col]);
+				fprintf(fp, "O %d %d %d %d\n",g1,row,col,g.origfield[g1][row][col]);
 			}
 
 
 	/*
 	 * Finish up with the setting offsets and the final line.
 	 */
-	fprintf(fp, "T %d %d\n", baseset - settable, nextset - settable);
+	fprintf(fp, "T %d %d\n", g.baseset - g.settable, g.nextset - g.settable);
 	fprintf(fp, "E\n");
 
 	if (fclose(fp))
@@ -593,10 +590,10 @@ STATUS loadstate(TCHAR *file1)
 			cp=strtok(buf," ");
 			for(x=0;x<x1;x++) {
 				if(cp) {
-					origfield[z][x][y]=atoi(cp);
+					g.origfield[z][x][y]=atoi(cp);
 					cp=strtok(NULL," ");
 				}
-				else origfield[z][x][y]=4;  // error
+				else g.origfield[z][x][y]=4;  // error
 			}
 		}
 	}
@@ -661,7 +658,7 @@ STATUS loadstate(TCHAR *file1)
 	/*
 	 * Handle cells which have been set.
 	 */
-	newset = settable;
+	g.newset = g.settable;
 
 	for (;;)
 	{
@@ -729,7 +726,7 @@ STATUS loadstate(TCHAR *file1)
 		row = getnum(&cp, 0);
 		col = getnum(&cp, 0);
 		val=getnum(&cp,0);
-		origfield[g1][row][col]=val;
+		g.origfield[g1][row][col]=val;
 
 		buf[0] = '\0';
 		fgets(buf, LINESIZE, fp);
@@ -746,8 +743,8 @@ STATUS loadstate(TCHAR *file1)
 	}
 
 	cp = &buf[1];
-	baseset = &settable[getnum(&cp, 0)];
-	nextset = &settable[getnum(&cp, 0)];
+	g.baseset = &g.settable[getnum(&cp, 0)];
+	g.nextset = &g.settable[getnum(&cp, 0)];
 
 	fgets(buf, LINESIZE, fp);
 
@@ -1066,7 +1063,7 @@ setrules(TCHAR *cp)
 	 * Construct the rule string for printouts and see if this
 	 * is the normal Life rule.
 	 */
-	cp = rulestring;
+	cp = g.rulestring;
 
 	*cp++ = 'B';
 
@@ -1087,7 +1084,7 @@ setrules(TCHAR *cp)
 
 	*cp = '\0';
 
-	islife = (_tcscmp(rulestring, _T("B3/S23")) == 0);
+	islife = (_tcscmp(g.rulestring, _T("B3/S23")) == 0);
 
 	return TRUE;
 }

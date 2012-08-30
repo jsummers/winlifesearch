@@ -153,16 +153,6 @@ struct cell
 #define	NULL_CELL	((CELL *) 0)
 
 
-/*
- * Declare this macro so that by default the variables are defined external.
- * In the main program, this is defined as a null value so as to actually
- * define the variables.
- */
-#ifndef	EXTERN
-#define	EXTERN	extern
-#endif
-
-
 struct globals_struct {
 /*
  * Current parameter values for the program to be saved over runs.
@@ -230,21 +220,26 @@ struct globals_struct {
 	//char * outputfile; /* file to output results to */
 	TCHAR dumpfile[80];
 	TCHAR outputfile[80];
-};
-
-
 
 /*
  * Data about all of the cells.
  */
-EXTERN	CELL *	settable[MAXCELLS];	/* table of cells whose value is set */
-EXTERN	CELL **	newset;		/* where to add new cells into setting table */
-EXTERN	CELL **	nextset;	/* next cell in setting table to examine */
-EXTERN	CELL **	baseset;	/* base of changeable part of setting table */
-EXTERN	CELL *	fullsearchlist;	/* complete list of cells to search */
-EXTERN	ROWINFO	rowinfo[ROWMAX];	/* information about rows of gen 0 */
-EXTERN	COLINFO	colinfo[COLMAX];	/* information about columns of gen 0 */
-EXTERN	int	fullcolumns;	/* columns in gen 0 which are fully set */
+	CELL * settable[MAXCELLS];	/* table of cells whose value is set */
+	CELL ** newset;		/* where to add new cells into setting table */
+	CELL ** nextset;	/* next cell in setting table to examine */
+	CELL ** baseset;	/* base of changeable part of setting table */
+	CELL * fullsearchlist;	/* complete list of cells to search */
+	ROWINFO rowinfo[ROWMAX];	/* information about rows of gen 0 */
+	COLINFO colinfo[COLMAX];	/* information about columns of gen 0 */
+	int fullcolumns;	/* columns in gen 0 which are fully set */
+
+
+	int origfield[GENMAX][COLMAX][ROWMAX];
+	TCHAR rulestring[20];
+	int saveoutput;
+};
+
+
 
 
 /*

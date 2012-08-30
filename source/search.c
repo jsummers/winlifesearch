@@ -15,11 +15,6 @@
 #include <tchar.h>
 #include <search.h>
 
-/*
- * Define this as a null value so as to define the global variables
- * defined in lifesrc.h here.
- */
-#define	EXTERN
 
 // Uncommenting this line will disable certain features in an attempt
 // to make the search go a little faster. Maybe 10% faster or so...
@@ -259,8 +254,8 @@ initcells()
 		for (col = 1; col <= g.colmax; col++)
 		{
 			cell = findcell(row, col, 0);
-			cell->rowinfo = &rowinfo[row];
-			cell->colinfo = &colinfo[col];
+			cell->rowinfo = &g.rowinfo[row];
+			cell->colinfo = &g.colinfo[col];
 		}
 	}
 
@@ -271,9 +266,9 @@ initcells()
 	else
 		getunknown = getnormalunknown;
 
-	newset = settable;
-	nextset = settable;
-	baseset = settable;
+	g.newset = g.settable;
+	g.nextset = g.settable;
+	g.baseset = g.settable;
 
 	g.curgen = 0;
 	g.curstatus = OK;
@@ -498,7 +493,7 @@ initsearchorder()
 		searchlist = cell;
 	}
 	
-	fullsearchlist = searchlist;
+	g.fullsearchlist = searchlist;
 }
 
 
@@ -536,8 +531,8 @@ setcell(cell, state, free)
 
 	if (cell->gen == 0)
 	{
-		if (g.usecol && (colinfo[g.usecol].oncount == 0)
-			&& (colinfo[g.usecol].setcount == g.rowmax) && g.inited)
+		if (g.usecol && (g.colinfo[g.usecol].oncount == 0)
+			&& (g.colinfo[g.usecol].setcount == g.rowmax) && g.inited)
 		{
 			return ERROR1;
 		}
@@ -585,14 +580,14 @@ setcell(cell, state, free)
 		cell->row, cell->col, cell->gen,
 		(free ? "free" : "forced"), ((state == ON) ? "on" : "off"));
 
-	*newset++ = cell;
+	*g.newset++ = cell;
 
 	cell->state = state;
 	cell->free = free;
 	cell->colinfo->setcount++;
 
 	if ((cell->gen == 0) && (cell->colinfo->setcount == g.rowmax))
-		fullcolumns++;
+		g.fullcolumns++;
 
 	return OK;
 }
@@ -820,14 +815,14 @@ examinenext()
 	 * If there are no more cells to examine, then what we have
 	 * is consistent.
 	 */
-	if (nextset == newset)
+	if (g.nextset == g.newset)
 		return CONSISTENT;
 
 	/*
 	 * Get the next cell to examine, and check it out for symmetry
 	 * and for consistency with its previous and next generations.
 	 */
-	cell = *nextset++;
+	cell = *g.nextset++;
 
 	DPRINTF4("Examining saved cell %d %d %d (%s) for consistency\n",
 		cell->row, cell->col, cell->gen,
@@ -880,11 +875,11 @@ backup()
 {
 	CELL *	cell;
 
-	searchlist = fullsearchlist;
+	searchlist = g.fullsearchlist;
 
-	while (newset != baseset)
+	while (g.newset != g.baseset)
 	{
-		cell = *--newset;
+		cell = *--g.newset;
 
 		DPRINTF5("backing up cell %d %d %d, was %s, %s\n",
 			cell->row, cell->col, cell->gen,
@@ -901,7 +896,7 @@ backup()
 		}
 
 		if ((cell->gen == 0) && (cell->colinfo->setcount == g.rowmax))
-			fullcolumns--;
+			g.fullcolumns--;
 
 		cell->colinfo->setcount--;
 
@@ -913,12 +908,12 @@ backup()
 			continue;
 		}
 
-		nextset = newset;
+		g.nextset = g.newset;
 
 		return cell;
 	}
 
-	nextset = baseset;
+	g.nextset = g.baseset;
 	return NULL_CELL;
 }
 
@@ -1009,13 +1004,13 @@ getaverageunknown()
 
 		testcol = curcol - 1;
 
-		while ((testcol > 0) && (colinfo[testcol].oncount <= 0))
+		while ((testcol > 0) && (g.colinfo[testcol].oncount <= 0))
 			testcol--;
 
 		if (testcol > 0)
 		{
-			wantrow = colinfo[testcol].sumpos /
-				colinfo[testcol].oncount;
+			wantrow = g.colinfo[testcol].sumpos /
+				g.colinfo[testcol].oncount;
 		}
 		else
 			wantrow = (g.rowmax + 1) / 2;
@@ -1141,14 +1136,14 @@ search()
 //		needwrite1=FALSE;
 
 		if (g.outputcols &&
-			(fullcolumns >= g.outputlastcols + g.outputcols))
+			(g.fullcolumns >= g.outputlastcols + g.outputcols))
 		{
-			g.outputlastcols = fullcolumns;
+			g.outputlastcols = g.fullcolumns;
 			needwrite = TRUE;
 		}
 
-		if (g.outputlastcols > fullcolumns)
-			g.outputlastcols = fullcolumns;
+		if (g.outputlastcols > g.fullcolumns)
+			g.outputlastcols = g.fullcolumns;
 
 		/*
 		 * If it is time to view the progress,then show it.
