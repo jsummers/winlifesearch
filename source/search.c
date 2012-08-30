@@ -31,6 +31,8 @@
 
 #define SUMCOUNT 8
 
+extern struct globals_struct g;
+
 extern volatile int abortthread;
 extern int symmetry;
 
@@ -147,9 +149,9 @@ initcells()
 	dummycolinfo.oncount=0;
 
 
-	if ((rowmax <= 0) || (rowmax > ROWMAX) ||
-		(colmax <= 0) || (colmax > COLMAX) ||
-		(genmax <= 0) || (genmax > GENMAX) ||
+	if ((g.rowmax <= 0) || (g.rowmax > ROWMAX) ||
+		(g.colmax <= 0) || (g.colmax > COLMAX) ||
+		(g.genmax <= 0) || (g.genmax > GENMAX) ||
 		(rowtrans < -TRANSMAX) || (rowtrans > TRANSMAX) ||
 		(coltrans < -TRANSMAX) || (coltrans > TRANSMAX))
 	{
@@ -170,14 +172,14 @@ initcells()
 	/*
 	 * Link the cells together.
 	 */
-	for (col = 0; col <= colmax+1; col++)
+	for (col = 0; col <= g.colmax+1; col++)
 	{
-		for (row = 0; row <= rowmax+1; row++)
+		for (row = 0; row <= g.rowmax+1; row++)
 		{
-			for (gen = 0; gen < genmax; gen++)
+			for (gen = 0; gen < g.genmax; gen++)
 			{
 				edge = ((row == 0) || (col == 0) ||
-					(row > rowmax) || (col > colmax));
+					(row > g.rowmax) || (col > g.colmax));
 
 				cell = findcell(row, col, gen);
 				cell->gen = gen;
@@ -204,10 +206,10 @@ initcells()
 				 * wrapping around at the ends.
 				 */
 				cell->past = findcell(row, col,
-					(gen+genmax-1) % genmax);
+					(gen+g.genmax-1) % g.genmax);
 
 				cell->future = findcell(row, col,
-					(gen+1) % genmax);
+					(gen+1) % g.genmax);
 
 				/*
 				 * If this is not an edge cell, and
@@ -232,9 +234,9 @@ initcells()
 	 */
 	if (rowtrans || coltrans || fliprows || flipcols || flipquads)
 	{
-		for (row = 0; row <= rowmax+1; row++)
+		for (row = 0; row <= g.rowmax+1; row++)
 		{
-			for (col = 0; col <= colmax+1; col++)
+			for (col = 0; col <= g.colmax+1; col++)
 			{
 /*				cell = findcell(row, col, genmax - 1);
 				cell2 = mapcell(cell);
@@ -253,9 +255,9 @@ initcells()
 	/*
 	 * Initialize the row and column info addresses for generation 0.
 	 */
-	for (row = 1; row <= rowmax; row++)
+	for (row = 1; row <= g.rowmax; row++)
 	{
-		for (col = 1; col <= colmax; col++)
+		for (col = 1; col <= g.colmax; col++)
 		{
 			cell = findcell(row, col, 0);
 			cell->rowinfo = &rowinfo[row];
@@ -275,7 +277,7 @@ initcells()
 	baseset = settable;
 
 	curgen = 0;
-	curstatus = OK;
+	g.curstatus = OK;
 	inittransit();
 	initimplic();
 }
@@ -337,7 +339,7 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 	 */
 	if (ordermiddle)
 	{
-		midcol = (colmax + 1) / 2;
+		midcol = (g.colmax + 1) / 2;
 
 		dif1 = c1->col - midcol;
 
@@ -375,7 +377,7 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 	 * opposite of the desired order because the initial setting
 	 * for new cells is OFF.
 	 */
-	midrow = (rowmax + 1) / 2;
+	midrow = (g.rowmax + 1) / 2;
 
 	dif1 = c1->row - midrow;
 
@@ -426,12 +428,12 @@ initsearchorder()
 	 */
 	count = 0;
 
-	for (gen = 0; gen < genmax; gen++)
-		for (col = 1; col <= colmax; col++)
-			for (row = 1; row <= rowmax; row++)	{
+	for (gen = 0; gen < g.genmax; gen++)
+		for (col = 1; col <= g.colmax; col++)
+			for (row = 1; row <= g.rowmax; row++)	{
 				
-				nrow=rowmax+1-row;
-				ncol=colmax+1-col;
+				nrow=g.rowmax+1-row;
+				ncol=g.colmax+1-col;
 
 				switch(symmetry) {
 				case 1:
@@ -536,7 +538,7 @@ setcell(cell, state, free)
 	if (cell->gen == 0)
 	{
 		if (usecol && (colinfo[usecol].oncount == 0)
-			&& (colinfo[usecol].setcount == rowmax) && inited)
+			&& (colinfo[usecol].setcount == g.rowmax) && inited)
 		{
 			return ERROR1;
 		}
@@ -590,7 +592,7 @@ setcell(cell, state, free)
 	cell->free = free;
 	cell->colinfo->setcount++;
 
-	if ((cell->gen == 0) && (cell->colinfo->setcount == rowmax))
+	if ((cell->gen == 0) && (cell->colinfo->setcount == g.rowmax))
 		fullcolumns++;
 
 	return OK;
@@ -899,7 +901,7 @@ backup()
 			adjustnear(cell, -1);
 		}
 
-		if ((cell->gen == 0) && (cell->colinfo->setcount == rowmax))
+		if ((cell->gen == 0) && (cell->colinfo->setcount == g.rowmax))
 			fullcolumns--;
 
 		cell->colinfo->setcount--;
@@ -1017,7 +1019,7 @@ getaverageunknown()
 				colinfo[testcol].oncount;
 		}
 		else
-			wantrow = (rowmax + 1) / 2;
+			wantrow = (g.rowmax + 1) / 2;
 
 		for (; cell && (cell->col == curcol); cell = cell->search)
 		{
@@ -1252,19 +1254,19 @@ checkwidth(cell)
 	minrow = cell->row;
 	maxrow = cell->row;
 	srcminrow = 1;
-	srcmaxrow = rowmax;
+	srcmaxrow = g.rowmax;
 	full = TRUE;
 
 	if ((rowsym && (cell->col >= rowsym)) ||
 		(fliprows && (cell->col >= fliprows)))
 	{
 		full = FALSE;
-		srcmaxrow = (rowmax + 1) / 2;
+		srcmaxrow = (g.rowmax + 1) / 2;
 
 		if (cell->row > srcmaxrow)
 		{
-			srcminrow = (rowmax / 2) + 1;
-			srcmaxrow = rowmax;
+			srcminrow = (g.rowmax / 2) + 1;
+			srcmaxrow = g.rowmax;
 		}
 	}
 
@@ -1315,14 +1317,14 @@ subperiods()
 	CELL *	cellg0;
 	CELL *	cellgn;
 
-	for (gen = 1; gen < genmax; gen++)
+	for (gen = 1; gen < g.genmax; gen++)
 	{
-		if (genmax % gen)
+		if (g.genmax % gen)
 			continue;
 
-		for (row = 1; row <= rowmax; row++)
+		for (row = 1; row <= g.rowmax; row++)
 		{
-			for (col = 1; col <= colmax; col++)
+			for (col = 1; col <= g.colmax; col++)
 			{
 				cellg0 = findcell(row, col, 0);
 				cellgn = findcell(row, col, gen);
@@ -1360,16 +1362,16 @@ mapcell(cell)
 	forward = (cell->gen != 0);
 
 	if (fliprows && (col >= fliprows))
-		row = rowmax + 1 - row;
+		row = g.rowmax + 1 - row;
 
 	if (flipcols && (row >= flipcols))
-		col = colmax + 1 - col;
+		col = g.colmax + 1 - col;
 
 	if (flipquads)
 	{				/* NEED TO GO BACKWARDS */
 		tmp = col;
 		col = row;
-		row = colmax + 1 - tmp;
+		row = g.colmax + 1 - tmp;
 	}
 
 	if (forward)
@@ -1386,7 +1388,7 @@ mapcell(cell)
 	if (forward)
 		return findcell(row, col, 0);
 	else
-		return findcell(row, col, genmax - 1);
+		return findcell(row, col, g.genmax - 1);
 }
 
 
@@ -1495,15 +1497,15 @@ static CELL *symcell(CELL *cell)
 
 	row = cell->row;
 	col = cell->col;
-	nrow = rowmax + 1 - row;
-	ncol = colmax + 1 - col;
+	nrow = g.rowmax + 1 - row;
+	ncol = g.colmax + 1 - col;
 
 	if(symmetry==1)  // col sym
 		return findcell(row,ncol,cell->gen);
 
 	if(symmetry==2) { // row sym
 		if(fastsym) {
-			if(rowmax%2) {    // odd sym
+			if(g.rowmax%2) {    // odd sym
 
 				if(abs(nrow-row)==2) {
 					return findcell(nrow,col,cell->gen);
@@ -1684,11 +1686,11 @@ findcell(row, col, gen)
 	/*
 	 * If the cell is a normal cell, then we know where it is.
 	 */
-	if ((row >= 0) && (row <= rowmax + 1) &&
-		(col >= 0) && (col <= colmax + 1) &&
-		(gen >= 0) && (gen < genmax))
+	if ((row >= 0) && (row <= g.rowmax + 1) &&
+		(col >= 0) && (col <= g.colmax + 1) &&
+		(gen >= 0) && (gen < g.genmax))
 	{
-		return celltable[(col * (rowmax + 2) + row) * genmax + gen];
+		return celltable[(col * (g.rowmax + 2) + row) * g.genmax + gen];
 	}
 
 	/*

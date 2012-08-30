@@ -42,13 +42,15 @@
 #include <strsafe.h>
 
 
-#define cellheight 15
+#define CELLHEIGHT 15
 
-#define cellwidth  15
+#define CELLWIDTH  15
 
 // #define maxfieldsize 87
 // #define maxgens    8
 #define TOOLBARHEIGHT 24
+
+struct globals_struct g;
 
 TCHAR rulestring[20];
 int saveoutput;
@@ -255,29 +257,29 @@ static POINT *GetSymmetricCells(int x,int y,int *num)
 	n=0;
 
 	if(s & 0x02) {
-		assert(colmax==rowmax);
-		pt[n].x=rowmax-1-y; // forward diag
-		pt[n].y=colmax-1-x;
+		assert(g.colmax==g.rowmax);
+		pt[n].x=g.rowmax-1-y; // forward diag
+		pt[n].y=g.colmax-1-x;
 		n++;
 	}
 	if(s & 0x04) {
-		assert(colmax==rowmax);
+		assert(g.colmax==g.rowmax);
 		pt[n].x=y;               // rotate90
-		pt[n].y=colmax-1-x;
+		pt[n].y=g.colmax-1-x;
 		n++;
 	}
 	if(s & 0x08) {
-		pt[n].x=colmax-1-x;  // mirrorx
+		pt[n].x=g.colmax-1-x;  // mirrorx
 		pt[n].y=y;
 		n++;
 	}
 	if(s & 0x10) {
-		pt[n].x=colmax-1-x;  // rotate180
-		pt[n].y=rowmax-1-y;
+		pt[n].x=g.colmax-1-x;  // rotate180
+		pt[n].y=g.rowmax-1-y;
 		n++;
 	}
 	if(s & 0x20) {
-		assert(colmax==rowmax);
+		assert(g.colmax==g.rowmax);
 		pt[n].x=y;                // back diag
 		pt[n].y=x;
 /* special symmetry
@@ -293,14 +295,14 @@ static POINT *GetSymmetricCells(int x,int y,int *num)
 		n++;
 	}
 	if(s & 0x40) {
-		assert(colmax==rowmax);
-		pt[n].x=rowmax-1-y; // rotate270
+		assert(g.colmax==g.rowmax);
+		pt[n].x=g.rowmax-1-y; // rotate270
 		pt[n].y=x;
 		n++;
 	}
 	if(s & 0x80) {
 		pt[n].x=x;               // mirrory
-		pt[n].y=rowmax-1-y;
+		pt[n].y=g.rowmax-1-y;
 		n++;
 	}
 
@@ -312,10 +314,10 @@ static POINT *GetSymmetricCells(int x,int y,int *num)
 // A stupid function
 static void SetCenter(void)
 {
-	centerx= colmax/2;
-	centery= rowmax/2;
-	centerxodd= colmax%2;
-	centeryodd= rowmax%2;
+	centerx= g.colmax/2;
+	centery= g.rowmax/2;
+	centerxodd= g.colmax%2;
+	centeryodd= g.rowmax%2;
 }
 
 static void InitGameSettings(void)
@@ -336,11 +338,11 @@ static void InitGameSettings(void)
 	trans_x= 0;
 	trans_y= 0;
 
-	genmax=2;
+	g.genmax=2;
 
 	curgen=0;
-	colmax=35;
-	rowmax=15;
+	g.colmax=35;
+	g.rowmax=15;
 	parent=0;
 	allobjects=0;
 	nearcols=0;
@@ -377,19 +379,19 @@ static void set_main_scrollbars(int redraw)
 	if(scrollpos.x<0) scrollpos.x=0;
 	if(scrollpos.y<0) scrollpos.y=0;
 
-	if(colmax*cellwidth<=r.right && scrollpos.x!=0) { scrollpos.x=0; redraw=1; }
-	if(rowmax*cellheight<=r.bottom && scrollpos.y!=0) { scrollpos.y=0; redraw=1; }
+	if(g.colmax*CELLWIDTH<=r.right && scrollpos.x!=0) { scrollpos.x=0; redraw=1; }
+	if(g.rowmax*CELLHEIGHT<=r.bottom && scrollpos.y!=0) { scrollpos.y=0; redraw=1; }
 
 	si.cbSize=sizeof(SCROLLINFO);
 	si.fMask=SIF_ALL;
 	si.nMin=0;
-	si.nMax=colmax*cellwidth;
+	si.nMax=g.colmax*CELLWIDTH;
 	si.nPage=r.right;
 	si.nPos=scrollpos.x;
 	si.nTrackPos=0;
 	SetScrollInfo(hwndMain,SB_HORZ,&si,TRUE);
 
-	si.nMax=rowmax*cellheight;
+	si.nMax=g.rowmax*CELLHEIGHT;
 	si.nPage=r.bottom;
 	si.nPos=scrollpos.y;
 	SetScrollInfo(hwndMain,SB_VERT,&si,TRUE);
@@ -404,6 +406,8 @@ static void set_main_scrollbars(int redraw)
 static BOOL InitApp(HANDLE hInstance, int nCmdShow)
 {
 	RECT r;
+
+	memset(&g,0,sizeof(struct globals_struct));
 
 	scrollpos.x=0; scrollpos.y=0;
 
@@ -499,8 +503,8 @@ static void DrawGuides(HDC hDC)
 	SetCenter();
 
 	// store the center pixel in some temp vars to make things readable
-	centerpx=centerx*cellwidth+centerxodd*(cellwidth/2);
-	centerpy=centery*cellheight+centeryodd*(cellheight/2);
+	centerpx=centerx*CELLWIDTH+centerxodd*(CELLWIDTH/2);
+	centerpy=centery*CELLHEIGHT+centeryodd*(CELLHEIGHT/2);
 
 	SelectObject(hDC,pens.axes);
 
@@ -508,45 +512,45 @@ static void DrawGuides(HDC hDC)
 	// horizontal line
 	if(symmetry==2 || symmetry==6 || symmetry==9) {	
 		MoveToEx(hDC,0,centerpy,NULL);
-		LineTo(hDC,colmax*cellwidth,centerpy);
+		LineTo(hDC,g.colmax*CELLWIDTH,centerpy);
 	}
 
 	// vertical line
 	if(symmetry==1 || symmetry==6 || symmetry==9) {
 		MoveToEx(hDC,centerpx,0,NULL);
-		LineTo(hDC,centerpx,rowmax*cellheight);
+		LineTo(hDC,centerpx,g.rowmax*CELLHEIGHT);
 	}
 
 	// diag - forward
 	if(symmetry==3 || symmetry==5 || symmetry>=7) {
-		MoveToEx(hDC,0,rowmax*cellheight,NULL);
-		LineTo(hDC,colmax*cellwidth,0);
+		MoveToEx(hDC,0,g.rowmax*CELLHEIGHT,NULL);
+		LineTo(hDC,g.colmax*CELLWIDTH,0);
 	}
 
 	// diag - backward
 	if(symmetry==4 || symmetry>=7) {
 		MoveToEx(hDC,0,0,NULL);
-		LineTo(hDC,colmax*cellwidth,rowmax*cellheight);
+		LineTo(hDC,g.colmax*CELLWIDTH,g.rowmax*CELLHEIGHT);
 	}
 	if(symmetry==5 || symmetry==8) {
-		MoveToEx(hDC,0,rowmax*cellheight,NULL);
-		LineTo(hDC,0,(rowmax-2)*cellheight);
-		MoveToEx(hDC,colmax*cellwidth,0,NULL);
-		LineTo(hDC,colmax*cellwidth,2*cellheight);
+		MoveToEx(hDC,0,g.rowmax*CELLHEIGHT,NULL);
+		LineTo(hDC,0,(g.rowmax-2)*CELLHEIGHT);
+		MoveToEx(hDC,g.colmax*CELLWIDTH,0,NULL);
+		LineTo(hDC,g.colmax*CELLWIDTH,2*CELLHEIGHT);
 	}
 	if(symmetry==8) {
 		MoveToEx(hDC,0,0,NULL);
-		LineTo(hDC,2*cellwidth,0);
-		MoveToEx(hDC,colmax*cellwidth,rowmax*cellheight,NULL);
-		LineTo(hDC,(colmax-2)*cellwidth,rowmax*cellheight);
+		LineTo(hDC,2*CELLWIDTH,0);
+		MoveToEx(hDC,g.colmax*CELLWIDTH,g.rowmax*CELLHEIGHT,NULL);
+		LineTo(hDC,(g.colmax-2)*CELLWIDTH,g.rowmax*CELLHEIGHT);
 	}
 		
 		
 	if(trans_rotate || trans_flip || trans_x || trans_y) {
 		// the px & py values are pixels offsets from the center
-		px1=0;           py1=2*cellheight;
+		px1=0;           py1=2*CELLHEIGHT;
 		px2=0;           py2=0;
-		px3=cellwidth/2; py3=cellheight/2;
+		px3=CELLWIDTH/2; py3=CELLHEIGHT/2;
 
 		// an arrow indicating the starting position
 		SelectObject(hDC,pens.arrow1);
@@ -567,7 +571,7 @@ static void DrawGuides(HDC hDC)
 
 		switch(trans_rotate) {
 		case 1:
-			px1=cellwidth*2;
+			px1=CELLWIDTH*2;
 			py1=0;
 			if(trans_flip)
 				px3= -px3;
@@ -580,7 +584,7 @@ static void DrawGuides(HDC hDC)
 			py3= -py3;
 			break;
 		case 3:
-			px1= -cellwidth*2;
+			px1= -CELLWIDTH*2;
 			py1=0;
 			if(trans_flip)
 				py3= -py3;
@@ -590,12 +594,12 @@ static void DrawGuides(HDC hDC)
 		}
 
 		// translate if necessary
-		px1+=trans_x*cellwidth;
-		px2+=trans_x*cellwidth;
-		px3+=trans_x*cellwidth;
-		py1+=trans_y*cellheight;
-		py2+=trans_y*cellheight;
-		py3+=trans_y*cellheight;
+		px1+=trans_x*CELLWIDTH;
+		px2+=trans_x*CELLWIDTH;
+		px3+=trans_x*CELLWIDTH;
+		py1+=trans_y*CELLHEIGHT;
+		py2+=trans_y*CELLHEIGHT;
+		py3+=trans_y*CELLHEIGHT;
 		
 		SelectObject(hDC,pens.arrow2);
 		MoveToEx(hDC,centerpx+px1,centerpy+py1,NULL);
@@ -609,11 +613,11 @@ static void DrawGuides(HDC hDC)
 // pen & brush must already be selected
 static void ClearCell(HDC hDC,int x,int y, int dblsize)
 {
-	Rectangle(hDC,x*cellwidth+1,y*cellheight+1,
-	    (x+1)*cellwidth,(y+1)*cellheight);
+	Rectangle(hDC,x*CELLWIDTH+1,y*CELLHEIGHT+1,
+	    (x+1)*CELLWIDTH,(y+1)*CELLHEIGHT);
 	if(dblsize) {
-		Rectangle(hDC,x*cellwidth+2,y*cellheight+2,
-			(x+1)*cellwidth-1,(y+1)*cellheight-1);
+		Rectangle(hDC,x*CELLWIDTH+2,y*CELLHEIGHT+2,
+			(x+1)*CELLWIDTH-1,(y+1)*CELLHEIGHT-1);
 	}
 }
 
@@ -628,7 +632,7 @@ static void DrawCell(HDC hDC,int x,int y)
 	SelectObject(hDC,brushes.cell);
 
 	tmp=currfield[0][x][y];
-	for(i=1;i<genmax;i++) {
+	for(i=1;i<g.genmax;i++) {
 		if(currfield[i][x][y]!=tmp) allsame=0;
 	}
 
@@ -638,34 +642,34 @@ static void DrawCell(HDC hDC,int x,int y)
 	case 0:        // must be off
 		SelectObject(hDC,pens.cell_off);
 		SelectObject(hDC,GetStockObject(NULL_BRUSH));
-		Ellipse(hDC,x*cellwidth+3,y*cellheight+3,
-			(x+1)*cellwidth-2,(y+1)*cellheight-2);
+		Ellipse(hDC,x*CELLWIDTH+3,y*CELLHEIGHT+3,
+			(x+1)*CELLWIDTH-2,(y+1)*CELLHEIGHT-2);
 		break;
 	case 1:	       // must be on
 		SelectObject(hDC,brushes.cell_on);
 		SelectObject(hDC,GetStockObject(NULL_PEN));
-		Ellipse(hDC,x*cellwidth+3,y*cellheight+3,
-			(x+1)*cellwidth-1,(y+1)*cellheight-1);
+		Ellipse(hDC,x*CELLWIDTH+3,y*CELLHEIGHT+3,
+			(x+1)*CELLWIDTH-1,(y+1)*CELLHEIGHT-1);
 		break;
 	case 3:       // unknown
 		SelectObject(hDC,pens.unchecked);
-		MoveToEx(hDC,(x  )*cellwidth+2,(y  )*cellheight+2,NULL);
-		LineTo(hDC,  (x+1)*cellwidth-2,(y+1)*cellheight-2);
-		MoveToEx(hDC,(x+1)*cellwidth-2,(y  )*cellheight+2,NULL);
-		LineTo(hDC,  (x  )*cellwidth+2,(y+1)*cellheight-2);
+		MoveToEx(hDC,(x  )*CELLWIDTH+2,(y  )*CELLHEIGHT+2,NULL);
+		LineTo(hDC,  (x+1)*CELLWIDTH-2,(y+1)*CELLHEIGHT-2);
+		MoveToEx(hDC,(x+1)*CELLWIDTH-2,(y  )*CELLHEIGHT+2,NULL);
+		LineTo(hDC,  (x  )*CELLWIDTH+2,(y+1)*CELLHEIGHT-2);
 
 		break;
 	case 4:       // frozen
 		SelectObject(hDC,pens.cell_off);
-		MoveToEx(hDC,x*cellwidth+2*cellwidth/3,y*cellheight+  cellheight/3,NULL);
-		LineTo(hDC,  x*cellwidth+  cellwidth/3,y*cellheight+  cellheight/3);
-		LineTo(hDC,  x*cellwidth+  cellwidth/3,y*cellheight+2*cellheight/3);
+		MoveToEx(hDC,x*CELLWIDTH+2*CELLWIDTH/3,y*CELLHEIGHT+  CELLHEIGHT/3,NULL);
+		LineTo(hDC,  x*CELLWIDTH+  CELLWIDTH/3,y*CELLHEIGHT+  CELLHEIGHT/3);
+		LineTo(hDC,  x*CELLWIDTH+  CELLWIDTH/3,y*CELLHEIGHT+2*CELLHEIGHT/3);
 
-		MoveToEx(hDC,x*cellwidth+2*cellwidth/3,y*cellheight+  cellheight/2,NULL);
-		LineTo(hDC,  x*cellwidth+  cellwidth/3,y*cellheight+  cellheight/2);
+		MoveToEx(hDC,x*CELLWIDTH+2*CELLWIDTH/3,y*CELLHEIGHT+  CELLHEIGHT/2,NULL);
+		LineTo(hDC,  x*CELLWIDTH+  CELLWIDTH/3,y*CELLHEIGHT+  CELLHEIGHT/2);
 
-//		MoveToEx(hDC,x*cellwidth+cellwidth/3,  y*cellheight+cellheight/3,NULL);
-//		LineTo(hDC,  x*cellwidth+2*cellwidth/3,y*cellheight+cellheight/3);
+//		MoveToEx(hDC,x*CELLWIDTH+CELLWIDTH/3,  y*CELLHEIGHT+CELLHEIGHT/3,NULL);
+//		LineTo(hDC,  x*CELLWIDTH+2*CELLWIDTH/3,y*CELLHEIGHT+CELLHEIGHT/3);
 		break;
 
 	}
@@ -707,21 +711,21 @@ static void InvertCells(HDC hDC1)
 
 
 	if(endcell.x>=startcell.x) {
-		r.left= startcell.x*cellwidth;
-		r.right= (endcell.x+1)*cellwidth;
+		r.left= startcell.x*CELLWIDTH;
+		r.right= (endcell.x+1)*CELLWIDTH;
 	}
 	else {
-		r.left= endcell.x*cellwidth;
-		r.right=(startcell.x+1)*cellwidth;
+		r.left= endcell.x*CELLWIDTH;
+		r.right=(startcell.x+1)*CELLWIDTH;
 	}
 
 	if(endcell.y>=startcell.y) {
-		r.top= startcell.y*cellheight;
-		r.bottom= (endcell.y+1)*cellheight;
+		r.top= startcell.y*CELLHEIGHT;
+		r.bottom= (endcell.y+1)*CELLHEIGHT;
 	}
 	else {
-		r.top=   endcell.y*cellheight;
-		r.bottom=(startcell.y+1)*cellheight;
+		r.top=   endcell.y*CELLHEIGHT;
+		r.bottom=(startcell.y+1)*CELLHEIGHT;
 	}
 
 
@@ -753,8 +757,8 @@ static void SelectOff(HDC hDC)
 static void DrawWindow(HDC hDC)
 {
 	int i,j;
-	for(i=0;i<colmax;i++) {
-		for(j=0;j<rowmax;j++) {
+	for(i=0;i<g.colmax;i++) {
+		for(j=0;j<g.rowmax;j++) {
 			DrawCell(hDC,i,j);
 		}
 	}
@@ -822,11 +826,11 @@ static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 	xp+=(WORD)scrollpos.x;
 	yp+=(WORD)scrollpos.y;
 
-	x=xp/cellwidth;   // + scroll offset
-	y=yp/cellheight;  // + scroll offset
+	x=xp/CELLWIDTH;   // + scroll offset
+	y=yp/CELLHEIGHT;  // + scroll offset
 
-	if(x<0 || x>=colmax) return 1;
-	if(y<0 || y>=rowmax) return 1;
+	if(x<0 || x>=g.colmax) return 1;
+	if(y<0 || y>=g.rowmax) return 1;
 
 
 	lastval= currfield[curgen][x][y];
@@ -1011,28 +1015,28 @@ static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 static int set_initial_cells(void)
 {
 	TCHAR buf[80];
-	int i,j,g;
+	int i,j,g1;
 
-	for(g=0;g<genmax;g++) 
-		for(i=0;i<colmax;i++)
-			for(j=0;j<rowmax;j++) {
-				switch(origfield[g][i][j]) {
+	for(g1=0;g1<g.genmax;g1++) 
+		for(i=0;i<g.colmax;i++)
+			for(j=0;j<g.rowmax;j++) {
+				switch(origfield[g1][i][j]) {
 				case 0:  // forced off
-					if(proceed(findcell(j+1,i+1,g),OFF,FALSE)!=OK) {
-						StringCbPrintf(buf,sizeof(buf),_T("Inconsistent OFF state for cell (col %d,row %d,gen %d)"),i+1,j+1,g);
+					if(proceed(findcell(j+1,i+1,g1),OFF,FALSE)!=OK) {
+						StringCbPrintf(buf,sizeof(buf),_T("Inconsistent OFF state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
 						wlsMessage(buf,0);
 						return 0;
 					}
 					break;
 				case 1:  // forced on
-					if(proceed(findcell(j+1,i+1,g),ON,FALSE)!=OK) {
-						StringCbPrintf(buf,sizeof(buf),_T("Inconsistent ON state for cell (col %d,row %d,gen %d)"),i+1,j+1,g);
+					if(proceed(findcell(j+1,i+1,g1),ON,FALSE)!=OK) {
+						StringCbPrintf(buf,sizeof(buf),_T("Inconsistent ON state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
 						wlsMessage(buf,0);
 						return 0;
 					}
 					break;
 				case 3:  // eXcluded cells
-					excludecone(j+1,i+1,g);
+					excludecone(j+1,i+1,g1);
 					break;
 				case 4: // frozen cells
 					freezecell(j+1, i+1);
@@ -1053,7 +1057,7 @@ static void draw_gen_counter(void)
 	si.cbSize=sizeof(SCROLLINFO);
 	si.fMask=SIF_ALL;
 	si.nMin=0;
-	si.nMax=genmax-1;
+	si.nMax=g.genmax-1;
 	si.nPage=1;
 	si.nPos=curgen;
 	si.nTrackPos=0;
@@ -1079,25 +1083,25 @@ void showcount(int c)
 
 void printgen(int gen)
 {
-	int i,j,g;
+	int i,j,g1;
 	CELL *cell;
 
 	curgen=gen;
 
 	// copy dbell's format back into mine
-	for(g=0;g<genmax;g++) 
-		for(i=0;i<colmax;i++)
-			for(j=0;j<rowmax;j++) {
-				cell=findcell(j+1,i+1,g);
+	for(g1=0;g1<g.genmax;g1++) 
+		for(i=0;i<g.colmax;i++)
+			for(j=0;j<g.rowmax;j++) {
+				cell=findcell(j+1,i+1,g1);
 				switch(cell->state) {
 				case OFF:
-					currfield[g][i][j]=0;
+					currfield[g1][i][j]=0;
 					break;
 				case ON:
-					currfield[g][i][j]=1;
+					currfield[g1][i][j]=1;
 					break;
 				case UNK:
-					currfield[g][i][j]=2;
+					currfield[g1][i][j]=2;
 					break;
 				}
 			}
@@ -1118,18 +1122,18 @@ static DWORD WINAPI search_thread(LPVOID foo)
 	 */
 	while (TRUE)
 	{
-		if (curstatus == OK)
-			curstatus = search();
+		if (g.curstatus == OK)
+			g.curstatus = search();
 
 		if(abortthread) goto done;
 
-		if ((curstatus == FOUND) && userow && (rowinfo[userow].oncount == 0)) {
-			curstatus = OK;
+		if ((g.curstatus == FOUND) && userow && (rowinfo[userow].oncount == 0)) {
+			g.curstatus = OK;
 			continue;
 		}
 
-		if ((curstatus == FOUND) && !allobjects && subperiods()) {
-			curstatus = OK;
+		if ((g.curstatus == FOUND) && !allobjects && subperiods()) {
+			g.curstatus = OK;
 			continue;
 		}
 
@@ -1138,7 +1142,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			dumpstate(dumpfile);
 		}
 
-		quitok = (curstatus == NOTEXIST);
+		quitok = (g.curstatus == NOTEXIST);
 
 		curgen = 0;
 
@@ -1150,8 +1154,8 @@ static DWORD WINAPI search_thread(LPVOID foo)
 		/*
 		 * Here if results are going to a file.
 		 */
-		if (curstatus == FOUND) {
-			curstatus = OK;
+		if (g.curstatus == FOUND) {
+			g.curstatus = OK;
 
 			if (!quiet) {
 				printgen(0);
@@ -1266,7 +1270,7 @@ static void start_search(TCHAR *statefile)
 	fullsearchlist=NULL;
 	outputlastcols=0;
 	fullcolumns=0;
-	curstatus=OK;
+	g.curstatus=OK;
 
 	if(statefile) {
 		if(loadstate(statefile) == ERROR1) return;
@@ -1393,21 +1397,21 @@ static void open_state(void)
 
 static void gen_changeby(int delta)
 {
-	if(genmax<2) return;
+	if(g.genmax<2) return;
 	curgen+=delta;
-	if(curgen>=genmax) curgen=0;
-	if(curgen<0) curgen=genmax-1;
+	if(curgen>=g.genmax) curgen=0;
+	if(curgen<0) curgen=g.genmax-1;
 
 	draw_gen_counter();
 	InvalidateRect(hwndMain,NULL,TRUE);
 }
 
 
-static void clear_gen(int g)
+static void clear_gen(int g1)
 {	int i,j;
 	for(i=0;i<COLMAX;i++)
 		for(j=0;j<ROWMAX;j++)
-			currfield[g][i][j]=2;
+			currfield[g1][i][j]=2;
 }
 
 static void clear_all(void)
@@ -1446,7 +1450,7 @@ static void copytoclipboard(void)
 
 	offset=lstrlen(buf);
 
-	size=(offset+(colmax+2)*rowmax+1)*sizeof(TCHAR);
+	size=(offset+(g.colmax+2)*g.rowmax+1)*sizeof(TCHAR);
 	hClip=GlobalAlloc(GMEM_MOVEABLE|GMEM_DDESHARE,size);
 
 	lpClip=GlobalLock(hClip);
@@ -1454,17 +1458,17 @@ static void copytoclipboard(void)
 
 	StringCbCopy(s,size,buf);
 
-	for(j=0;j<rowmax;j++) {
-		for(i=0;i<colmax;i++) {
+	for(j=0;j<g.rowmax;j++) {
+		for(i=0;i<g.colmax;i++) {
 			if(currfield[curgen][i][j]==1)
-				s[offset+(colmax+2)*j+i]='*';
+				s[offset+(g.colmax+2)*j+i]='*';
 			else
-				s[offset+(colmax+2)*j+i]='.';
+				s[offset+(g.colmax+2)*j+i]='.';
 		}
-		s[offset+(colmax+2)*j+colmax]='\r';
-		s[offset+(colmax+2)*j+colmax+1]='\n';
+		s[offset+(g.colmax+2)*j+g.colmax]='\r';
+		s[offset+(g.colmax+2)*j+g.colmax+1]='\n';
 	}
-	s[offset+(colmax+2)*rowmax]='\0';
+	s[offset+(g.colmax+2)*g.rowmax]='\0';
 
 	OpenClipboard(NULL);
 	EmptyClipboard();
@@ -1654,10 +1658,10 @@ static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 		return 0;
 	case WM_HSCROLL:
 		switch(id) {
-		case SB_LINELEFT: scrollpos.x-=cellwidth; break;
-		case SB_LINERIGHT: scrollpos.x+=cellwidth; break;
-		case SB_PAGELEFT: scrollpos.x-=cellwidth*4; break;
-		case SB_PAGERIGHT: scrollpos.x+=cellwidth*4; break;
+		case SB_LINELEFT: scrollpos.x-=CELLWIDTH; break;
+		case SB_LINERIGHT: scrollpos.x+=CELLWIDTH; break;
+		case SB_PAGELEFT: scrollpos.x-=CELLWIDTH*4; break;
+		case SB_PAGERIGHT: scrollpos.x+=CELLWIDTH*4; break;
 		//case SB_THUMBPOSITION: scrollpos.x=HIWORD(wParam); break;
 		case SB_THUMBTRACK:
 			if(HIWORD(wParam)==scrollpos.x) return 0;
@@ -1670,10 +1674,10 @@ static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 		return 0;
 	case WM_VSCROLL:
 		switch(id) {
-		case SB_LINELEFT: scrollpos.y-=cellheight; break;
-		case SB_LINERIGHT: scrollpos.y+=cellheight; break;
-		case SB_PAGELEFT: scrollpos.y-=cellheight*4; break;
-		case SB_PAGERIGHT: scrollpos.y+=cellheight*4; break;
+		case SB_LINELEFT: scrollpos.y-=CELLHEIGHT; break;
+		case SB_LINERIGHT: scrollpos.y+=CELLHEIGHT; break;
+		case SB_PAGELEFT: scrollpos.y-=CELLHEIGHT*4; break;
+		case SB_PAGERIGHT: scrollpos.y+=CELLHEIGHT*4; break;
 		//case SB_THUMBPOSITION: scrollpos.y=HIWORD(wParam); break;
 		case SB_THUMBTRACK:
 			if(HIWORD(wParam)==scrollpos.y) return 0;
@@ -1728,12 +1732,12 @@ static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			case SB_PAGELEFT: curgen--; break;
 			case SB_PAGERIGHT: curgen++; break;
 			case SB_LEFT: curgen=0; break;
-			case SB_RIGHT: curgen=genmax-1; break;
+			case SB_RIGHT: curgen=g.genmax-1; break;
 			case SB_THUMBPOSITION: curgen=HIWORD(wParam); break;
 			case SB_THUMBTRACK: curgen=HIWORD(wParam); break;
 			}
-			if(curgen<0) curgen=genmax-1;  // wrap around
-			if(curgen>=genmax) curgen=0;
+			if(curgen<0) curgen=g.genmax-1;  // wrap around
+			if(curgen>=g.genmax) curgen=0;
 			if(curgen!=ori_gen) {
 				draw_gen_counter();
 				InvalidateRect(hwndMain,NULL,TRUE);
@@ -1794,23 +1798,23 @@ static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
 	switch (msg) {
 	case WM_INITDIALOG:
-		SetDlgItemInt(hWnd,IDC_COLUMNS,colmax,FALSE);
-		SetDlgItemInt(hWnd,IDC_ROWS,rowmax,FALSE);
+		SetDlgItemInt(hWnd,IDC_COLUMNS,g.colmax,FALSE);
+		SetDlgItemInt(hWnd,IDC_ROWS,g.rowmax,FALSE);
 		return 1;   // didn't call SetFocus
 
 	case WM_COMMAND:
 		switch(id) {
 		case IDOK:
-			colmax=GetDlgItemInt(hWnd,IDC_COLUMNS,NULL,FALSE);
-			rowmax=GetDlgItemInt(hWnd,IDC_ROWS,NULL,FALSE);
-			if(colmax<1) colmax=1;
-			if(rowmax<1) rowmax=1;
-			if(colmax>COLMAX) colmax=COLMAX;
-			if(rowmax>ROWMAX) rowmax=ROWMAX;
+			g.colmax=GetDlgItemInt(hWnd,IDC_COLUMNS,NULL,FALSE);
+			g.rowmax=GetDlgItemInt(hWnd,IDC_ROWS,NULL,FALSE);
+			if(g.colmax<1) g.colmax=1;
+			if(g.rowmax<1) g.rowmax=1;
+			if(g.colmax>COLMAX) g.colmax=COLMAX;
+			if(g.rowmax>ROWMAX) g.rowmax=ROWMAX;
 			SetCenter();
 
 			// put these in a separate Validate function
-			if(colmax!=rowmax) {
+			if(g.colmax!=g.rowmax) {
 				if(symmap[symmetry] & 0x66) {
 					MessageBox(hWnd,_T("Current symmetry requires that rows and ")
 						_T("columns be equal. Your symmetry setting has been altered."),
@@ -1823,7 +1827,7 @@ static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 				}
 			}
 
-			if(colmax != rowmax) {
+			if(g.colmax != g.rowmax) {
 				if(trans_rotate==1 || trans_rotate==3) {
 					MessageBox(hWnd,_T("Current rotation setting requires that rows and ")
 						_T("columns be equal. Your translation setting has been altered."),
@@ -1855,16 +1859,16 @@ static INT_PTR CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 	case WM_INITDIALOG:
 		StringCbPrintf(buf,sizeof(buf),_T("Enter a period from 1 to %d"),GENMAX);
 		SetDlgItemText(hWnd,IDC_PERIODTEXT,buf);
-		SetDlgItemInt(hWnd,IDC_PERIOD1,genmax,FALSE);
+		SetDlgItemInt(hWnd,IDC_PERIOD1,g.genmax,FALSE);
 		return 1;
 
 	case WM_COMMAND:
 		switch(id) {
 		case IDOK:
-			genmax=GetDlgItemInt(hWnd,IDC_PERIOD1,NULL,FALSE);
-			if(genmax>GENMAX) genmax=GENMAX;
-			if(genmax<1) genmax=1;
-			if(curgen>=genmax) curgen=genmax-1;
+			g.genmax=GetDlgItemInt(hWnd,IDC_PERIOD1,NULL,FALSE);
+			if(g.genmax>GENMAX) g.genmax=GENMAX;
+			if(g.genmax<1) g.genmax=1;
+			if(curgen>=g.genmax) curgen=g.genmax-1;
 
 			draw_gen_counter();
 			InvalidateRect(hwndMain,NULL,TRUE);
@@ -1990,7 +1994,7 @@ static INT_PTR CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 
 	switch (msg) {
 	case WM_INITDIALOG:
-		if(colmax!=rowmax) {
+		if(g.colmax!=g.rowmax) {
 			EnableWindow(GetDlgItem(hWnd,IDC_SYM3),FALSE);
 			EnableWindow(GetDlgItem(hWnd,IDC_SYM4),FALSE);
 			EnableWindow(GetDlgItem(hWnd,IDC_SYM7),FALSE);
@@ -2050,7 +2054,7 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 		SetDlgItemInt(hWnd,IDC_TRANSX,trans_x,TRUE);
 		SetDlgItemInt(hWnd,IDC_TRANSY,trans_y,TRUE);
 
-		if(colmax != rowmax) {
+		if(g.colmax != g.rowmax) {
 			EnableWindow(GetDlgItem(hWnd,IDC_TRANS1),FALSE);
 			EnableWindow(GetDlgItem(hWnd,IDC_TRANS3),FALSE);
 			EnableWindow(GetDlgItem(hWnd,IDC_TRANS5),FALSE);

@@ -163,16 +163,18 @@ struct cell
 #endif
 
 
+struct globals_struct {
 /*
  * Current parameter values for the program to be saved over runs.
  * These values are dumped and loaded by the dump and load commands.
  * If you add another parameter, be sure to also add it to param_table,
  * preferably at the end so as to minimize dump file incompatibilities.
  */
-EXTERN	STATUS	curstatus;	/* current status of search */
-EXTERN	int	rowmax;		/* maximum number of rows */
-EXTERN	int	colmax;		/* maximum number of columns */
-EXTERN	int	genmax;		/* maximum number of generations */
+	STATUS curstatus; /* current status of search */
+	int rowmax; /* maximum number of rows */
+	int colmax; /* maximum number of columns */
+	int genmax; /* maximum number of generations */
+};
 EXTERN	int	rowtrans;	/* translation of rows */
 EXTERN	int	coltrans;	/* translation of columns */
 EXTERN	BOOL	rowsym;		/* enable row symmetry starting at column */
