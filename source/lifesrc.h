@@ -9,8 +9,6 @@
 
 #include <ctype.h>        //JES, for isdigit()
 
-#define	PROTO(a)	a
-
 
 /*
  * Maximum dimensions of the search
@@ -247,35 +245,35 @@ struct globals_struct {
  */
 
 
-void	getcommands PROTO((void));
-void	initcells PROTO((void));
-void	printgen PROTO((int));
-void	writegen PROTO((TCHAR *, BOOL));
-void	dumpstate PROTO((TCHAR *));
-void	adjustnear PROTO((CELL *, int));
-STATUS	search PROTO((void));
-STATUS	proceed PROTO((CELL *, STATE, BOOL));
-STATUS	go PROTO((CELL *, STATE, BOOL));
-STATUS	setcell PROTO((CELL *, STATE, BOOL));
-CELL *	findcell PROTO((int, int, int));
-CELL *	backup PROTO((void));
-BOOL	subperiods PROTO((void));
-void	loopcells PROTO((CELL *, CELL *));
+void	getcommands (void);
+void	initcells (void);
+void	printgen (int);
+void	writegen (TCHAR *, BOOL);
+void	dumpstate (TCHAR *);
+void	adjustnear (CELL *, int);
+STATUS	search (void);
+STATUS	proceed (CELL *, STATE, BOOL);
+STATUS	go (CELL *, STATE, BOOL);
+STATUS	setcell (CELL *, STATE, BOOL);
+CELL *	findcell (int, int, int);
+CELL *	backup (void);
+BOOL	subperiods (void);
+void	loopcells (CELL *, CELL *);
 
-BOOL	ttyopen PROTO((void));
-BOOL	ttycheck PROTO((void));
-BOOL	ttyread PROTO((char *, char *, int));
-void	ttyprintf PROTO((TCHAR *, ...));
-void	ttystatus PROTO((TCHAR *, ...));
-void	ttywrite PROTO((char *, int));
-void	ttyhome PROTO((void));
-void	ttyeeop PROTO((void));
-void	ttyflush PROTO((void));
-void	ttyclose PROTO((void));
+BOOL	ttyopen (void);
+BOOL	ttycheck (void);
+BOOL	ttyread (char *, char *, int);
+void	ttyprintf (TCHAR *, ...);
+void	ttystatus (TCHAR *, ...);
+void	ttywrite (char *, int);
+void	ttyhome (void);
+void	ttyeeop (void);
+void	ttyflush (void);
+void	ttyclose (void);
 
 //JES
-void	excludecone PROTO((int, int, int));
-void	freezecell PROTO((int, int));
+void	excludecone (int, int, int);
+void	freezecell (int, int);
 
 BOOL	setrules(TCHAR *);
 #ifdef UNICODE

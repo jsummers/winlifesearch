@@ -86,27 +86,27 @@ static	COLINFO	dummycolinfo;	/* dummy info for ignored cells */
 /*
  * Local procedures
  */
-static	void	inittransit PROTO((void));
-static	void	initimplic PROTO((void));
-static	void	initsearchorder PROTO((void));
-static	void	linkcell PROTO((CELL *));
-static __inline	STATE	transition PROTO((STATE, int, int));
-static	STATE	choose PROTO((CELL *));
-static	FLAGS	implication PROTO((STATE, int, int));
-static	CELL *	symcell PROTO((CELL *));
-static	CELL *	mapcell PROTO((CELL *));
-static	CELL *	allocatecell PROTO((void));
-static	CELL *	getnormalunknown PROTO((void));
-static	CELL *	getaverageunknown PROTO((void));
-static	STATUS	consistify PROTO((CELL *));
-static	STATUS	consistify10 PROTO((CELL *));
-static	STATUS	examinenext PROTO((void));
-static	BOOL	checkwidth PROTO((CELL *));
-//static	int	getdesc PROTO((CELL *));
-//static	int	sumtodesc PROTO((STATE, int));
-//static	int	ordersortfunc PROTO((CELL **, CELL **));
-static	CELL *	(*getunknown) PROTO((void));
-static	__inline STATE	nextstate PROTO((STATE, int));
+static	void	inittransit (void);
+static	void	initimplic (void);
+static	void	initsearchorder (void);
+static	void	linkcell (CELL *);
+static __inline	STATE	transition (STATE, int, int);
+static	STATE	choose (CELL *);
+static	FLAGS	implication (STATE, int, int);
+static	CELL *	symcell (CELL *);
+static	CELL *	mapcell (CELL *);
+static	CELL *	allocatecell (void);
+static	CELL *	getnormalunknown (void);
+static	CELL *	getaverageunknown (void);
+static	STATUS	consistify (CELL *);
+static	STATUS	consistify10 (CELL *);
+static	STATUS	examinenext (void);
+static	BOOL	checkwidth (CELL *);
+//static	int	getdesc (CELL *);
+//static	int	sumtodesc (STATE, int);
+//static	int	ordersortfunc (CELL **, CELL **);
+static	CELL *	(*getunknown) (void);
+static	__inline STATE	nextstate (STATE, int);
 
 
 /*

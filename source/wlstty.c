@@ -17,7 +17,7 @@
 
 static	BOOL	inputready;		/* TRUE if input now ready */
 
-static	void	gotinput PROTO((void));
+static	void	gotinput (void);
 
 
 /*

@@ -30,18 +30,18 @@ static	char *	loadfile;	/* file to load state from */
 /*
  * Local procedures
  */
-//static	void	usage PROTO((void));
-//static	void	getsetting PROTO((char *));
-//static	void	getbackup PROTO((char *));
-//static	void	getclear PROTO((char *));
-//static	void	getexclude PROTO((char *));
-//static	void	getfreeze PROTO((char *));
+//static	void	usage (void);
+//static	void	getsetting (char *);
+//static	void	getbackup (char *);
+//static	void	getclear (char *);
+//static	void	getexclude (char *);
+//static	void	getfreeze (char *);
 
-//static	STATUS	loadstate PROTO((char *));
-//static	STATUS	readfile PROTO((TCHAR *));
-static	BOOL	confirm PROTO((char *));
-static	long	getnum PROTO((char **, int));
-//static	char *	getstr PROTO((char *, char *));
+//static	STATUS	loadstate (char *);
+//static	STATUS	readfile (TCHAR *);
+static	BOOL	confirm (char *);
+static	long	getnum (char **, int);
+//static	char *	getstr (char *, char *);
 
 
 /*
