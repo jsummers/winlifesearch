@@ -34,7 +34,6 @@
 extern struct globals_struct g;
 
 extern volatile int abortthread;
-extern int symmetry;
 
 /*
  * IMPLIC flag values.
@@ -152,8 +151,8 @@ initcells()
 	if ((g.rowmax <= 0) || (g.rowmax > ROWMAX) ||
 		(g.colmax <= 0) || (g.colmax > COLMAX) ||
 		(g.genmax <= 0) || (g.genmax > GENMAX) ||
-		(rowtrans < -TRANSMAX) || (rowtrans > TRANSMAX) ||
-		(coltrans < -TRANSMAX) || (coltrans > TRANSMAX))
+		(g.rowtrans < -TRANSMAX) || (g.rowtrans > TRANSMAX) ||
+		(g.coltrans < -TRANSMAX) || (g.coltrans > TRANSMAX))
 	{
 		ttyclose();
 		wlsError(_T("ROW, COL, GEN, or TRANS out of range"),0);
@@ -219,7 +218,7 @@ initcells()
 				 */
 //				if ((rowsym || colsym || pointsym ||
 //					fwdsym || bwdsym) && !edge)
-				if(symmetry)
+				if(g.symmetry)
 				{
 					loopcells(cell, symcell(cell));
 				}
@@ -232,7 +231,7 @@ initcells()
 	 * and the first generation, then change the future and past pointers
 	 * to implement it.  This is for translations and flips.
 	 */
-	if (rowtrans || coltrans || fliprows || flipcols || flipquads)
+	if (g.rowtrans || g.coltrans || g.fliprows || g.flipcols || g.flipquads)
 	{
 		for (row = 0; row <= g.rowmax+1; row++)
 		{
@@ -267,7 +266,7 @@ initcells()
 
 	initsearchorder();
 
-	if (follow)
+	if (g.follow)
 		getunknown = getaverageunknown;
 	else
 		getunknown = getnormalunknown;
@@ -276,7 +275,7 @@ initcells()
 	nextset = settable;
 	baseset = settable;
 
-	curgen = 0;
+	g.curgen = 0;
 	g.curstatus = OK;
 	inittransit();
 	initimplic();
@@ -308,7 +307,7 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 	 * If we do not order by all generations, then put all of
 	 * generation zero ahead of the other generations.
 	 */
-	if (!ordergens)
+	if (!g.ordergens)
 	{
 		if (c1->gen < c2->gen)
 			return -1;
@@ -317,17 +316,17 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 			return 1;
 	}
 
-	if(diagsort) {
+	if(g.diagsort) {
 		if(c1->col+c1->row > c2->col+c2->row) return 1;
 		if(c1->col+c1->row < c2->col+c2->row) return -1;
-		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (orderwide)?1:(-1);  /* ??? */
-		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (orderwide)?(-1):1;
+		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (g.orderwide)?1:(-1);  /* ??? */
+		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (g.orderwide)?(-1):1;
 	}
-	if(knightsort) {
+	if(g.knightsort) {
 		if(c1->col*2+c1->row > c2->col*2+c2->row) return 1;
 		if(c1->col*2+c1->row < c2->col*2+c2->row) return -1;
-		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (orderwide)?1:(-1);
-		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (orderwide)?(-1):1;
+		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (g.orderwide)?1:(-1);
+		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (g.orderwide)?(-1):1;
 	}
 	
 
@@ -337,7 +336,7 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 	 * But if middle ordering is set, the ordering is from the center
 	 * column outwards.
 	 */
-	if (ordermiddle)
+	if (g.ordermiddle)
 	{
 		midcol = (g.colmax + 1) / 2;
 
@@ -390,10 +389,10 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 		dif2 = -dif2;
 
 	if (dif1 < dif2)
-		return (orderwide ? -1 : 1);
+		return (g.orderwide ? -1 : 1);
 
 	if (dif1 > dif2)
-		return (orderwide ? 1 : -1);
+		return (g.orderwide ? 1 : -1);
 
 	/*
 	 * Sort by the generation again if we didn't do it yet.
@@ -435,7 +434,7 @@ initsearchorder()
 				nrow=g.rowmax+1-row;
 				ncol=g.colmax+1-col;
 
-				switch(symmetry) {
+				switch(g.symmetry) {
 				case 1:
 					if(col>ncol) continue;
 					break;
@@ -537,8 +536,8 @@ setcell(cell, state, free)
 
 	if (cell->gen == 0)
 	{
-		if (usecol && (colinfo[usecol].oncount == 0)
-			&& (colinfo[usecol].setcount == g.rowmax) && inited)
+		if (g.usecol && (colinfo[g.usecol].oncount == 0)
+			&& (colinfo[g.usecol].setcount == g.rowmax) && g.inited)
 		{
 			return ERROR1;
 		}
@@ -548,7 +547,7 @@ setcell(cell, state, free)
 
 #ifndef FASTER
 
-			if (maxcount && (cellcount >= maxcount))
+			if (g.maxcount && (g.cellcount >= g.maxcount))
 			{
 				DPRINTF2("setcell %d %d 0 on exceeds maxcount\n",
 					cell->row, cell->col);
@@ -556,29 +555,29 @@ setcell(cell, state, free)
 				return ERROR1;
 			}
 
-			if (nearcols && (cell->near1 <= 0) && (cell->col > 1)
-				&& inited)
+			if (g.nearcols && (cell->near1 <= 0) && (cell->col > 1)
+				&& g.inited)
 			{
 				return ERROR1;
 			}
 
-			if (colcells && (cell->colinfo->oncount >= colcells)
-				&& inited)
+			if (g.colcells && (cell->colinfo->oncount >= g.colcells)
+				&& g.inited)
 			{
 				return ERROR1;
 			}
 
-			if (colwidth && inited && checkwidth(cell))
+			if (g.colwidth && g.inited && checkwidth(cell))
 				return ERROR1;
 
-			if (nearcols)
+			if (g.nearcols)
 				adjustnear(cell, 1);
 #endif
 
 			cell->rowinfo->oncount++;
 			cell->colinfo->oncount++;
 			cell->colinfo->sumpos += cell->row;
-			cellcount++;
+			g.cellcount++;
 		}
 	}
 
@@ -669,7 +668,7 @@ static STATUS consistify(CELL *cell)
 	 * the cell is consistent with respect to the previous generation.
 	 */
 #ifndef FASTER
-	if (parent && (cell->gen == 0))
+	if (g.parent && (cell->gen == 0))
 		return OK;
 #endif
 
@@ -897,7 +896,7 @@ backup()
 			cell->rowinfo->oncount--;
 			cell->colinfo->oncount--;
 			cell->colinfo->sumpos -= cell->row;
-			cellcount--;
+			g.cellcount--;
 			adjustnear(cell, -1);
 		}
 
@@ -936,7 +935,7 @@ go(cell, state, free)
 {
 	STATUS	status;
 
-	quitok = FALSE;
+	g.quitok = FALSE;
 
 	for (;;)
 	{
@@ -1063,7 +1062,7 @@ choose(cell)
 	 * If we are following cells in other generations,
 	 * then try to do that.
 	 */
-	if (followgens)
+	if (g.followgens)
 	{
 		if ((cell->past->state == ON) ||
 			(cell->future->state == ON))
@@ -1127,10 +1126,10 @@ search()
 		/*
 		 * If it is time to dump our state, then do that.
 		 */
-		if (dumpfreq && (++dumpcount >= dumpfreq))
+		if (g.dumpfreq && (++g.dumpcount >= g.dumpfreq))
 		{
-			dumpcount = 0;
-			dumpstate(dumpfile);
+			g.dumpcount = 0;
+			dumpstate(g.dumpfile);
 		}
 
 		/*
@@ -1141,24 +1140,24 @@ search()
 		needwrite = FALSE;
 //		needwrite1=FALSE;
 
-		if (outputcols &&
-			(fullcolumns >= outputlastcols + outputcols))
+		if (g.outputcols &&
+			(fullcolumns >= g.outputlastcols + g.outputcols))
 		{
-			outputlastcols = fullcolumns;
+			g.outputlastcols = fullcolumns;
 			needwrite = TRUE;
 		}
 
-		if (outputlastcols > fullcolumns)
-			outputlastcols = fullcolumns;
+		if (g.outputlastcols > fullcolumns)
+			g.outputlastcols = fullcolumns;
 
 		/*
 		 * If it is time to view the progress,then show it.
 		 */
-		if (needwrite || (viewfreq && (++viewcount >= viewfreq)))
+		if (needwrite || (g.viewfreq && (++g.viewcount >= g.viewfreq)))
 		{
-			showcount(viewcount);
-			printgen(curgen);
-			viewcount = 0;
+			showcount(g.viewcount);
+			printgen(g.curgen);
+			g.viewcount = 0;
 		}
 
 		/*
@@ -1167,7 +1166,7 @@ search()
 		 * message will stay visible for a while.
 		 */
 		if (needwrite)
-			writegen(outputfile, TRUE);
+			writegen(g.outputfile, TRUE);
 
 		/*
 		 * Check for commands.
@@ -1204,17 +1203,17 @@ adjustnear(cell, inc)
 	int	count;
 	int	colcount;
 
-	for (colcount = nearcols; colcount > 0; colcount--)
+	for (colcount = g.nearcols; colcount > 0; colcount--)
 	{
 		cell = cell->cr;
 		curcell = cell;
 
-		for (count = nearcols; count-- >= 0; curcell = curcell->cu)
+		for (count = g.nearcols; count-- >= 0; curcell = curcell->cu)
 			curcell->near1 += inc;
 
 		curcell = cell->cd;
 
-		for (count = nearcols; count-- > 0; curcell = curcell->cd)
+		for (count = g.nearcols; count-- > 0; curcell = curcell->cd)
 			curcell->near1 += inc;
 	}
 }
@@ -1240,7 +1239,7 @@ checkwidth(cell)
 	CELL *	dcp;
 	BOOL	full;
 
-	if (!colwidth || !inited || cell->gen)
+	if (!g.colwidth || !g.inited || cell->gen)
 		return FALSE;
 
 	left = cell->colinfo->oncount;
@@ -1250,15 +1249,15 @@ checkwidth(cell)
 
 	ucp = cell;
 	dcp = cell;
-	width = colwidth;
+	width = g.colwidth;
 	minrow = cell->row;
 	maxrow = cell->row;
 	srcminrow = 1;
 	srcmaxrow = g.rowmax;
 	full = TRUE;
 
-	if ((rowsym && (cell->col >= rowsym)) ||
-		(fliprows && (cell->col >= fliprows)))
+	if ((g.rowsym && (cell->col >= g.rowsym)) ||
+		(g.fliprows && (cell->col >= g.fliprows)))
 	{
 		full = FALSE;
 		srcmaxrow = (g.rowmax + 1) / 2;
@@ -1295,7 +1294,7 @@ checkwidth(cell)
 		}
 	}
 
-	if (maxrow - minrow >= colwidth)
+	if (maxrow - minrow >= g.colwidth)
 		return TRUE;
 
 	return FALSE;
@@ -1361,13 +1360,13 @@ mapcell(cell)
 	col = cell->col;
 	forward = (cell->gen != 0);
 
-	if (fliprows && (col >= fliprows))
+	if (g.fliprows && (col >= g.fliprows))
 		row = g.rowmax + 1 - row;
 
-	if (flipcols && (row >= flipcols))
+	if (g.flipcols && (row >= g.flipcols))
 		col = g.colmax + 1 - col;
 
-	if (flipquads)
+	if (g.flipquads)
 	{				/* NEED TO GO BACKWARDS */
 		tmp = col;
 		col = row;
@@ -1376,13 +1375,13 @@ mapcell(cell)
 
 	if (forward)
 	{
-		row += rowtrans;
-		col += coltrans;
+		row += g.rowtrans;
+		col += g.coltrans;
 	}
 	else
 	{
-		row -= rowtrans;
-		col -= coltrans;
+		row -= g.rowtrans;
+		col -= g.coltrans;
 	}
 
 	if (forward)
@@ -1492,7 +1491,7 @@ static CELL *symcell(CELL *cell)
 //	if (!rowsym && !colsym && !pointsym && !fwdsym && !bwdsym)
 //		return NULL_CELL;
 
-	if(!symmetry)
+	if(!g.symmetry)
 		return NULL_CELL;
 
 	row = cell->row;
@@ -1500,11 +1499,11 @@ static CELL *symcell(CELL *cell)
 	nrow = g.rowmax + 1 - row;
 	ncol = g.colmax + 1 - col;
 
-	if(symmetry==1)  // col sym
+	if(g.symmetry==1)  // col sym
 		return findcell(row,ncol,cell->gen);
 
-	if(symmetry==2) { // row sym
-		if(fastsym) {
+	if(g.symmetry==2) { // row sym
+		if(g.fastsym) {
 			if(g.rowmax%2) {    // odd sym
 
 				if(abs(nrow-row)==2) {
@@ -1528,11 +1527,11 @@ static CELL *symcell(CELL *cell)
 		}
 	}
 
-	if(symmetry==3)       // fwd diag
+	if(g.symmetry==3)       // fwd diag
 		return findcell(ncol,nrow,cell->gen);
 
-	if(symmetry==4)    {   // bwd diag
-		if(fastsym) {
+	if(g.symmetry==4)    {   // bwd diag
+		if(g.fastsym) {
 			if(abs(col-row)==1)
 				return findcell(col,row,cell->gen);
 			if(abs(col-row)==2)
@@ -1551,10 +1550,10 @@ static CELL *symcell(CELL *cell)
 
 	}
 */
-	if(symmetry==5)       // origin
+	if(g.symmetry==5)       // origin
 		return findcell(nrow, ncol, cell->gen);
 
-	if(symmetry==6) {
+	if(g.symmetry==6) {
 		/*
 		 * Here is there is both row and column symmetry.
 		 * First see if the cell is in the middle row or middle column,
@@ -1574,7 +1573,7 @@ static CELL *symcell(CELL *cell)
 			return findcell(nrow, col, cell->gen);  // quadrant 1 or 3
 	}
 
-	if(symmetry==7) {  // diagonal 4-fold
+	if(g.symmetry==7) {  // diagonal 4-fold
 		// if on a diagonal...
 		if(row==col || row==ncol)
 			return findcell(nrow,ncol,cell->gen);
@@ -1586,12 +1585,12 @@ static CELL *symcell(CELL *cell)
 			return findcell(ncol,nrow,cell->gen);
 	}
 
-	if(symmetry==8) {      // origin*4 symmetry 
+	if(g.symmetry==8) {      // origin*4 symmetry 
 		// this is surprisingly simple
 			return findcell(ncol,row,cell->gen);
 	}
 
-	if(symmetry==9) {    // octagonal, this is gonna be tough
+	if(g.symmetry==9) {    // octagonal, this is gonna be tough
 		// if on an axis
 		if(nrow==row || ncol==col)
 			return findcell(ncol,row,cell->gen);
@@ -1864,14 +1863,14 @@ nextstate(state, ONcount)
 	switch (state)
 	{
 		case ON:
-			return liverules[ONcount];
+			return g.liverules[ONcount];
 
 		case OFF:
-			return bornrules[ONcount];
+			return g.bornrules[ONcount];
 
 		case UNK:
-			if (bornrules[ONcount] == liverules[ONcount])
-				return bornrules[ONcount];
+			if (g.bornrules[ONcount] == g.liverules[ONcount])
+				return g.bornrules[ONcount];
 
 			/* fall into default case */
 

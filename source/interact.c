@@ -57,15 +57,15 @@ static	long	getnum PROTO((char **, int));
 static	int *	param_table[] =
 {
 	&g.curstatus,
-	&g.rowmax, &g.colmax, &g.genmax, &rowtrans, &coltrans,
-	&rowsym, &colsym, &pointsym, &fwdsym, &bwdsym,
-	&fliprows, &flipcols, &flipquads,
-	&parent, &allobjects, &nearcols, &maxcount,
-	&userow, &usecol, &colcells, &colwidth, &follow,
-	&orderwide, &ordergens, &ordermiddle, &followgens,
+	&g.rowmax, &g.colmax, &g.genmax, &g.rowtrans, &g.coltrans,
+	&g.rowsym, &g.colsym, &g.pointsym, &g.fwdsym, &g.bwdsym,
+	&g.fliprows, &g.flipcols, &g.flipquads,
+	&g.parent, &g.allobjects, &g.nearcols, &g.maxcount,
+	&g.userow, &g.usecol, &g.colcells, &g.colwidth, &g.follow,
+	&g.orderwide, &g.ordergens, &g.ordermiddle, &g.followgens,
 
-	&diagsort, &symmetry, &trans_rotate, &trans_flip, &trans_x, &trans_y,
-	&knightsort,
+	&g.diagsort, &g.symmetry, &g.trans_rotate, &g.trans_flip, &g.trans_x, &g.trans_y,
+	&g.knightsort,
 	NULL
 };
 
@@ -164,7 +164,7 @@ getbackup(char *cp)
 
 		if (cell == NULL_CELL)
 		{
-			printgen(curgen);
+			printgen(g.curgen);
 			ttystatus(_T("Backed up over all possibilities\n"));
 
 			return;
@@ -179,14 +179,14 @@ getbackup(char *cp)
 
 		if (go(cell, state, FALSE) != OK)
 		{
-			printgen(curgen);
+			printgen(g.curgen);
 			ttystatus(_T("Backed up over all possibilities\n"));
 
 			return;
 		}
 	}
 
-	printgen(curgen);
+	printgen(g.curgen);
 }
 
 static int getfilename_l(TCHAR *fn)
@@ -261,7 +261,7 @@ void writegen(TCHAR *file1, BOOL append)
 	TCHAR file[MAX_PATH];
 	static int writecount=0;
 
-	if(!saveoutput && !outputcols) return;
+	if(!saveoutput && !g.outputcols) return;
 
 //	file = getstr(file, "Write object to file: ");
 	if(file1) {
@@ -299,7 +299,7 @@ void writegen(TCHAR *file1, BOOL append)
 	{
 		for (col = 1; col <= g.colmax; col++)
 		{
-			cell = findcell(row, col, curgen);
+			cell = findcell(row, col, g.curgen);
 
 			if (cell->state == OFF)
 				continue;
@@ -336,7 +336,7 @@ void writegen(TCHAR *file1, BOOL append)
 	{
 		for (col = mincol; col <= maxcol; col++)
 		{
-			cell = findcell(row, col, curgen);
+			cell = findcell(row, col, g.curgen);
 
 			switch (cell->state)
 			{
@@ -374,7 +374,7 @@ void writegen(TCHAR *file1, BOOL append)
 		wlsStatus(buf);
 	}
 
-	quitok = TRUE;
+	g.quitok = TRUE;
 }
 
 
@@ -515,7 +515,7 @@ void dumpstate(TCHAR *file1)
 	}
 
 	ttystatus(_T("State dumped to \"%s\"\n"), file);
-	quitok = TRUE;
+	g.quitok = TRUE;
 }
 
 
@@ -537,7 +537,7 @@ STATUS loadstate(TCHAR *file1)
 	CELL *	cell;
 	int **	param;
 	char	buf[LINESIZE];
-	int g,val;
+	int g1,val;
 	TCHAR file[MAX_PATH];
 
 	int x1,y1,z1,x,y,z;
@@ -725,11 +725,11 @@ STATUS loadstate(TCHAR *file1)
 
 	while(buf[0]=='O') {
 		cp=&buf[1];
-		g=getnum(&cp,0);
+		g1=getnum(&cp,0);
 		row = getnum(&cp, 0);
 		col = getnum(&cp, 0);
 		val=getnum(&cp,0);
-		origfield[g][row][col]=val;
+		origfield[g1][row][col]=val;
 
 		buf[0] = '\0';
 		fgets(buf, LINESIZE, fp);
@@ -767,7 +767,7 @@ STATUS loadstate(TCHAR *file1)
 	}
 
 	ttystatus(_T("State loaded from \"%s\"\n"), file);
-	quitok = TRUE;
+	g.quitok = TRUE;
 
 	return OK;
 }
@@ -993,8 +993,8 @@ setrules(TCHAR *cp)
 
 	for (i = 0; i < 9; i++)
 	{
-		bornrules[i] = OFF;
-		liverules[i] = OFF;
+		g.bornrules[i] = OFF;
+		g.liverules[i] = OFF;
 	}
 
 	if (*cp == '\0')
@@ -1028,10 +1028,10 @@ setrules(TCHAR *cp)
 		for (i = 0; i < 9; i++)
 		{
 			if (bits & 0x01)
-				bornrules[i] = ON;
+				g.bornrules[i] = ON;
 
 			if (bits & 0x02)
-				liverules[i] = ON;
+				g.liverules[i] = ON;
 
 			bits >>= 2;
 		}
@@ -1045,7 +1045,7 @@ setrules(TCHAR *cp)
 			cp++;
 
 		while ((*cp >= '0') && (*cp <= '8'))
-			bornrules[*cp++ - '0'] = ON;
+			g.bornrules[*cp++ - '0'] = ON;
 
 		if ((*cp != ',') && (*cp != '/'))
 			return FALSE;
@@ -1056,7 +1056,7 @@ setrules(TCHAR *cp)
 			cp++;
 
 		while ((*cp >= '0') && (*cp <= '8'))
-			liverules[*cp++ - '0'] = ON;
+			g.liverules[*cp++ - '0'] = ON;
 
 		if (*cp)
 			return FALSE;
@@ -1072,7 +1072,7 @@ setrules(TCHAR *cp)
 
 	for (i = 0; i < 9; i++)
 	{
-		if (bornrules[i] == ON)
+		if (g.bornrules[i] == ON)
 			*cp++ = '0' + i;
 	}
 
@@ -1081,7 +1081,7 @@ setrules(TCHAR *cp)
 
 	for (i = 0; i < 9; i++)
 	{
-		if (liverules[i] == ON)
+		if (g.liverules[i] == ON)
 			*cp++ = '0' + i;
 	}
 

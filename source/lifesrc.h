@@ -174,65 +174,65 @@ struct globals_struct {
 	int rowmax; /* maximum number of rows */
 	int colmax; /* maximum number of columns */
 	int genmax; /* maximum number of generations */
-};
-EXTERN	int	rowtrans;	/* translation of rows */
-EXTERN	int	coltrans;	/* translation of columns */
-EXTERN	BOOL	rowsym;		/* enable row symmetry starting at column */
-EXTERN	BOOL	colsym;		/* enable column symmetry starting at row */
-EXTERN	BOOL	pointsym;	/* enable symmetry with central point */
-EXTERN	BOOL	fwdsym;		/* enable forward diagonal symmetry */
-EXTERN	BOOL	bwdsym;		/* enable backward diagonal symmetry */
-EXTERN	BOOL	fliprows;	/* flip rows at column number from last to first generation */
-EXTERN	BOOL	flipcols;	/* flip columns at row number from last to first generation */
-EXTERN	BOOL	flipquads;	/* flip quadrants from last to first gen */
-EXTERN	BOOL	parent;		/* only look for parents */
-EXTERN	BOOL	allobjects;	/* look for all objects including subperiods */
-EXTERN	int	nearcols;	/* maximum distance to be near columns */
-EXTERN	int	maxcount;	/* maximum number of cells in generation 0 */
-EXTERN	int	userow;		/* row that must have at least one ON cell */
-EXTERN	int	usecol;		/* column that must have at least one ON cell */
-EXTERN	int	colcells;	/* maximum cells in a column */
-EXTERN	int	colwidth;	/* maximum width of each column */
-EXTERN	BOOL	follow;		/* follow average position of previous column */
-EXTERN	BOOL	orderwide;	/* ordering tries to find wide objects */
-EXTERN	BOOL	ordergens;	/* ordering tries all gens first */
-EXTERN	BOOL	ordermiddle;	/* ordering tries middle columns first */
-EXTERN	BOOL	followgens;	/* try to follow setting of other gens */
+	int	rowtrans;   /* translation of rows */
+	int	coltrans;   /* translation of columns */
+	BOOL rowsym;    /* enable row symmetry starting at column */
+	BOOL colsym;    /* enable column symmetry starting at row */
+	BOOL pointsym;  /* enable symmetry with central point */
+	BOOL fwdsym;    /* enable forward diagonal symmetry */
+	BOOL bwdsym;    /* enable backward diagonal symmetry */
+	BOOL fliprows;  /* flip rows at column number from last to first generation */
+	BOOL flipcols;  /* flip columns at row number from last to first generation */
+	BOOL flipquads; /* flip quadrants from last to first gen */
+	BOOL parent;    /* only look for parents */
+	BOOL allobjects;  /* look for all objects including subperiods */
+	int nearcols;     /* maximum distance to be near columns */
+	int maxcount;     /* maximum number of cells in generation 0 */
+	int userow;       /* row that must have at least one ON cell */
+	int usecol;       /* column that must have at least one ON cell */
+	int colcells;     /* maximum cells in a column */
+	int	colwidth;     /* maximum width of each column */
+	BOOL follow;      /* follow average position of previous column */
+	BOOL orderwide;   /* ordering tries to find wide objects */
+	BOOL ordergens;   /* ordering tries all gens first */
+	BOOL ordermiddle; /* ordering tries middle columns first */
+	BOOL followgens;  /* try to follow setting of other gens */
 
-EXTERN  int  diagsort;       /* JES - optimize for diagonal objects */
-EXTERN  int  knightsort;     /* JES */
-EXTERN  int  fastsym;        /* JES */
-EXTERN  int  symmetry;       /* JES */
-EXTERN  int  trans_rotate;   /* JES */
-EXTERN  int  trans_flip;     /* JES */
-EXTERN  int  trans_x;        /* JES */
-EXTERN  int  trans_y;        /* JES */
-
-
+	int diagsort;       /* JES - optimize for diagonal objects */
+	int knightsort;     /* JES */
+	int fastsym;        /* JES */
+	int symmetry;       /* JES */
+	int trans_rotate;   /* JES */
+	int trans_flip;     /* JES */
+	int trans_x;        /* JES */
+	int trans_y;        /* JES */
 
 /*
  * These values are not affected when dumping and loading since they
  * do not affect the status of a search in progress.
  * They are either settable on the command line or are computed.
  */
-EXTERN	BOOL	quiet;		/* don't output */
-EXTERN	BOOL	debug;		/* enable debugging output (if compiled so) */
-EXTERN	BOOL	quitok;		/* ok to quit without confirming */
-EXTERN	BOOL	inited;		/* initialization has been done */
-EXTERN	STATE	bornrules[16];	/* rules for whether a cell is to be born */
-EXTERN	STATE	liverules[16];	/* rules for whether a live cell stays alive */
-EXTERN	int	curgen;		/* current generation for display */
-EXTERN	int	outputcols;	/* number of columns to save for output */
-EXTERN	int	outputlastcols;	/* last number of columns output */
-EXTERN	int	cellcount;	/* number of live cells in generation 0 */
-EXTERN	long	dumpfreq;	/* how often to perform dumps */
-EXTERN	long	dumpcount;	/* counter for dumps */
-EXTERN	long	viewfreq;	/* how often to view results */
-EXTERN	long	viewcount;	/* counter for viewing */
-//EXTERN	char *	dumpfile;	/* dump file name */
-//EXTERN	char *	outputfile;	/* file to output results to */
-EXTERN  TCHAR dumpfile[80];
-EXTERN  TCHAR outputfile[80];
+	BOOL quiet;      /* don't output */
+	BOOL debug;      /* enable debugging output (if compiled so) */
+	BOOL quitok;     /* ok to quit without confirming */
+	BOOL inited;     /* initialization has been done */
+	STATE bornrules[16]; /* rules for whether a cell is to be born */
+	STATE liverules[16]; /* rules for whether a live cell stays alive */
+	int curgen;      /* current generation for display */
+	int	outputcols;  /* number of columns to save for output */
+	int	outputlastcols;  /* last number of columns output */
+	int	cellcount;   /* number of live cells in generation 0 */
+	long dumpfreq;   /* how often to perform dumps */
+	long dumpcount;  /* counter for dumps */
+	long viewfreq;   /* how often to view results */
+	long viewcount;  /* counter for viewing */
+	//char * dumpfile;   /* dump file name */
+	//char * outputfile; /* file to output results to */
+	TCHAR dumpfile[80];
+	TCHAR outputfile[80];
+};
+
+
 
 /*
  * Data about all of the cells.

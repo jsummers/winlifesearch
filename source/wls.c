@@ -253,7 +253,7 @@ static POINT *GetSymmetricCells(int x,int y,int *num)
 //	int duplist[7];
 //	int i,j,used,moveto,dup;
 
-	s=symmap[symmetry];
+	s=symmap[g.symmetry];
 	n=0;
 
 	if(s & 0x02) {
@@ -331,38 +331,38 @@ static void InitGameSettings(void)
 				currfield[k][i][j]=2;
 			}
 
-	symmetry=0;
+	g.symmetry=0;
 
-	trans_rotate=0;  // 1=90 degrees, 2=180, 3=270;
-	trans_flip=0;
-	trans_x= 0;
-	trans_y= 0;
+	g.trans_rotate=0;  // 1=90 degrees, 2=180, 3=270;
+	g.trans_flip=0;
+	g.trans_x= 0;
+	g.trans_y= 0;
 
 	g.genmax=2;
 
-	curgen=0;
+	g.curgen=0;
 	g.colmax=35;
 	g.rowmax=15;
-	parent=0;
-	allobjects=0;
-	nearcols=0;
-	maxcount=0;
-	userow=0;
-	usecol=0;
-	colcells=0;
-	colwidth=0;
-	followgens=FALSE;
-	follow=FALSE;
-	orderwide=FALSE;
-	ordergens=FALSE;
-	ordermiddle=FALSE;
-	diagsort=0;
-	knightsort=0;
-	fastsym=1;
-	viewfreq=1000000;
-	StringCchCopy(outputfile,80,_T("output.txt"));
+	g.parent=0;
+	g.allobjects=0;
+	g.nearcols=0;
+	g.maxcount=0;
+	g.userow=0;
+	g.usecol=0;
+	g.colcells=0;
+	g.colwidth=0;
+	g.followgens=FALSE;
+	g.follow=FALSE;
+	g.orderwide=FALSE;
+	g.ordergens=FALSE;
+	g.ordermiddle=FALSE;
+	g.diagsort=0;
+	g.knightsort=0;
+	g.fastsym=1;
+	g.viewfreq=1000000;
+	StringCchCopy(g.outputfile,80,_T("output.txt"));
 	saveoutput=0;
-	StringCchCopy(dumpfile,80,_T("dump.txt"));
+	StringCchCopy(g.dumpfile,80,_T("dump.txt"));
 	StringCchCopy(rulestring,20,_T("B3/S23"));
 
 	SetCenter();
@@ -510,35 +510,35 @@ static void DrawGuides(HDC hDC)
 
 
 	// horizontal line
-	if(symmetry==2 || symmetry==6 || symmetry==9) {	
+	if(g.symmetry==2 || g.symmetry==6 || g.symmetry==9) {	
 		MoveToEx(hDC,0,centerpy,NULL);
 		LineTo(hDC,g.colmax*CELLWIDTH,centerpy);
 	}
 
 	// vertical line
-	if(symmetry==1 || symmetry==6 || symmetry==9) {
+	if(g.symmetry==1 || g.symmetry==6 || g.symmetry==9) {
 		MoveToEx(hDC,centerpx,0,NULL);
 		LineTo(hDC,centerpx,g.rowmax*CELLHEIGHT);
 	}
 
 	// diag - forward
-	if(symmetry==3 || symmetry==5 || symmetry>=7) {
+	if(g.symmetry==3 || g.symmetry==5 || g.symmetry>=7) {
 		MoveToEx(hDC,0,g.rowmax*CELLHEIGHT,NULL);
 		LineTo(hDC,g.colmax*CELLWIDTH,0);
 	}
 
 	// diag - backward
-	if(symmetry==4 || symmetry>=7) {
+	if(g.symmetry==4 || g.symmetry>=7) {
 		MoveToEx(hDC,0,0,NULL);
 		LineTo(hDC,g.colmax*CELLWIDTH,g.rowmax*CELLHEIGHT);
 	}
-	if(symmetry==5 || symmetry==8) {
+	if(g.symmetry==5 || g.symmetry==8) {
 		MoveToEx(hDC,0,g.rowmax*CELLHEIGHT,NULL);
 		LineTo(hDC,0,(g.rowmax-2)*CELLHEIGHT);
 		MoveToEx(hDC,g.colmax*CELLWIDTH,0,NULL);
 		LineTo(hDC,g.colmax*CELLWIDTH,2*CELLHEIGHT);
 	}
-	if(symmetry==8) {
+	if(g.symmetry==8) {
 		MoveToEx(hDC,0,0,NULL);
 		LineTo(hDC,2*CELLWIDTH,0);
 		MoveToEx(hDC,g.colmax*CELLWIDTH,g.rowmax*CELLHEIGHT,NULL);
@@ -546,7 +546,7 @@ static void DrawGuides(HDC hDC)
 	}
 		
 		
-	if(trans_rotate || trans_flip || trans_x || trans_y) {
+	if(g.trans_rotate || g.trans_flip || g.trans_x || g.trans_y) {
 		// the px & py values are pixels offsets from the center
 		px1=0;           py1=2*CELLHEIGHT;
 		px2=0;           py2=0;
@@ -560,20 +560,20 @@ static void DrawGuides(HDC hDC)
 
 		// an arrow indicating the ending position
 		// flip (horizontally) if necessary
-		if(trans_flip) {
+		if(g.trans_flip) {
 			px3= -px3;
 		}
 
 		// rotate if necessary
 		// Note: can't rotate by 90 or 270 degrees if centerxodd != centeryodd
 		if(centerxodd != centeryodd)
-			assert(trans_rotate==0 || trans_rotate==2);
+			assert(g.trans_rotate==0 || g.trans_rotate==2);
 
-		switch(trans_rotate) {
+		switch(g.trans_rotate) {
 		case 1:
 			px1=CELLWIDTH*2;
 			py1=0;
-			if(trans_flip)
+			if(g.trans_flip)
 				px3= -px3;
 			else
 				py3= -py3;
@@ -586,7 +586,7 @@ static void DrawGuides(HDC hDC)
 		case 3:
 			px1= -CELLWIDTH*2;
 			py1=0;
-			if(trans_flip)
+			if(g.trans_flip)
 				py3= -py3;
 			else
 				px3= -px3;
@@ -594,12 +594,12 @@ static void DrawGuides(HDC hDC)
 		}
 
 		// translate if necessary
-		px1+=trans_x*CELLWIDTH;
-		px2+=trans_x*CELLWIDTH;
-		px3+=trans_x*CELLWIDTH;
-		py1+=trans_y*CELLHEIGHT;
-		py2+=trans_y*CELLHEIGHT;
-		py3+=trans_y*CELLHEIGHT;
+		px1+=g.trans_x*CELLWIDTH;
+		px2+=g.trans_x*CELLWIDTH;
+		px3+=g.trans_x*CELLWIDTH;
+		py1+=g.trans_y*CELLHEIGHT;
+		py2+=g.trans_y*CELLHEIGHT;
+		py3+=g.trans_y*CELLHEIGHT;
 		
 		SelectObject(hDC,pens.arrow2);
 		MoveToEx(hDC,centerpx+px1,centerpy+py1,NULL);
@@ -638,7 +638,7 @@ static void DrawCell(HDC hDC,int x,int y)
 
 	ClearCell(hDC,x,y,!allsame);
 
-	switch(currfield[curgen][x][y]) {
+	switch(currfield[g.curgen][x][y]) {
 	case 0:        // must be off
 		SelectObject(hDC,pens.cell_off);
 		SelectObject(hDC,GetStockObject(NULL_BRUSH));
@@ -688,15 +688,15 @@ static void Symmetricalize(HDC hDC,int x,int y,int allgens)
 
 	if(allgens) {
 		for(j=0;j<GENMAX;j++)
-			currfield[j][x][y]=currfield[curgen][x][y];
+			currfield[j][x][y]=currfield[g.curgen][x][y];
 	}
 	DrawCell(hDC,x,y);
 
 	for(i=0;i<numpts;i++) {
-		currfield[curgen][pts[i].x][pts[i].y]=currfield[curgen][x][y];
+		currfield[g.curgen][pts[i].x][pts[i].y]=currfield[g.curgen][x][y];
 		if(allgens) {
 			for(j=0;j<GENMAX;j++)
-				currfield[j][pts[i].x][pts[i].y]=currfield[curgen][x][y];
+				currfield[j][pts[i].x][pts[i].y]=currfield[g.curgen][x][y];
 		}
 		DrawCell(hDC,pts[i].x,pts[i].y);
 	}
@@ -795,8 +795,8 @@ static void FixFrozenCells(void)
 	for(x=0;x<COLMAX;x++) {
 		for(y=0;y<ROWMAX;y++) {
 			for(z=0;z<GENMAX;z++) {
-				if(z!=curgen) {
-					if(currfield[curgen][x][y]==4) {
+				if(z!=g.curgen) {
+					if(currfield[g.curgen][x][y]==4) {
 						currfield[z][x][y]=4;
 					}
 					else {  // current not frozen
@@ -833,7 +833,7 @@ static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 	if(y<0 || y>=g.rowmax) return 1;
 
 
-	lastval= currfield[curgen][x][y];
+	lastval= currfield[g.curgen][x][y];
 //	if(lastval==4) allgens=1;       // previously frozen
 
 
@@ -908,8 +908,8 @@ static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 		if(wParam & MK_SHIFT) allgens=1;
 		if(x==startcell.x && y==startcell.y) {
 			selectstate=0;
-			if(currfield[curgen][x][y]==1) newval=2; //currfield[curgen][x][y]=2;
-			else newval=1;  //currfield[curgen][x][y]=1;
+			if(currfield[g.curgen][x][y]==1) newval=2; //currfield[curgen][x][y]=2;
+			else newval=1;  //currfield[g.curgen][x][y]=1;
 			//Symmetricalize(hDC,x,y,allgens);
 		}
 		else if(selectstate==1) {
@@ -922,7 +922,7 @@ static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 
 	case WM_RBUTTONDOWN:     // toggle off/unchecked
 		if(wParam & MK_SHIFT) allgens=1;
-		if(currfield[curgen][x][y]==0) newval=2; //currfield[curgen][x][y]=2;
+		if(currfield[g.curgen][x][y]==0) newval=2; //currfield[curgen][x][y]=2;
 		else newval=0; //currfield[curgen][x][y]=0;
 		break;
 
@@ -979,7 +979,7 @@ static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 		if(newval>=0) {
 			for(i=selectrect.left;i<=selectrect.right;i++) {
 				for(j=selectrect.top;j<=selectrect.bottom;j++) {
-					currfield[curgen][i][j]=newval;
+					currfield[g.curgen][i][j]=newval;
 					Symmetricalize(hDC,i,j,allgens);
 				}
 			}
@@ -995,7 +995,7 @@ static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 //		}
 	}
 	else {
-		if(newval>=0) currfield[curgen][x][y]=newval;
+		if(newval>=0) currfield[g.curgen][x][y]=newval;
 		Symmetricalize(hDC,x,y,allgens);
 	}
 
@@ -1059,12 +1059,12 @@ static void draw_gen_counter(void)
 	si.nMin=0;
 	si.nMax=g.genmax-1;
 	si.nPage=1;
-	si.nPos=curgen;
+	si.nPos=g.curgen;
 	si.nTrackPos=0;
 
 	SetScrollInfo(hwndGenScroll,SB_CTL,&si,TRUE);
 
-	StringCbPrintf(buf,sizeof(buf),_T("%d"),curgen);
+	StringCbPrintf(buf,sizeof(buf),_T("%d"),g.curgen);
 	SetWindowText(hwndGen,buf);
 }
 
@@ -1086,7 +1086,7 @@ void printgen(int gen)
 	int i,j,g1;
 	CELL *cell;
 
-	curgen=gen;
+	g.curgen=gen;
 
 	// copy dbell's format back into mine
 	for(g1=0;g1<g.genmax;g1++) 
@@ -1127,24 +1127,24 @@ static DWORD WINAPI search_thread(LPVOID foo)
 
 		if(abortthread) goto done;
 
-		if ((g.curstatus == FOUND) && userow && (rowinfo[userow].oncount == 0)) {
+		if ((g.curstatus == FOUND) && g.userow && (rowinfo[g.userow].oncount == 0)) {
 			g.curstatus = OK;
 			continue;
 		}
 
-		if ((g.curstatus == FOUND) && !allobjects && subperiods()) {
+		if ((g.curstatus == FOUND) && !g.allobjects && subperiods()) {
 			g.curstatus = OK;
 			continue;
 		}
 
-		if (dumpfreq) {
-			dumpcount = 0;
-			dumpstate(dumpfile);
+		if (g.dumpfreq) {
+			g.dumpcount = 0;
+			dumpstate(g.dumpfile);
 		}
 
-		quitok = (g.curstatus == NOTEXIST);
+		g.quitok = (g.curstatus == NOTEXIST);
 
-		curgen = 0;
+		g.curgen = 0;
 
 //		if (outputfile == NULL) {
 //			getcommands();
@@ -1157,14 +1157,14 @@ static DWORD WINAPI search_thread(LPVOID foo)
 		if (g.curstatus == FOUND) {
 			g.curstatus = OK;
 
-			if (!quiet) {
+			if (!g.quiet) {
 				printgen(0);
 //				ttystatus("Object %ld found.\n", ++foundcount);
 				StringCbPrintf(buf,sizeof(buf),_T("Object %ld found."), ++foundcount);
 				wlsStatus(buf);
 			}
 
-			writegen(outputfile, TRUE);
+			writegen(g.outputfile, TRUE);
 			goto done;
 //			pause_search();
 //			continue;
@@ -1178,7 +1178,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 
 		ttyclose();
 
-		if (!quiet) {
+		if (!g.quiet) {
 //			sprintf(buf,"Search completed, file \"%s\" contains %ld object%s\n",
 //				outputfile, foundcount, (foundcount == 1) ? "" : "s");
 			StringCbPrintf(buf,sizeof(buf),_T("Search completed: %ld object%s found"),
@@ -1250,12 +1250,12 @@ static void start_search(TCHAR *statefile)
 	}
 
 	// set the variables that dbell's code uses
-	coltrans= -trans_x;
-	rowtrans= -trans_y;
-	flipquads= trans_rotate%2;
-	fliprows= (trans_rotate>=2);
-	flipcols= (trans_flip==0 && trans_rotate>=2) ||
-		      (trans_flip==1 && trans_rotate<2);
+	g.coltrans= -g.trans_x;
+	g.rowtrans= -g.trans_y;
+	g.flipquads= g.trans_rotate%2;
+	g.fliprows= (g.trans_rotate>=2);
+	g.flipcols= (g.trans_flip==0 && g.trans_rotate>=2) ||
+		      (g.trans_flip==1 && g.trans_rotate<2);
 
 	// init some things that the orig code doesn't bother to init
 	for(i=0;i<COLMAX;i++) {
@@ -1268,14 +1268,14 @@ static void start_search(TCHAR *statefile)
 	nextset=NULL;
 	baseset=NULL;
 	fullsearchlist=NULL;
-	outputlastcols=0;
+	g.outputlastcols=0;
 	fullcolumns=0;
 	g.curstatus=OK;
 
 	if(statefile) {
 		if(loadstate(statefile) == ERROR1) return;
 
-		printgen(curgen);
+		printgen(g.curgen);
 		draw_gen_counter();
 		searchstate=1;
 /*
@@ -1294,12 +1294,12 @@ static void start_search(TCHAR *statefile)
 
 	}
 	else {
-		inited=FALSE;
+		g.inited=FALSE;
 
 		initcells();
 		baseset = nextset;
 
-		inited = TRUE;
+		g.inited = TRUE;
 
 
 		if(!set_initial_cells()) {
@@ -1398,9 +1398,9 @@ static void open_state(void)
 static void gen_changeby(int delta)
 {
 	if(g.genmax<2) return;
-	curgen+=delta;
-	if(curgen>=g.genmax) curgen=0;
-	if(curgen<0) curgen=g.genmax-1;
+	g.curgen+=delta;
+	if(g.curgen>=g.genmax) g.curgen=0;
+	if(g.curgen<0) g.curgen=g.genmax-1;
 
 	draw_gen_counter();
 	InvalidateRect(hwndMain,NULL,TRUE);
@@ -1439,11 +1439,11 @@ static void copytoclipboard(void)
 		// unfortunately the rulestring is in the wrong format for life32
 		StringCbCopy(buf,sizeof(buf),_T("#P 0 0\r\n#R S"));
 		for(i=0;i<=8;i++) {
-			if(liverules[i]) {StringCbPrintf(buf2,sizeof(buf2),_T("%d"),i); StringCbCat(buf,sizeof(buf),buf2);}
+			if(g.liverules[i]) {StringCbPrintf(buf2,sizeof(buf2),_T("%d"),i); StringCbCat(buf,sizeof(buf),buf2);}
 		}
 		StringCbCat(buf,sizeof(buf),_T("/B"));
 		for(i=0;i<=8;i++) {
-			if(bornrules[i]) {StringCbPrintf(buf2,sizeof(buf2),_T("%d"),i); StringCbCat(buf,sizeof(buf),buf2);}
+			if(g.bornrules[i]) {StringCbPrintf(buf2,sizeof(buf2),_T("%d"),i); StringCbCat(buf,sizeof(buf),buf2);}
 		}
 		StringCbCat(buf,sizeof(buf),_T("\r\n"));
 	}
@@ -1460,7 +1460,7 @@ static void copytoclipboard(void)
 
 	for(j=0;j<g.rowmax;j++) {
 		for(i=0;i<g.colmax;i++) {
-			if(currfield[curgen][i][j]==1)
+			if(currfield[g.curgen][i][j]==1)
 				s[offset+(g.colmax+2)*j+i]='*';
 			else
 				s[offset+(g.colmax+2)*j+i]='.';
@@ -1628,7 +1628,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			copytoclipboard();
 			return 0;
 		case IDC_CLEARGEN:
-			clear_gen(curgen);
+			clear_gen(g.curgen);
 			InvalidateRect(hwndMain,NULL,TRUE);
 			return 0;
 		case IDC_CLEAR:
@@ -1725,20 +1725,20 @@ static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 		htmp=(HWND)(lParam);
 		if(htmp==hwndGenScroll) {
 //			code=LOWORD(wParam);
-			ori_gen=curgen;
+			ori_gen=g.curgen;
 			switch(id) {
-			case SB_LINELEFT: curgen--; break;
-			case SB_LINERIGHT: curgen++; break;
-			case SB_PAGELEFT: curgen--; break;
-			case SB_PAGERIGHT: curgen++; break;
-			case SB_LEFT: curgen=0; break;
-			case SB_RIGHT: curgen=g.genmax-1; break;
-			case SB_THUMBPOSITION: curgen=HIWORD(wParam); break;
-			case SB_THUMBTRACK: curgen=HIWORD(wParam); break;
+			case SB_LINELEFT: g.curgen--; break;
+			case SB_LINERIGHT: g.curgen++; break;
+			case SB_PAGELEFT: g.curgen--; break;
+			case SB_PAGERIGHT: g.curgen++; break;
+			case SB_LEFT: g.curgen=0; break;
+			case SB_RIGHT: g.curgen=g.genmax-1; break;
+			case SB_THUMBPOSITION: g.curgen=HIWORD(wParam); break;
+			case SB_THUMBTRACK: g.curgen=HIWORD(wParam); break;
 			}
-			if(curgen<0) curgen=g.genmax-1;  // wrap around
-			if(curgen>=g.genmax) curgen=0;
-			if(curgen!=ori_gen) {
+			if(g.curgen<0) g.curgen=g.genmax-1;  // wrap around
+			if(g.curgen>=g.genmax) g.curgen=0;
+			if(g.curgen!=ori_gen) {
 				draw_gen_counter();
 				InvalidateRect(hwndMain,NULL,TRUE);
 			}
@@ -1815,24 +1815,24 @@ static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
 			// put these in a separate Validate function
 			if(g.colmax!=g.rowmax) {
-				if(symmap[symmetry] & 0x66) {
+				if(symmap[g.symmetry] & 0x66) {
 					MessageBox(hWnd,_T("Current symmetry requires that rows and ")
 						_T("columns be equal. Your symmetry setting has been altered."),
 						_T("Warning"),MB_OK|MB_ICONWARNING);
-					switch(symmetry) {
-					case 3: case 4: symmetry=0; break;
-					case 7: case 8: symmetry=5; break;
-					case 9: symmetry=6;
+					switch(g.symmetry) {
+					case 3: case 4: g.symmetry=0; break;
+					case 7: case 8: g.symmetry=5; break;
+					case 9: g.symmetry=6;
 					}
 				}
 			}
 
 			if(g.colmax != g.rowmax) {
-				if(trans_rotate==1 || trans_rotate==3) {
+				if(g.trans_rotate==1 || g.trans_rotate==3) {
 					MessageBox(hWnd,_T("Current rotation setting requires that rows and ")
 						_T("columns be equal. Your translation setting has been altered."),
 						_T("Warning"),MB_OK|MB_ICONWARNING);
-					trans_rotate--;
+					g.trans_rotate--;
 				}
 			}
 
@@ -1868,7 +1868,7 @@ static INT_PTR CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 			g.genmax=GetDlgItemInt(hWnd,IDC_PERIOD1,NULL,FALSE);
 			if(g.genmax>GENMAX) g.genmax=GENMAX;
 			if(g.genmax<1) g.genmax=1;
-			if(curgen>=g.genmax) curgen=g.genmax-1;
+			if(g.curgen>=g.genmax) g.curgen=g.genmax-1;
 
 			draw_gen_counter();
 			InvalidateRect(hwndMain,NULL,TRUE);
@@ -1890,12 +1890,12 @@ static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 
 	switch (msg) {
 	case WM_INITDIALOG:
-		SetDlgItemInt(hWnd,IDC_VIEWFREQ,viewfreq,FALSE);
-		SetDlgItemText(hWnd,IDC_DUMPFILE,dumpfile);
-		SetDlgItemInt(hWnd,IDC_DUMPFREQ,dumpfreq,FALSE);
+		SetDlgItemInt(hWnd,IDC_VIEWFREQ,g.viewfreq,FALSE);
+		SetDlgItemText(hWnd,IDC_DUMPFILE,g.dumpfile);
+		SetDlgItemInt(hWnd,IDC_DUMPFREQ,g.dumpfreq,FALSE);
 		CheckDlgButton(hWnd,IDC_OUTPUTFILEYN,saveoutput?BST_CHECKED:BST_UNCHECKED);
-		SetDlgItemText(hWnd,IDC_OUTPUTFILE,outputfile);
-		SetDlgItemInt(hWnd,IDC_OUTPUTCOLS,outputcols,FALSE);
+		SetDlgItemText(hWnd,IDC_OUTPUTFILE,g.outputfile);
+		SetDlgItemInt(hWnd,IDC_OUTPUTCOLS,g.outputcols,FALSE);
 //		EnableWindow(GetDlgItem(hWnd,IDC_VIEWFREQ),FALSE);
 
 //		sprintf(buf,"Enter a period from 1 to %d",GENMAX);
@@ -1906,12 +1906,12 @@ static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 	case WM_COMMAND:
 		switch(id) {
 		case IDOK:
-			viewfreq=GetDlgItemInt(hWnd,IDC_VIEWFREQ,NULL,FALSE);
-			dumpfreq=GetDlgItemInt(hWnd,IDC_DUMPFREQ,NULL,FALSE);
-			GetDlgItemText(hWnd,IDC_DUMPFILE,dumpfile,79);
+			g.viewfreq=GetDlgItemInt(hWnd,IDC_VIEWFREQ,NULL,FALSE);
+			g.dumpfreq=GetDlgItemInt(hWnd,IDC_DUMPFREQ,NULL,FALSE);
+			GetDlgItemText(hWnd,IDC_DUMPFILE,g.dumpfile,79);
 			saveoutput=(IsDlgButtonChecked(hWnd,IDC_OUTPUTFILEYN)==BST_CHECKED);
-			GetDlgItemText(hWnd,IDC_OUTPUTFILE,outputfile,79);
-			outputcols=GetDlgItemInt(hWnd,IDC_OUTPUTCOLS,NULL,FALSE);
+			GetDlgItemText(hWnd,IDC_OUTPUTFILE,g.outputfile,79);
+			g.outputcols=GetDlgItemInt(hWnd,IDC_OUTPUTCOLS,NULL,FALSE);
 			// fall through
 		case IDCANCEL:
 			EndDialog(hWnd, TRUE);
@@ -1930,23 +1930,23 @@ static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 
 	switch (msg) {
 	case WM_INITDIALOG:
-		CheckDlgButton(hWnd,IDC_ORDERWIDE,orderwide);
-		CheckDlgButton(hWnd,IDC_ORDERGENS,ordergens);
-		CheckDlgButton(hWnd,IDC_ORDERMIDDLE,ordermiddle);
-		CheckDlgButton(hWnd,IDC_DIAGSORT,diagsort);
-		CheckDlgButton(hWnd,IDC_KNIGHTSORT,knightsort);
-		CheckDlgButton(hWnd,IDC_FASTSYM,fastsym);
-		CheckDlgButton(hWnd,IDC_ALLOBJECTS,allobjects);
-		CheckDlgButton(hWnd,IDC_PARENT,parent);
-		CheckDlgButton(hWnd,IDC_FOLLOW,follow);
-		CheckDlgButton(hWnd,IDC_FOLLOWGENS,followgens);
-		SetDlgItemInt(hWnd,IDC_NEARCOLS,nearcols,TRUE);
-		SetDlgItemInt(hWnd,IDC_USECOL,usecol,TRUE);
-		SetDlgItemInt(hWnd,IDC_USEROW,userow,TRUE);
+		CheckDlgButton(hWnd,IDC_ORDERWIDE,g.orderwide);
+		CheckDlgButton(hWnd,IDC_ORDERGENS,g.ordergens);
+		CheckDlgButton(hWnd,IDC_ORDERMIDDLE,g.ordermiddle);
+		CheckDlgButton(hWnd,IDC_DIAGSORT,g.diagsort);
+		CheckDlgButton(hWnd,IDC_KNIGHTSORT,g.knightsort);
+		CheckDlgButton(hWnd,IDC_FASTSYM,g.fastsym);
+		CheckDlgButton(hWnd,IDC_ALLOBJECTS,g.allobjects);
+		CheckDlgButton(hWnd,IDC_PARENT,g.parent);
+		CheckDlgButton(hWnd,IDC_FOLLOW,g.follow);
+		CheckDlgButton(hWnd,IDC_FOLLOWGENS,g.followgens);
+		SetDlgItemInt(hWnd,IDC_NEARCOLS,g.nearcols,TRUE);
+		SetDlgItemInt(hWnd,IDC_USECOL,g.usecol,TRUE);
+		SetDlgItemInt(hWnd,IDC_USEROW,g.userow,TRUE);
 
-		SetDlgItemInt(hWnd,IDC_MAXCOUNT,maxcount,TRUE);
-		SetDlgItemInt(hWnd,IDC_COLCELLS,colcells,TRUE);
-		SetDlgItemInt(hWnd,IDC_COLWIDTH,colwidth,TRUE);
+		SetDlgItemInt(hWnd,IDC_MAXCOUNT,g.maxcount,TRUE);
+		SetDlgItemInt(hWnd,IDC_COLCELLS,g.colcells,TRUE);
+		SetDlgItemInt(hWnd,IDC_COLWIDTH,g.colwidth,TRUE);
 
 		SetDlgItemText(hWnd,IDC_RULESTRING,rulestring);
 		return 1;
@@ -1955,22 +1955,22 @@ static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 		switch(id) {
 		case IDOK:
 			//GetDlgItemText(hWnd,IDC_DUMPFILE,buf,79);
-			orderwide=  IsDlgButtonChecked(hWnd,IDC_ORDERWIDE  )?1:0;
-			ordergens=  IsDlgButtonChecked(hWnd,IDC_ORDERGENS  )?1:0;
-			ordermiddle=IsDlgButtonChecked(hWnd,IDC_ORDERMIDDLE)?1:0;
-			diagsort=   IsDlgButtonChecked(hWnd,IDC_DIAGSORT   )?1:0;
-			knightsort= IsDlgButtonChecked(hWnd,IDC_KNIGHTSORT )?1:0;
-			fastsym=    IsDlgButtonChecked(hWnd,IDC_FASTSYM )?1:0;
-			allobjects= IsDlgButtonChecked(hWnd,IDC_ALLOBJECTS )?1:0;
-			parent=     IsDlgButtonChecked(hWnd,IDC_PARENT     )?1:0;
-			follow=     IsDlgButtonChecked(hWnd,IDC_FOLLOW     )?1:0;
-			followgens= IsDlgButtonChecked(hWnd,IDC_FOLLOWGENS )?1:0;
-			nearcols=GetDlgItemInt(hWnd,IDC_NEARCOLS,NULL,TRUE);
-			usecol=GetDlgItemInt(hWnd,IDC_USECOL,NULL,TRUE);
-			userow=GetDlgItemInt(hWnd,IDC_USEROW,NULL,TRUE);
-			maxcount=GetDlgItemInt(hWnd,IDC_MAXCOUNT,NULL,TRUE);
-			colcells=GetDlgItemInt(hWnd,IDC_COLCELLS,NULL,TRUE);
-			colwidth=GetDlgItemInt(hWnd,IDC_COLWIDTH,NULL,TRUE);
+			g.orderwide=  IsDlgButtonChecked(hWnd,IDC_ORDERWIDE  )?1:0;
+			g.ordergens=  IsDlgButtonChecked(hWnd,IDC_ORDERGENS  )?1:0;
+			g.ordermiddle=IsDlgButtonChecked(hWnd,IDC_ORDERMIDDLE)?1:0;
+			g.diagsort=   IsDlgButtonChecked(hWnd,IDC_DIAGSORT   )?1:0;
+			g.knightsort= IsDlgButtonChecked(hWnd,IDC_KNIGHTSORT )?1:0;
+			g.fastsym=    IsDlgButtonChecked(hWnd,IDC_FASTSYM )?1:0;
+			g.allobjects= IsDlgButtonChecked(hWnd,IDC_ALLOBJECTS )?1:0;
+			g.parent=     IsDlgButtonChecked(hWnd,IDC_PARENT     )?1:0;
+			g.follow=     IsDlgButtonChecked(hWnd,IDC_FOLLOW     )?1:0;
+			g.followgens= IsDlgButtonChecked(hWnd,IDC_FOLLOWGENS )?1:0;
+			g.nearcols=GetDlgItemInt(hWnd,IDC_NEARCOLS,NULL,TRUE);
+			g.usecol=GetDlgItemInt(hWnd,IDC_USECOL,NULL,TRUE);
+			g.userow=GetDlgItemInt(hWnd,IDC_USEROW,NULL,TRUE);
+			g.maxcount=GetDlgItemInt(hWnd,IDC_MAXCOUNT,NULL,TRUE);
+			g.colcells=GetDlgItemInt(hWnd,IDC_COLCELLS,NULL,TRUE);
+			g.colwidth=GetDlgItemInt(hWnd,IDC_COLWIDTH,NULL,TRUE);
 			GetDlgItemText(hWnd,IDC_RULESTRING,rulestring,50);
 
 			// fall through
@@ -2001,7 +2001,7 @@ static INT_PTR CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			EnableWindow(GetDlgItem(hWnd,IDC_SYM8),FALSE);
 			EnableWindow(GetDlgItem(hWnd,IDC_SYM9),FALSE);
 		}
-		switch(symmetry) {
+		switch(g.symmetry) {
 		case 1: item=IDC_SYM1; break;
 		case 2: item=IDC_SYM2; break;
 		case 3: item=IDC_SYM3; break;
@@ -2019,16 +2019,16 @@ static INT_PTR CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 	case WM_COMMAND:
 		switch(id) {
 		case IDOK:
-			if(IsDlgButtonChecked(hWnd,IDC_SYM0)==BST_CHECKED) symmetry=0;
-			if(IsDlgButtonChecked(hWnd,IDC_SYM1)==BST_CHECKED) symmetry=1;
-			if(IsDlgButtonChecked(hWnd,IDC_SYM2)==BST_CHECKED) symmetry=2;
-			if(IsDlgButtonChecked(hWnd,IDC_SYM3)==BST_CHECKED) symmetry=3;
-			if(IsDlgButtonChecked(hWnd,IDC_SYM4)==BST_CHECKED) symmetry=4;
-			if(IsDlgButtonChecked(hWnd,IDC_SYM5)==BST_CHECKED) symmetry=5;
-			if(IsDlgButtonChecked(hWnd,IDC_SYM6)==BST_CHECKED) symmetry=6;
-			if(IsDlgButtonChecked(hWnd,IDC_SYM7)==BST_CHECKED) symmetry=7;
-			if(IsDlgButtonChecked(hWnd,IDC_SYM8)==BST_CHECKED) symmetry=8;
-			if(IsDlgButtonChecked(hWnd,IDC_SYM9)==BST_CHECKED) symmetry=9;
+			if(IsDlgButtonChecked(hWnd,IDC_SYM0)==BST_CHECKED) g.symmetry=0;
+			if(IsDlgButtonChecked(hWnd,IDC_SYM1)==BST_CHECKED) g.symmetry=1;
+			if(IsDlgButtonChecked(hWnd,IDC_SYM2)==BST_CHECKED) g.symmetry=2;
+			if(IsDlgButtonChecked(hWnd,IDC_SYM3)==BST_CHECKED) g.symmetry=3;
+			if(IsDlgButtonChecked(hWnd,IDC_SYM4)==BST_CHECKED) g.symmetry=4;
+			if(IsDlgButtonChecked(hWnd,IDC_SYM5)==BST_CHECKED) g.symmetry=5;
+			if(IsDlgButtonChecked(hWnd,IDC_SYM6)==BST_CHECKED) g.symmetry=6;
+			if(IsDlgButtonChecked(hWnd,IDC_SYM7)==BST_CHECKED) g.symmetry=7;
+			if(IsDlgButtonChecked(hWnd,IDC_SYM8)==BST_CHECKED) g.symmetry=8;
+			if(IsDlgButtonChecked(hWnd,IDC_SYM9)==BST_CHECKED) g.symmetry=9;
 
 			InvalidateRect(hwndMain,NULL,TRUE);
 			// fall through
@@ -2051,8 +2051,8 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 
 	switch (msg) {
 	case WM_INITDIALOG:
-		SetDlgItemInt(hWnd,IDC_TRANSX,trans_x,TRUE);
-		SetDlgItemInt(hWnd,IDC_TRANSY,trans_y,TRUE);
+		SetDlgItemInt(hWnd,IDC_TRANSX,g.trans_x,TRUE);
+		SetDlgItemInt(hWnd,IDC_TRANSY,g.trans_y,TRUE);
 
 		if(g.colmax != g.rowmax) {
 			EnableWindow(GetDlgItem(hWnd,IDC_TRANS1),FALSE);
@@ -2061,7 +2061,7 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 			EnableWindow(GetDlgItem(hWnd,IDC_TRANS7),FALSE);
 		}
 
-		switch(trans_rotate + 4*trans_flip) {
+		switch(g.trans_rotate + 4*g.trans_flip) {
 		case 1: item=IDC_TRANS1; break;
 		case 2: item=IDC_TRANS2; break;
 		case 3: item=IDC_TRANS3; break;
@@ -2077,21 +2077,21 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 	case WM_COMMAND:
 		switch(id) {
 		case IDOK:
-			trans_x=GetDlgItemInt(hWnd,IDC_TRANSX,NULL,TRUE);
-			trans_y=GetDlgItemInt(hWnd,IDC_TRANSY,NULL,TRUE);
-			if(trans_x>TRANSMAX) trans_x=TRANSMAX;
-			if(trans_y>TRANSMAX) trans_y=TRANSMAX;
-			if(trans_x< -TRANSMAX) trans_x= -TRANSMAX;
-			if(trans_y< -TRANSMAX) trans_y= -TRANSMAX;
+			g.trans_x=GetDlgItemInt(hWnd,IDC_TRANSX,NULL,TRUE);
+			g.trans_y=GetDlgItemInt(hWnd,IDC_TRANSY,NULL,TRUE);
+			if(g.trans_x>TRANSMAX) g.trans_x=TRANSMAX;
+			if(g.trans_y>TRANSMAX) g.trans_y=TRANSMAX;
+			if(g.trans_x< -TRANSMAX) g.trans_x= -TRANSMAX;
+			if(g.trans_y< -TRANSMAX) g.trans_y= -TRANSMAX;
 
-			if(IsDlgButtonChecked(hWnd,IDC_TRANS0)==BST_CHECKED) { trans_flip=0; trans_rotate=0; }
-			if(IsDlgButtonChecked(hWnd,IDC_TRANS1)==BST_CHECKED) { trans_flip=0; trans_rotate=1; }
-			if(IsDlgButtonChecked(hWnd,IDC_TRANS2)==BST_CHECKED) { trans_flip=0; trans_rotate=2; }
-			if(IsDlgButtonChecked(hWnd,IDC_TRANS3)==BST_CHECKED) { trans_flip=0; trans_rotate=3; }
-			if(IsDlgButtonChecked(hWnd,IDC_TRANS4)==BST_CHECKED) { trans_flip=1; trans_rotate=0; }
-			if(IsDlgButtonChecked(hWnd,IDC_TRANS5)==BST_CHECKED) { trans_flip=1; trans_rotate=1; }
-			if(IsDlgButtonChecked(hWnd,IDC_TRANS6)==BST_CHECKED) { trans_flip=1; trans_rotate=2; }
-			if(IsDlgButtonChecked(hWnd,IDC_TRANS7)==BST_CHECKED) { trans_flip=1; trans_rotate=3; }
+			if(IsDlgButtonChecked(hWnd,IDC_TRANS0)==BST_CHECKED) { g.trans_flip=0; g.trans_rotate=0; }
+			if(IsDlgButtonChecked(hWnd,IDC_TRANS1)==BST_CHECKED) { g.trans_flip=0; g.trans_rotate=1; }
+			if(IsDlgButtonChecked(hWnd,IDC_TRANS2)==BST_CHECKED) { g.trans_flip=0; g.trans_rotate=2; }
+			if(IsDlgButtonChecked(hWnd,IDC_TRANS3)==BST_CHECKED) { g.trans_flip=0; g.trans_rotate=3; }
+			if(IsDlgButtonChecked(hWnd,IDC_TRANS4)==BST_CHECKED) { g.trans_flip=1; g.trans_rotate=0; }
+			if(IsDlgButtonChecked(hWnd,IDC_TRANS5)==BST_CHECKED) { g.trans_flip=1; g.trans_rotate=1; }
+			if(IsDlgButtonChecked(hWnd,IDC_TRANS6)==BST_CHECKED) { g.trans_flip=1; g.trans_rotate=2; }
+			if(IsDlgButtonChecked(hWnd,IDC_TRANS7)==BST_CHECKED) { g.trans_flip=1; g.trans_rotate=3; }
 			InvalidateRect(hwndMain,NULL,TRUE);
 			// fall through
 		case IDCANCEL:
