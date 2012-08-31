@@ -260,16 +260,7 @@ CELL *	backup (void);
 BOOL	subperiods (void);
 void	loopcells (CELL *, CELL *);
 
-BOOL	ttyopen (void);
-BOOL	ttycheck (void);
-BOOL	ttyread (char *, char *, int);
-void	ttyprintf (TCHAR *, ...);
 void	ttystatus (TCHAR *, ...);
-void	ttywrite (char *, int);
-void	ttyhome (void);
-void	ttyeeop (void);
-void	ttyflush (void);
-void	ttyclose (void);
 
 //JES
 void	excludecone (int, int, int);

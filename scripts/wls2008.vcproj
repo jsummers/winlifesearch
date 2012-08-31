@@ -196,10 +196,6 @@
 				RelativePath="..\source\wls.rc"
 				>
 			</File>
-			<File
-				RelativePath="..\source\wlstty.c"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"

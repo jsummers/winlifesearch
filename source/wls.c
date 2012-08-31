@@ -1162,12 +1162,9 @@ static DWORD WINAPI search_thread(LPVOID foo)
 		}
 
 		if (ctx->foundcount == 0) {
-			ttyclose();
 			wlsWarning(_T("No objects found"),0);
 			goto done;
 		}
-
-		ttyclose();
 
 		if (!g.quiet) {
 //			sprintf(buf,"Search completed, file \"%s\" contains %ld object%s\n",
