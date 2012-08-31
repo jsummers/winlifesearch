@@ -1,13 +1,13 @@
 /*
  * Life search program include file.
- * Author: David I. Bell.
+ * Original author: David I. Bell.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include <ctype.h>        //JES, for isdigit()
+#include <ctype.h>
 
 
 /*
@@ -30,7 +30,7 @@
 /*
  * Other definitions
  */
-#define	DUMPVERSION	56		/* version of dump file   JES-was 6 */
+#define	DUMPVERSION	56		/* version of dump file  (was 6) */
 
 #define	ALLOCSIZE	1000		/* chunk size for cell allocation */
 #define	VIEWMULT	1000		/* viewing frequency multiplier */
@@ -62,7 +62,7 @@
 #endif
 
 
-//#define	isdigit(ch)	(((ch) >= '0') && ((ch) <= '9'))  //JES
+//#define	isdigit(ch)	(((ch) >= '0') && ((ch) <= '9'))
 #define	isblank(ch)	(((ch) == ' ') || ((ch) == '\t'))
 
 typedef	unsigned int  PACKED_BOOL;
@@ -127,10 +127,7 @@ struct cell
 	short	col;		/* column of this cell */
 	short	near1;		/* count of cells this cell is near */
 
-
-// JES
 	int specsym;
-
 
 	CELL *	search;		/* cell next to be searched for setting */
 	CELL *	past;		/* cell in the past at this location */
@@ -186,14 +183,14 @@ struct globals_struct {
 	BOOL ordermiddle; /* ordering tries middle columns first */
 	BOOL followgens;  /* try to follow setting of other gens */
 
-	int diagsort;       /* JES - optimize for diagonal objects */
-	int knightsort;     /* JES */
-	int fastsym;        /* JES */
-	int symmetry;       /* JES */
-	int trans_rotate;   /* JES */
-	int trans_flip;     /* JES */
-	int trans_x;        /* JES */
-	int trans_y;        /* JES */
+	int diagsort;
+	int knightsort;
+	int fastsym;
+	int symmetry;
+	int trans_rotate;
+	int trans_flip;
+	int trans_x;
+	int trans_y;
 
 /*
  * These values are not affected when dumping and loading since they
@@ -214,10 +211,8 @@ struct globals_struct {
 	long dumpcount;  /* counter for dumps */
 	long viewfreq;   /* how often to view results */
 	long viewcount;  /* counter for viewing */
-	//char * dumpfile;   /* dump file name */
-	//char * outputfile; /* file to output results to */
-	TCHAR dumpfile[80];
-	TCHAR outputfile[80];
+	TCHAR dumpfile[80];   /* dump file name */
+	TCHAR outputfile[80]; /* file to output results to */
 
 /*
  * Data about all of the cells.
@@ -238,12 +233,9 @@ struct globals_struct {
 };
 
 
-
-
 /*
  * Global procedures
  */
-
 
 void	getcommands (void);
 void	initcells (void);
@@ -262,7 +254,6 @@ void	loopcells (CELL *, CELL *);
 
 void	ttystatus (TCHAR *, ...);
 
-//JES
 void	excludecone (int, int, int);
 void	freezecell (int, int);
 

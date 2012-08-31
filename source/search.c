@@ -5,23 +5,20 @@
  * included with the "xlife 2.0" distribution.  Thanks!
  * Changes for arbitrary Life rules by Nathan S. Thompson.
 
-
   ****** Heavily modified. Modifications not noted consistently.  -JES ******
  */
 
 #include "wls-config.h"
-
 #include <windows.h>
 #include <tchar.h>
 #include <search.h>
+#include "wls.h"
+#include "lifesrc.h"
 
 
 // Uncommenting this line will disable certain features in an attempt
 // to make the search go a little faster. Maybe 10% faster or so...
 //#define FASTER
-
-#include "wls.h"
-#include "lifesrc.h"
 
 
 #define SUMCOUNT 8
@@ -115,7 +112,6 @@ static	__inline STATE	nextstate (STATE, int);
 static __inline int
 sumtodesc(STATE state, int sum)
 {
-//	return ((sum & 0x88) ? (sum + state * 2 + 0x11) : (sum * 2 + state));  // JES
 	return ((sum & 0x88) ? (sum + state * 2 + 0x11) : (sum * 2 + state));
 }
 
@@ -1890,7 +1886,7 @@ transition(state, OFFcount, ONcount)
 
  	on_always = TRUE;
 	off_always = TRUE;
-	UNKcount = SUMCOUNT - OFFcount - ONcount;      // JES
+	UNKcount = SUMCOUNT - OFFcount - ONcount;
  
 	for (i = 0; i <= UNKcount; i++)
 	{
@@ -1934,7 +1930,7 @@ implication(state, OFFcount, ONcount)
 	int	UNKcount;
 	int	i;
 
-	UNKcount = SUMCOUNT - OFFcount - ONcount;     // JES
+	UNKcount = SUMCOUNT - OFFcount - ONcount;
 	flags = 0;
 	
 	if (state == UNK)

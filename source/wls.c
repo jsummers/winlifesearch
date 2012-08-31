@@ -2,12 +2,6 @@
 // a Windows port of David I. Bell's lifesrc program
 // By Jason Summers
 //
-// !!!! PLEASE NOTE !!!!
-// Unlike the original lifesrc, this port is incomplete, full
-// of bugs, and has many serious design problems. If you want to
-// make a good port, you might consider starting over, rather
-// than try to fix up this mess.     -JES
-// 
 
 // Request a newer version of comctl32.dll.
 #ifdef _WIN64
@@ -37,19 +31,13 @@
 #include <assert.h>
 #include "resource.h"
 #include "wls.h"
-
 #include "lifesrc.h"
 #include <strsafe.h>
 
 
 #define CELLHEIGHT 15
-
 #define CELLWIDTH  15
-
-// #define maxfieldsize 87
-// #define maxgens    8
 #define TOOLBARHEIGHT 24
-
 
 static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -61,7 +49,6 @@ static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 static INT_PTR CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-static INT_PTR CALLBACK DlgProcTest(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 
 typedef struct {
@@ -237,8 +224,6 @@ static POINT *GetSymmetricCells(int x,int y,int *num)
 {
 	static POINT pt[7];
 	int s,n;
-//	int duplist[7];
-//	int i,j,used,moveto,dup;
 
 	s=symmap[g.symmetry];
 	n=0;
@@ -298,8 +283,7 @@ static POINT *GetSymmetricCells(int x,int y,int *num)
 	return pt;
 }
 
-// A stupid function
-static void SetCenter(struct wcontext *ctx)
+static void RecalcCenter(struct wcontext *ctx)
 {
 	ctx->centerx= g.colmax/2;
 	ctx->centery= g.rowmax/2;
@@ -352,7 +336,7 @@ static void InitGameSettings(struct wcontext *ctx)
 	StringCchCopy(g.dumpfile,80,_T("dump.txt"));
 	StringCchCopy(g.rulestring,20,_T("B3/S23"));
 
-	SetCenter(ctx);
+	RecalcCenter(ctx);
 }
 
 static void set_main_scrollbars(struct wcontext *ctx, int redraw)
@@ -492,7 +476,7 @@ static void DrawGuides(struct wcontext *ctx, HDC hDC)
 	int centerpx,centerpy;
 	int px1,py1,px2,py2,px3,py3;
 
-	SetCenter(ctx);
+	RecalcCenter(ctx);
 
 	// store the center pixel in some temp vars to make things readable
 	centerpx=ctx->centerx*CELLWIDTH+ctx->centerxodd*(CELLWIDTH/2);
@@ -924,23 +908,18 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 			allgens=1;
 
 		if(vkey=='C' || vkey=='c') {
-			//currfield[curgen][x][y]=2;
 			newval=2;
 		}
 		else if(vkey=='X' || vkey=='x') {
-			//currfield[curgen][x][y]=3;
 			newval=3;
 		}
 		else if(vkey=='A' || vkey=='a') {
-			//currfield[curgen][x][y]=0;
 			newval=0;
 		}
 		else if(vkey=='S' || vkey=='s') {
 			newval=1;
-			//currfield[curgen][x][y]=1;
 		}
 		else if(vkey=='F' || vkey=='f') {
-			//currfield[curgen][x][y]=4;
 			newval=4;
 			allgens=1;
 		}
@@ -948,8 +927,6 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 			return 1;
 		}
 
-//				if(currfield[curgen][x][y]==3) currfield[curgen][x][y]=2;
-//				else currfield[curgen][x][y]=3;
 		break;
 
 	default:
@@ -974,26 +951,11 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 				}
 			}
 		}
-
-//		else {  // remove this??
-//			for(i=selectrect.left;i<=selectrect.right;i++) {
-//				for(j=selectrect.top;j<=selectrect.bottom;j++) {
-//					currfield[curgen][i][j]=currfield[curgen][x][y];
-//					Symmetricalize(ctx, hDC,i,j,allgens);
-//				}
-//			}
-//		}
 	}
 	else {
 		if(newval>=0) currfield[g.curgen][x][y]=newval;
 		Symmetricalize(ctx, hDC,x,y,allgens);
 	}
-
-//	DrawCell(hDC,x,y);
-	// If Ctrl key was held down,
-	// create a "frozen" cell (same in all generations) // WRONG
-
-	
 
 	DrawGuides(ctx, hDC);
 
@@ -1198,7 +1160,6 @@ static void resume_search(struct wcontext *ctx)
 	abortthread=0;
 
 	ctx->searchstate=2;
-	//hthread=CreateThread(NULL,0,search_thread,(LPVOID)0,0,&threadid);
 	ctx->hthread=(HANDLE)_beginthreadex(NULL,0,search_thread,(void*)0,0,&threadid);
 
 
@@ -1313,8 +1274,7 @@ static void pause_search(struct wcontext *ctx)
 		wlsError(_T("No search is running"),0);
 		return;
 	}
-//	SuspendThread(hthread);
-//	wlsMessage("Paused",0);
+
 	abortthread=1;
 	do {
 		GetExitCodeThread(ctx->hthread, &exitcode);
@@ -1335,7 +1295,6 @@ static void pause_search(struct wcontext *ctx)
 
 static void reset_search(struct wcontext *ctx)
 {
-//	HDC hDC;
 	int i,j,k;
 
 	if(ctx->searchstate==0) {
@@ -1344,16 +1303,8 @@ static void reset_search(struct wcontext *ctx)
 	}
 
 	// stop the search thread if it is running
-//	abortthread=1;
 	if(ctx->searchstate==2) {
 		pause_search(ctx);
-/*		do {
-			GetExitCodeThread(hthread, &exitcode);
-			if(exitcode==STILL_ACTIVE) {
-				Sleep(200);
-			}
-		} while(exitcode==STILL_ACTIVE);
-		*/
 	}
 
 
@@ -1372,8 +1323,6 @@ here:
 
 	SetWindowText(ctx->hwndFrame,_T("WinLifeSearch"));
 	wlsStatus(_T(""));
-
-//	wlsMessage("Stopped",0);
 }
 
 static void open_state(struct wcontext *ctx)
@@ -1560,11 +1509,6 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		case IDC_EXIT:
 			DestroyWindow(hWnd);
 			return 0;
-#if 0
-		case IDC_TEST:
-			rv=DialogBox(hInst,"DLGTABS",hWnd,DlgProcTest);
-			return 0;
-#endif
 		case IDC_ABOUT:
 			DialogBox(ctx->hInst,_T("DLGABOUT"),hWnd,DlgProcAbout);
 			return 0;
@@ -1810,7 +1754,7 @@ static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 			if(g.rowmax<1) g.rowmax=1;
 			if(g.colmax>COLMAX) g.colmax=COLMAX;
 			if(g.rowmax>ROWMAX) g.rowmax=ROWMAX;
-			SetCenter(ctx);
+			RecalcCenter(ctx);
 
 			// put these in a separate Validate function
 			if(g.colmax!=g.rowmax) {
@@ -1924,7 +1868,6 @@ static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
-//	char buf[80];
 
 	id=LOWORD(wParam);
 
@@ -2105,23 +2048,3 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 	return 0;		// Didn't process a message
 }
 
-#if 0
-static INT_PTR CALLBACK DlgProcTest(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	WORD id;
-	id=LOWORD(wParam);
-
-	switch (msg) {
-	case WM_INITDIALOG:
-		return 1;   // didn't call SetFocus
-
-	case WM_COMMAND:
-		if (id == IDOK || id == IDCANCEL) {
-			EndDialog(hWnd, TRUE);
-			return 1;
-		}
-		break;
-	}
-	return 0;
-}
-#endif

@@ -2,9 +2,9 @@
  * Life search program - user interactions module.
  * Author: David I. Bell.
 
-
   ****** Heavily modified. Modifications not noted consistently.  -JES ******
  */
+
 #include "wls-config.h"
 #define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
@@ -30,18 +30,7 @@ static	char *	loadfile;	/* file to load state from */
 /*
  * Local procedures
  */
-//static	void	usage (void);
-//static	void	getsetting (char *);
-//static	void	getbackup (char *);
-//static	void	getclear (char *);
-//static	void	getexclude (char *);
-//static	void	getfreeze (char *);
-
-//static	STATUS	loadstate (char *);
-//static	STATUS	readfile (TCHAR *);
-static	BOOL	confirm (char *);
 static	long	getnum (char **, int);
-//static	char *	getstr (char *, char *);
 
 
 /*
@@ -67,14 +56,12 @@ static	int *	param_table[] =
 };
 
 
-
-
 /*
  * Exclude all cells within the previous light cone centered at the
  * specified cell from searching.
  */
 void
-excludecone(row, col, gen)
+excludecone(int row, int col, int gen)
 {
 	int	tgen;
 	int	trow;
@@ -906,26 +893,6 @@ getstr(char *str, char *prompt)
 	return str;
 }
 #endif
-
-
-/*
- * Confirm an action by prompting with the specified string and reading
- * an answer.  Entering 'y' or 'Y' indicates TRUE, everything else FALSE.
- */
-static BOOL
-confirm(char *prompt)
-{
-/*	int	ch;
-
-	ch = *getstr(NULL, prompt);
-
-	if ((ch == 'y') || (ch == 'Y'))
-		return TRUE;
-
-	return FALSE;
-	*/
-	return TRUE;
-}
 
 
 /*
