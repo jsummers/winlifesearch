@@ -238,7 +238,7 @@ struct globals_struct {
  */
 
 void	getcommands (void);
-void	initcells (void);
+STATUS initcells(void);
 void	printgen (int);
 void	writegen (TCHAR *, BOOL);
 void	dumpstate (TCHAR *);
@@ -250,12 +250,12 @@ STATUS	setcell (CELL *, STATE, BOOL);
 CELL *	findcell (int, int, int);
 CELL *	backup (void);
 BOOL	subperiods (void);
-void	loopcells (CELL *, CELL *);
+STATUS loopcells(CELL *, CELL *);
 
 void	ttystatus (TCHAR *, ...);
 
 void	excludecone (int, int, int);
-void	freezecell (int, int);
+STATUS freezecell(int, int);
 
 BOOL	setrules(TCHAR *);
 #ifdef UNICODE

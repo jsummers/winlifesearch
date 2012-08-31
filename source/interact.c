@@ -90,12 +90,13 @@ excludecone(int row, int col, int gen)
  * the generation into the same loop so that they will be forced
  * to have the same state.
  */
-void
+STATUS
 freezecell(int row, int col)
 {
 	int	gen;
 	CELL *	cell0;
 	CELL *	cell;
+	STATUS ret;
 
 	cell0 = findcell(row, col, 0);
 
@@ -105,8 +106,10 @@ freezecell(int row, int col)
 
 		cell->frozen = TRUE;
 
-		loopcells(cell0, cell);
+		ret = loopcells(cell0, cell);
+		if(ret!=OK) return ret;
 	}
+	return OK;
 }
 
 /*
@@ -515,6 +518,7 @@ STATUS loadstate(TCHAR *file1)
 	int	row;
 	int	col;
 	int	gen;
+	STATUS ret;
 	STATE	state;
 	BOOL	free;
 //	BOOL	choose;
@@ -640,7 +644,10 @@ STATUS loadstate(TCHAR *file1)
 	/*
 	 * Initialize the cells.
 	 */
-	initcells();
+	if(OK != initcells()) {
+		fclose(fp);
+		return ERROR1;
+	}
 
 	/*
 	 * Handle cells which have been set.
@@ -701,7 +708,11 @@ STATUS loadstate(TCHAR *file1)
 		row = getnum(&cp, 0);
 		col = getnum(&cp, 0);
 
-		freezecell(row, col);
+		ret = freezecell(row, col);
+		if(ret!=OK) {
+			fclose(fp);
+			return ERROR1;
+		}
 
 		buf[0] = '\0';
 		fgets(buf, LINESIZE, fp);

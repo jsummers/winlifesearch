@@ -121,11 +121,12 @@ sumtodesc(STATE state, int sum)
  * Each cell in the active area is set to unknown state.
  * Boundary cells are set to zero state.
  */
-void
+STATUS
 initcells()
 {
 	int	row, col, gen;
 	int	i;
+	STATUS ret;
 	BOOL	edge;
 	CELL *	cell;
 	CELL *	cell2;
@@ -146,7 +147,7 @@ initcells()
 		(g.coltrans < -TRANSMAX) || (g.coltrans > TRANSMAX))
 	{
 		wlsError(_T("ROW, COL, GEN, or TRANS out of range"),0);
-		exit(1);
+		return ERROR1;
 	}
 
 	/*
@@ -210,7 +211,8 @@ initcells()
 //					fwdsym || bwdsym) && !edge)
 				if(g.symmetry)
 				{
-					loopcells(cell, symcell(cell));
+					ret = loopcells(cell, symcell(cell));
+					if(ret!=OK) return ret;
 				}
 			}
 		}
@@ -269,6 +271,7 @@ initcells()
 	g.curstatus = OK;
 	inittransit();
 	initimplic();
+	return OK;
 }
 
 
@@ -1388,12 +1391,12 @@ mapcell(cell)
  * Symmetry uses this feature, and so does setting stable cells.
  * If any cells in the loop are frozen, then they all are.
  */
-void loopcells(CELL *cell1, CELL *cell2)
+STATUS loopcells(CELL *cell1, CELL *cell2)
 {
 	CELL *	cell;
 	BOOL	frozen;
 
-	if(cell2==NULL_CELL) return;
+	if(cell2==NULL_CELL) return OK;
 
 	/*
 	 * Check simple cases of equality, or of either cell
@@ -1401,13 +1404,12 @@ void loopcells(CELL *cell1, CELL *cell2)
 	 */
 	if ((cell1 == deadcell) || (cell2 == deadcell))
 	{
-		fprintf(stderr, "Attemping to use deadcell in a loop\n");
-
-		exit(1);
+		wlsError(_T("Attemping to use deadcell in a loop"),0);
+		return ERROR1;
 	}
 
 	if (cell1 == cell2)
-		return;
+		return OK;
 
 	/*
 	 * Make the cells belong to their own loop if required.
@@ -1427,7 +1429,7 @@ void loopcells(CELL *cell1, CELL *cell2)
 	for (cell = cell1->loop; cell != cell1; cell = cell->loop)
 	{
 		if (cell == cell2)
-			return;
+			return OK;
 	}
 
 	/*
@@ -1459,6 +1461,7 @@ void loopcells(CELL *cell1, CELL *cell2)
 		for (cell = cell1->loop; cell != cell1; cell = cell->loop)
 			cell->frozen = TRUE;
 	}
+	return OK;
 }
 
 

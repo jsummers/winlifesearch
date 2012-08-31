@@ -1275,7 +1275,9 @@ static void start_search(struct wcontext *ctx, TCHAR *statefile)
 	else {
 		g.inited=FALSE;
 
-		initcells();
+		if(OK != initcells()) {
+			return;
+		}
 		g.baseset = g.nextset;
 
 		g.inited = TRUE;
