@@ -87,6 +87,7 @@ struct wcontext {
 	brushes_type brushes;
 	int centerx,centery,centerxodd,centeryodd;
 	POINT scrollpos;
+	__int64 showcount_tot;
 };
 
 struct globals_struct g;
@@ -1059,13 +1060,13 @@ static void draw_gen_counter(struct wcontext *ctx)
 
 void showcount(int c)
 {
-	TCHAR buf[40];
-	static int tot=0;
+	TCHAR buf[80];
+	struct wcontext *ctx = gctx;
 
-	if(c<0) tot=0;
-	else tot+=c;
+	if(c<0) ctx->showcount_tot=0;
+	else ctx->showcount_tot+=c;
 
-	StringCbPrintf(buf,sizeof(buf),_T("WinLifeSearch [%d]"),tot);
+	StringCbPrintf(buf,sizeof(buf),_T("WinLifeSearch [%I64d]"),ctx->showcount_tot);
 	SetWindowText(gctx->hwndFrame,buf);
 }
 
