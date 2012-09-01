@@ -539,7 +539,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	UninitApp(ctx);
 
 	free(ctx);
-	return (msg.wParam);		/* Returns the value from PostQuitMessage */
+	return (int)msg.wParam; /* Returns the value from PostQuitMessage */
 }
 
 
