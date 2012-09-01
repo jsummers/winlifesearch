@@ -2,13 +2,9 @@
 // a Windows port of David I. Bell's lifesrc program
 // By Jason Summers
 //
-// !!!! PLEASE NOTE !!!!
-// Unlike the original lifesrc, this port is incomplete, full
-// of bugs, and has many serious design problems. If you want to
-// make a good port, you might consider starting over, rather
-// than try to fix up this mess.     -JES
-// 
 
+#include "wls-config.h"
+#define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include <stdio.h>
 #include <process.h>
@@ -37,17 +33,16 @@ HINSTANCE hInst;
 HWND hwndFrame,hwndMain,hwndToolbar;
 HWND hwndGen,hwndGenScroll;
 
-LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK DlgProcTest(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 
 int selectstate=0;
@@ -151,7 +146,7 @@ BOOL RegisterClasses(HANDLE hInstance)
 	HICON iconWLS;
 
 	wc.style = 0;
-	wc.lpfnWndProc = (WNDPROC)WndProcFrame;
+	wc.lpfnWndProc = WndProcFrame;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = hInstance;
@@ -164,7 +159,7 @@ BOOL RegisterClasses(HANDLE hInstance)
 	RegisterClass(&wc);
 
 	wc.style = CS_OWNDC;
-	wc.lpfnWndProc = (WNDPROC)WndProcMain;
+	wc.lpfnWndProc = WndProcMain;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = hInstance;
@@ -176,7 +171,7 @@ BOOL RegisterClasses(HANDLE hInstance)
 	RegisterClass(&wc);
 	
 	wc.style = 0;
-	wc.lpfnWndProc = (WNDPROC)WndProcToolbar;
+	wc.lpfnWndProc = WndProcToolbar;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = hInstance;
@@ -443,7 +438,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			DispatchMessage(&msg);
 		}
 	}
-	return (msg.wParam);		/* Returns the value from PostQuitMessage */
+	return (int)msg.wParam; /* Returns the value from PostQuitMessage */
 }
 
 
@@ -1807,7 +1802,7 @@ void copytoclipboard(void)
 		strcat(buf,"\r\n");
 	}
 
-	offset=strlen(buf);
+	offset=lstrlen(buf);
 
 	size=offset+(colmax+2)*rowmax+1;
 	hClip=GlobalAlloc(GMEM_MOVEABLE|GMEM_DDESHARE,size);
@@ -1836,11 +1831,10 @@ void copytoclipboard(void)
 }
 
 /****************************************************************************/
-LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 	POINT pt;
-	int rv;
 
 	id=LOWORD(wParam);
 
@@ -1915,9 +1909,6 @@ LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		switch(id) {
 		case IDC_EXIT:
 			DestroyWindow(hWnd);
-			return 0;
-		case IDC_TEST:
-			rv=DialogBox(hInst,"DLGTABS",hWnd,DlgProcTest);
 			return 0;
 		case IDC_ABOUT:
 			DialogBox(hInst,"DLGABOUT",hWnd,DlgProcAbout);
@@ -2087,7 +2078,7 @@ LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 
 
-LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 	id = sizeof(CELL);
@@ -2144,7 +2135,7 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 
-LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	HWND htmp;
 	WORD id;
@@ -2204,7 +2195,7 @@ LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 	return (DefWindowProc(hWnd, msg, wParam, lParam));
 }
 
-BOOL CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 	id=LOWORD(wParam);
@@ -2223,7 +2214,7 @@ BOOL CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return 0;		// Didn't process a message
 }
 
-BOOL CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 	id=LOWORD(wParam);
@@ -2279,7 +2270,7 @@ BOOL CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 
-BOOL CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 	char buf[80];
@@ -2312,7 +2303,7 @@ BOOL CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return 0;		// Didn't process a message
 }
 
-BOOL CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 
@@ -2352,7 +2343,7 @@ BOOL CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return 0;		// Didn't process a message
 }
 
-BOOL CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 
@@ -2426,7 +2417,7 @@ BOOL CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return 0;		// Didn't process a message
 }
 
-BOOL CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 	int item;
@@ -2483,7 +2474,7 @@ BOOL CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 
-BOOL CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 	int item;
@@ -2544,25 +2535,4 @@ BOOL CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 	return 0;		// Didn't process a message
 }
 
-
-
-
-BOOL CALLBACK DlgProcTest(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	WORD id;
-	id=LOWORD(wParam);
-
-	switch (msg) {
-	case WM_INITDIALOG:
-		return 1;   // didn't call SetFocus
-
-	case WM_COMMAND:
-		if (id == IDOK || id == IDCANCEL) {
-			EndDialog(hWnd, TRUE);
-			return 1;
-		}
-		break;
-	}
-	return 0;
-}
 

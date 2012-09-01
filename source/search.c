@@ -15,6 +15,7 @@
  */
 #define	EXTERN
 
+#include "wls-config.h"
 #include <windows.h>
 #include "wls.h"
 #include "lifesrc.h"

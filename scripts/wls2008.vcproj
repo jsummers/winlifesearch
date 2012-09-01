@@ -356,10 +356,6 @@
 				RelativePath="..\source\wls.rc"
 				>
 			</File>
-			<File
-				RelativePath="..\source\wlstty.c"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -372,6 +368,10 @@
 			</File>
 			<File
 				RelativePath="..\source\resource.h"
+				>
+			</File>
+			<File
+				RelativePath="..\source\wls-config.h"
 				>
 			</File>
 			<File

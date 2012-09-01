@@ -5,9 +5,12 @@
 
   ****** Heavily modified. Modifications not noted consistently.  -JES ******
  */
+#include "wls-config.h"
+#define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include "lifesrc.h"
 #include "wls.h"
+#include <strsafe.h>
 
 extern int origfield[GENMAX][COLMAX][ROWMAX];
 
@@ -884,6 +887,21 @@ setrules(cp)
 	return TRUE;
 }
 
+
+/*
+ * Print a status message, like printf.
+ * The string length is limited to 256 characters.
+ */
+void ttystatus(TCHAR * fmt, ...)
+{
+	va_list ap;
+	TCHAR buf[256];
+
+	va_start(ap, fmt);
+	StringCbVPrintf(buf, sizeof(buf), fmt, ap);
+	va_end(ap);
+	wlsMessage(buf,0);
+}
 
 
 /* END CODE */
