@@ -166,60 +166,60 @@ struct cell
 #endif
 
 
-/*
- * Current parameter values for the program to be saved over runs.
- * These values are dumped and loaded by the dump and load commands.
- * If you add another parameter, be sure to also add it to param_table,
- * preferably at the end so as to minimize dump file incompatibilities.
- */
-EXTERN	STATUS	curstatus;	/* current status of search */
-EXTERN	int	rowmax;		/* maximum number of rows */
-EXTERN	int	colmax;		/* maximum number of columns */
-EXTERN	int	genmax;		/* maximum number of generations */
-EXTERN	int	rowtrans;	/* translation of rows */
-EXTERN	int	coltrans;	/* translation of columns */
-EXTERN	BOOL	rowsym;		/* enable row symmetry starting at column */
-EXTERN	BOOL	colsym;		/* enable column symmetry starting at row */
-EXTERN	BOOL	pointsym;	/* enable symmetry with central point */
-EXTERN	BOOL	fwdsym;		/* enable forward diagonal symmetry */
-EXTERN	BOOL	bwdsym;		/* enable backward diagonal symmetry */
-EXTERN	BOOL	fliprows;	/* flip rows at column number from last to first generation */
-EXTERN	BOOL	flipcols;	/* flip columns at row number from last to first generation */
-EXTERN	BOOL	flipquads;	/* flip quadrants from last to first gen */
-EXTERN	BOOL	parent;		/* only look for parents */
-EXTERN	BOOL	allobjects;	/* look for all objects including subperiods */
-EXTERN	int	nearcols;	/* maximum distance to be near columns */
-EXTERN	int	maxcount;	/* maximum number of cells in generation 0 */
-EXTERN	int	userow;		/* row that must have at least one ON cell */
-EXTERN	int	usecol;		/* column that must have at least one ON cell */
-EXTERN	int	colcells;	/* maximum cells in a column */
-EXTERN	int	colwidth;	/* maximum width of each column */
-EXTERN	BOOL	follow;		/* follow average position of previous column */
-EXTERN	BOOL	orderwide;	/* ordering tries to find wide objects */
-EXTERN	BOOL	ordergens;	/* ordering tries all gens first */
-EXTERN	BOOL	ordermiddle;	/* ordering tries middle columns first */
-EXTERN	BOOL	followgens;	/* try to follow setting of other gens */
-EXTERN  BOOL    smart;      /* use smart method (KAS) */
-EXTERN  BOOL    smarton;
-EXTERN  BOOL    combine;
-EXTERN  BOOL    combining;
-EXTERN  int smartwindow; /* no. of cells to check */
-EXTERN  int smartthreshold; /* check threshold */
-EXTERN  int smartstatlen;
-EXTERN  int smartstatwnd;
-EXTERN  int smartstatsumlen;
-EXTERN  int smartstatsumwnd;
-EXTERN  int smartstatsumlenc;
-EXTERN  int smartstatsumwndc;
-
-
-EXTERN  int  diagsort;       /* JES - optimize for diagonal objects */
-EXTERN  int  knightsort;     /* JES */
-EXTERN  int  symmetry;       /* JES */
-EXTERN  int  trans_rotate;   /* JES */
-EXTERN  int  trans_flip;     /* JES */
-EXTERN  int  trans_x;        /* JES */
-EXTERN  int  trans_y;        /* JES */
+struct globals_struct {
+	/*
+	 * Current parameter values for the program to be saved over runs.
+	 * These values are dumped and loaded by the dump and load commands.
+	 * If you add another parameter, be sure to also add it to param_table,
+	 * preferably at the end so as to minimize dump file incompatibilities.
+	 */
+	STATUS curstatus;	/* current status of search */
+	int rowmax;		/* maximum number of rows */
+	int colmax;		/* maximum number of columns */
+	int genmax;		/* maximum number of generations */
+	int rowtrans;	/* translation of rows */
+	int coltrans;	/* translation of columns */
+	BOOL rowsym;		/* enable row symmetry starting at column */
+	BOOL colsym;		/* enable column symmetry starting at row */
+	BOOL pointsym;	/* enable symmetry with central point */
+	BOOL fwdsym;		/* enable forward diagonal symmetry */
+	BOOL bwdsym;		/* enable backward diagonal symmetry */
+	BOOL fliprows;	/* flip rows at column number from last to first generation */
+	BOOL flipcols;	/* flip columns at row number from last to first generation */
+	BOOL flipquads;	/* flip quadrants from last to first gen */
+	BOOL parent;		/* only look for parents */
+	BOOL allobjects;	/* look for all objects including subperiods */
+	int nearcols;	/* maximum distance to be near columns */
+	int maxcount;	/* maximum number of cells in generation 0 */
+	int userow;		/* row that must have at least one ON cell */
+	int usecol;		/* column that must have at least one ON cell */
+	int colcells;	/* maximum cells in a column */
+	int colwidth;	/* maximum width of each column */
+	BOOL follow;		/* follow average position of previous column */
+	BOOL orderwide;	/* ordering tries to find wide objects */
+	BOOL ordergens;	/* ordering tries all gens first */
+	BOOL ordermiddle;	/* ordering tries middle columns first */
+	BOOL followgens;	/* try to follow setting of other gens */
+	BOOL smart;      /* use smart method (KAS) */
+	BOOL smarton;
+	BOOL combine;
+	BOOL combining;
+	int smartwindow; /* no. of cells to check */
+	int smartthreshold; /* check threshold */
+	int smartstatlen;
+	int smartstatwnd;
+	int smartstatsumlen;
+	int smartstatsumwnd;
+	int smartstatsumlenc;
+	int smartstatsumwndc;
+	int diagsort;
+	int knightsort;
+	int symmetry;
+	int trans_rotate;
+	int trans_flip;
+	int trans_x;
+	int trans_y;
+};
 
 /*
  * These values are not affected when dumping and loading since they

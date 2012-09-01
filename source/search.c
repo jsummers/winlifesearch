@@ -25,8 +25,9 @@
 
 #define SUMCOUNT 8
 
+struct globals_struct g;
+
 extern volatile int abortthread;
-extern int symmetry;
 extern int stoponstep;
 
 /*
@@ -108,11 +109,11 @@ initcells()
 	dummycolinfo.oncount=0;
 
 
-	if ((rowmax <= 0) || (rowmax > ROWMAX) ||
-		(colmax <= 0) || (colmax > COLMAX) ||
-		(genmax <= 0) || (genmax > GENMAX) ||
-		(rowtrans < -TRANSMAX) || (rowtrans > TRANSMAX) ||
-		(coltrans < -TRANSMAX) || (coltrans > TRANSMAX))
+	if ((g.rowmax <= 0) || (g.rowmax > ROWMAX) ||
+		(g.colmax <= 0) || (g.colmax > COLMAX) ||
+		(g.genmax <= 0) || (g.genmax > GENMAX) ||
+		(g.rowtrans < -TRANSMAX) || (g.rowtrans > TRANSMAX) ||
+		(g.coltrans < -TRANSMAX) || (g.coltrans > TRANSMAX))
 	{
 		wlsError(_T("ROW, COL, GEN, or TRANS out of range"),0);
 		exit(1);
@@ -124,14 +125,14 @@ initcells()
 	/*
 	 * Link the cells together.
 	 */
-	for (col = 0; col <= colmax+1; col++)
+	for (col = 0; col <= g.colmax+1; col++)
 	{
-		for (row = 0; row <= rowmax+1; row++)
+		for (row = 0; row <= g.rowmax+1; row++)
 		{
-			for (gen = 0; gen < genmax; gen++)
+			for (gen = 0; gen < g.genmax; gen++)
 			{
 				edge = ((row == 0) || (col == 0) ||
-					(row > rowmax) || (col > colmax));
+					(row > g.rowmax) || (col > g.colmax));
 
 				cell = findcell(row, col, gen);
 				cell->gen = gen;
@@ -161,10 +162,10 @@ initcells()
 				 * wrapping around at the ends.
 				 */
 				cell->past = findcell(row, col,
-					(gen+genmax-1) % genmax);
+					(gen+g.genmax-1) % g.genmax);
 
 				cell->future = findcell(row, col,
-					(gen+1) % genmax);
+					(gen+1) % g.genmax);
 
 				/*
 				 * If this is not an edge cell, and
@@ -172,7 +173,7 @@ initcells()
 				 * this cell in the same loop as the
 				 * next symmetrical cell.
 				 */
-				if(symmetry && !edge)
+				if(g.symmetry && !edge)
 				{
 					loopcells(cell, symcell(cell));
 				}
@@ -186,9 +187,9 @@ initcells()
 	 * and select one cell from each loop as active
 	 */
 
-	for (col = 1; col <= colmax; col++) {
-		for (row = 1; row <= rowmax; row++) {
-			for (gen = 0; gen < genmax; gen++) {
+	for (col = 1; col <= g.colmax; col++) {
+		for (row = 1; row <= g.rowmax; row++) {
+			for (gen = 0; gen < g.genmax; gen++) {
 				cell = findcell(row, col, gen);
 
 				if (cell->active) {
@@ -208,11 +209,11 @@ initcells()
 	 * and the first generation, then change the future and past pointers
 	 * to implement it.  This is for translations and flips.
 	 */
-	if (rowtrans || coltrans || fliprows || flipcols || flipquads)
+	if (g.rowtrans || g.coltrans || g.fliprows || g.flipcols || g.flipquads)
 	{
-		for (row = 0; row <= rowmax+1; row++)
+		for (row = 0; row <= g.rowmax+1; row++)
 		{
-			for (col = 0; col <= colmax+1; col++)
+			for (col = 0; col <= g.colmax+1; col++)
 			{
 				cell = findcell(row, col, 0);
 				cell2 = mapcell(cell);
@@ -225,9 +226,9 @@ initcells()
 	/*
 	 * Initialize the row and column info addresses for generation 0.
 	 */
-	for (row = 1; row <= rowmax; row++)
+	for (row = 1; row <= g.rowmax; row++)
 	{
-		for (col = 1; col <= colmax; col++)
+		for (col = 1; col <= g.colmax; col++)
 		{
 			cell = findcell(row, col, 0);
 			cell->rowinfo = &rowinfo[row];
@@ -235,9 +236,9 @@ initcells()
 		}
 	}
 
-	if (smart) {
+	if (g.smart) {
 		getunknown = getsmartunknown; // KAS
-	} else if (follow) {
+	} else if (g.follow) {
 		getunknown = getaverageunknown;
 	} else {
 		getunknown = getnormalunknown;
@@ -248,7 +249,7 @@ initcells()
 
 	searchset = searchtable;
 
-	curstatus = OK;
+	g.curstatus = OK;
 	initimplic();
 
 	inited = TRUE;
@@ -280,11 +281,11 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 	 * If on equal position or not ordering by all generations
 	 * then sort primarily by generations
 	 */
-	if (((c1->row == c2->row) && (c1->col == c2->col)) || !ordergens)
+	if (((c1->row == c2->row) && (c1->col == c2->col)) || !g.ordergens)
 	{
 		// Put generation 0 first
 		// or if calculating parents, put generation 0 last
-		if (parent)
+		if (g.parent)
 		{
 			if (c1->gen < c2->gen) return 1;
 			if (c1->gen > c2->gen) return -1;
@@ -295,17 +296,17 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 		// if we are here, it is the same cell
 	}
 
-	if(diagsort) {
+	if(g.diagsort) {
 		if(c1->col+c1->row > c2->col+c2->row) return 1;
 		if(c1->col+c1->row < c2->col+c2->row) return -1;
-		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (orderwide)?1:(-1);
-		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (orderwide)?(-1):1;
+		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (g.orderwide)?1:(-1);
+		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (g.orderwide)?(-1):1;
 	}
-	if(knightsort) {
+	if(g.knightsort) {
 		if(c1->col*2+c1->row > c2->col*2+c2->row) return 1;
 		if(c1->col*2+c1->row < c2->col*2+c2->row) return -1;
-		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (orderwide)?1:(-1);
-		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (orderwide)?(-1):1;
+		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (g.orderwide)?1:(-1);
+		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (g.orderwide)?(-1):1;
 	}
 	
 	/*
@@ -314,9 +315,9 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 	 * But if middle ordering is set, the ordering is from the center
 	 * column outwards.
 	 */
-	if (ordermiddle)
+	if (g.ordermiddle)
 	{
-		midcol = (colmax + 1) / 2;
+		midcol = (g.colmax + 1) / 2;
 
 		dif1 = abs(c1->col - midcol);
 
@@ -339,15 +340,15 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 	 * opposite of the desired order because the initial setting
 	 * for new cells is OFF.
 	 */
-	midrow = (rowmax + 1) / 2;
+	midrow = (g.rowmax + 1) / 2;
 
 	dif1 = abs(c1->row - midrow);
 
 	dif2 = abs(c2->row - midrow);
 
-	if (dif1 < dif2) return (orderwide ? -1 : 1);
+	if (dif1 < dif2) return (g.orderwide ? -1 : 1);
 
-	if (dif1 > dif2) return (orderwide ? 1 : -1);
+	if (dif1 > dif2) return (g.orderwide ? 1 : -1);
 
 	return 0;
 }
@@ -372,9 +373,9 @@ initsearchorder()
 	 */
 	count = 0;
 
-	for (gen = 0; gen < genmax; gen++) {
-		for (col = 1; col <= colmax; col++) {
-			for (row = 1; row <= rowmax; row++)	{
+	for (gen = 0; gen < g.genmax; gen++) {
+		for (col = 1; col <= g.colmax; col++) {
+			for (row = 1; row <= g.rowmax; row++)	{
 				cell = findcell(row, col, gen);
 				// cells must be already loaded!!!
 				if ((cell->active) && (cell->state == UNK) && (!cell->unchecked))
@@ -430,13 +431,13 @@ rescell(CELL *cell)
 				--cell->rowinfo->oncount;
 				--cell->colinfo->oncount;
 				cell->colinfo->sumpos -= cell->row;
-				if (nearcols) adjustnear(cell, -1);
+				if (g.nearcols) adjustnear(cell, -1);
 				--g0oncellcount;
-				if (cell->colinfo->setcount == rowmax) --fullcolumns;
+				if (cell->colinfo->setcount == g.rowmax) --fullcolumns;
 				--cell->colinfo->setcount;
 			}
 
-			if (combining && (cell->combined != UNK))
+			if (g.combining && (cell->combined != UNK))
 			{
 				if (cell->combined == ON) 
 				{
@@ -454,12 +455,12 @@ rescell(CELL *cell)
 			cell->state = UNK;
 			cell->free = TRUE;
 			if (cell->gen == 0) {
-				if (cell->colinfo->setcount == rowmax) --fullcolumns;
+				if (cell->colinfo->setcount == g.rowmax) --fullcolumns;
 				--cell->colinfo->setcount;
 
 			}
 
-			if (combining && (cell->combined != UNK))
+			if (g.combining && (cell->combined != UNK))
 			{
 				if (cell->combined == OFF) 
 				{
@@ -502,7 +503,7 @@ setcell(CELL *cell, STATE state, BOOL free)
 		return FALSE;
 	}
 
-	if (combining && (differentcombinedcells == 0)) return FALSE;
+	if (g.combining && (differentcombinedcells == 0)) return FALSE;
 
 	c1 = cell;
 
@@ -511,34 +512,34 @@ setcell(CELL *cell, STATE state, BOOL free)
 		// first let's examine the stats
 		do {
 			if (cell->gen == 0) {
-				if ((usecol != 0)
-					&& (colinfo[usecol].oncount == 0)
-					&& (colinfo[usecol].setcount == rowmax) && inited)
+				if ((g.usecol != 0)
+					&& (colinfo[g.usecol].oncount == 0)
+					&& (colinfo[g.usecol].setcount == g.rowmax) && inited)
 				{
 					return FALSE;
 				}
 
-				if ((maxcount != 0) && (g0oncellcount >= maxcount))
+				if ((g.maxcount != 0) && (g0oncellcount >= g.maxcount))
 				{
 					return FALSE;
 				}
 
-				if (nearcols && (cell->near1 <= 0) && (cell->col > 1)
+				if (g.nearcols && (cell->near1 <= 0) && (cell->col > 1)
 					&& inited)
 				{
 					return FALSE;
 				}
 
-				if (colcells && (cell->colinfo->oncount >= colcells)
+				if (g.colcells && (cell->colinfo->oncount >= g.colcells)
 					&& inited)
 				{
 					return FALSE;
 				}
 
-				if (colwidth && inited && checkwidth(cell))
+				if (g.colwidth && inited && checkwidth(cell))
 					return FALSE;
 
-				if (nearcols) adjustnear(cell, 1);
+				if (g.nearcols) adjustnear(cell, 1);
 
 				cell->rowinfo->oncount++;
 
@@ -546,7 +547,7 @@ setcell(CELL *cell, STATE state, BOOL free)
 
 				cell->colinfo->setcount++;
 
-				if (cell->colinfo->setcount == rowmax) fullcolumns++;
+				if (cell->colinfo->setcount == g.rowmax) fullcolumns++;
 
 				cell->colinfo->sumpos += cell->row;
 
@@ -569,7 +570,7 @@ setcell(CELL *cell, STATE state, BOOL free)
 
 			}
 
-			if (combining &&(cell->combined != UNK))
+			if (g.combining &&(cell->combined != UNK))
 			{
 				if (cell->combined == ON) 
 				{
@@ -588,16 +589,16 @@ setcell(CELL *cell, STATE state, BOOL free)
 		// setting state OFF is somewhat easier
 		do {
 			if (cell->gen == 0) {
-				if ((usecol != 0)
-					&& (colinfo[usecol].oncount == 0)
-					&& (colinfo[usecol].setcount == rowmax) && inited)
+				if ((g.usecol != 0)
+					&& (colinfo[g.usecol].oncount == 0)
+					&& (colinfo[g.usecol].setcount == g.rowmax) && inited)
 				{
 					return FALSE;
 				}
 
 				cell->colinfo->setcount++;
 
-				if (cell->colinfo->setcount == rowmax) fullcolumns++;
+				if (cell->colinfo->setcount == g.rowmax) fullcolumns++;
 			}
 
 			cell->state = OFF;
@@ -615,7 +616,7 @@ setcell(CELL *cell, STATE state, BOOL free)
 				free = FALSE;
 			}
 
-			if (combining && (cell->combined != UNK))
+			if (g.combining && (cell->combined != UNK))
 			{
 				if (cell->combined == OFF) 
 				{
@@ -681,7 +682,7 @@ static BOOL consistify(CELL *cell)
 	 * If we are searching for parents and this is generation 0, then
 	 * the cell is consistent with respect to the previous generation.
 	 */
-	if (parent && (cell->gen == 0))
+	if (g.parent && (cell->gen == 0))
 		return TRUE;
 
 	// Now get the descriptor for the cell, its parent and its parent neighborhood
@@ -966,7 +967,7 @@ getaverageunknown()
 				colinfo[testcol].oncount;
 		}
 		else
-			wantrow = (rowmax + 1) / 2;
+			wantrow = (g.rowmax + 1) / 2;
 
 		for (; (cell != NULL) && (cell->col == curcol); cell = cell->search)
 		{
@@ -1028,7 +1029,7 @@ static BOOL getsmartnumbers(CELL *cell)
 			smartlen0 = cellcount - cellno;
 			comb0 = differentcombinedcells + setcombinedcells - comb0;
 
-			if (smarton)
+			if (g.smarton)
 			{
 				if (comb0 == comb1)
 				{
@@ -1100,7 +1101,7 @@ getsmartunknown()
 	if (searchlist == NULL) return NULL;
 
 	// Prepare threshold
-	threshold = smartthreshold;
+	threshold = g.smartthreshold;
 	if (threshold <= 0) threshold = MAXCELLS;
 
 	// Prepare the dummy maximum
@@ -1113,7 +1114,7 @@ getsmartunknown()
 
 	wnd = 0;
 
-	window = smartwindow;
+	window = g.smartwindow;
 	cell = searchlist;
 
 	while ((cell != NULL) && (window > 0) && (max < threshold)) {
@@ -1201,24 +1202,24 @@ getsmartunknown()
 
 
 		if (MAXCELLS >= max) {
-			smartstatsumwnd += wnd;
-			++smartstatsumwndc;
-			smartstatsumlen += max;
-			++smartstatsumlenc;
+			g.smartstatsumwnd += wnd;
+			++g.smartstatsumwndc;
+			g.smartstatsumlen += max;
+			++g.smartstatsumlenc;
 		
-			if (smartstatsumwndc >= 100000) {
-				smartstatwnd = smartstatsumwnd / smartstatsumwndc;
-				smartstatsumwnd = 0;
-				smartstatsumwndc = 0;
-				if (smartstatsumlenc >= 10000) {
-					smartstatlen = smartstatsumlen / smartstatsumlenc;
-					smartstatsumlen = 0;
-					smartstatsumlenc = 0;
+			if (g.smartstatsumwndc >= 100000) {
+				g.smartstatwnd = g.smartstatsumwnd / g.smartstatsumwndc;
+				g.smartstatsumwnd = 0;
+				g.smartstatsumwndc = 0;
+				if (g.smartstatsumlenc >= 10000) {
+					g.smartstatlen = g.smartstatsumlen / g.smartstatsumlenc;
+					g.smartstatsumlen = 0;
+					g.smartstatsumlenc = 0;
 				}
 			}
 		}
 
-		if (smarton)
+		if (g.smarton)
 		{
 			// propose the shorter tree
 			smartchoice = bestchoice;
@@ -1260,7 +1261,7 @@ choose(cell)
 	 * then try to do that.
 	 */
 
-	if (followgens)
+	if (g.followgens)
 	{
 		if ((cell->past->state == ON) ||
 			(cell->future->state == ON))
@@ -1409,17 +1410,17 @@ adjustnear(CELL *cell, int inc)
 	int	count;
 	int	colcount;
 
-	for (colcount = nearcols; colcount > 0; colcount--)
+	for (colcount = g.nearcols; colcount > 0; colcount--)
 	{
 		cell = cell->cr;
 		curcell = cell;
 
-		for (count = nearcols; count-- >= 0; curcell = curcell->cu)
+		for (count = g.nearcols; count-- >= 0; curcell = curcell->cu)
 			curcell->near1 += inc;
 
 		curcell = cell->cd;
 
-		for (count = nearcols; count-- > 0; curcell = curcell->cd)
+		for (count = g.nearcols; count-- > 0; curcell = curcell->cd)
 			curcell->near1 += inc;
 	}
 }
@@ -1446,7 +1447,7 @@ checkwidth(cell)
 	CELL *	dcp;
 	BOOL	full;
 
-	if (!colwidth || !inited || cell->gen)
+	if (!g.colwidth || !inited || cell->gen)
 		return FALSE;
 
 	left = cell->colinfo->oncount;
@@ -1456,23 +1457,23 @@ checkwidth(cell)
 
 	ucp = cell;
 	dcp = cell;
-	width = colwidth;
+	width = g.colwidth;
 	minrow = cell->row;
 	maxrow = cell->row;
 	srcminrow = 1;
-	srcmaxrow = rowmax;
+	srcmaxrow = g.rowmax;
 	full = TRUE;
 
-	if ((rowsym && (cell->col >= rowsym)) ||
-		(fliprows && (cell->col >= fliprows)))
+	if ((g.rowsym && (cell->col >= g.rowsym)) ||
+		(g.fliprows && (cell->col >= g.fliprows)))
 	{
 		full = FALSE;
-		srcmaxrow = (rowmax + 1) / 2;
+		srcmaxrow = (g.rowmax + 1) / 2;
 
 		if (cell->row > srcmaxrow)
 		{
-			srcminrow = (rowmax / 2) + 1;
-			srcmaxrow = rowmax;
+			srcminrow = (g.rowmax / 2) + 1;
+			srcmaxrow = g.rowmax;
 		}
 	}
 
@@ -1501,7 +1502,7 @@ checkwidth(cell)
 		}
 	}
 
-	if (maxrow - minrow >= colwidth)
+	if (maxrow - minrow >= g.colwidth)
 		return TRUE;
 
 	return FALSE;
@@ -1523,14 +1524,14 @@ subperiods()
 	CELL *	cellg0;
 	CELL *	cellgn;
 
-	for (gen = 1; gen < genmax; gen++)
+	for (gen = 1; gen < g.genmax; gen++)
 	{
-		if (genmax % gen)
+		if (g.genmax % gen)
 			continue;
 
-		for (row = 1; row <= rowmax; row++)
+		for (row = 1; row <= g.rowmax; row++)
 		{
-			for (col = 1; col <= colmax; col++)
+			for (col = 1; col <= g.colmax; col++)
 			{
 				cellg0 = findcell(row, col, 0);
 				cellgn = findcell(row, col, gen);
@@ -1567,34 +1568,34 @@ mapcell(cell)
 	col = cell->col;
 	forward = (cell->gen != 0);
 
-	if (fliprows && (col >= fliprows))
-		row = rowmax + 1 - row;
+	if (g.fliprows && (col >= g.fliprows))
+		row = g.rowmax + 1 - row;
 
-	if (flipcols && (row >= flipcols))
-		col = colmax + 1 - col;
+	if (g.flipcols && (row >= g.flipcols))
+		col = g.colmax + 1 - col;
 
-	if (flipquads)
+	if (g.flipquads)
 	{				/* NEED TO GO BACKWARDS */
 		tmp = col;
 		col = row;
-		row = colmax + 1 - tmp;
+		row = g.colmax + 1 - tmp;
 	}
 
 	if (forward)
 	{
-		row += rowtrans;
-		col += coltrans;
+		row += g.rowtrans;
+		col += g.coltrans;
 	}
 	else
 	{
-		row -= rowtrans;
-		col -= coltrans;
+		row -= g.rowtrans;
+		col -= g.coltrans;
 	}
 
 	if (forward)
 		return findcell(row, col, 0);
 	else
-		return findcell(row, col, genmax - 1);
+		return findcell(row, col, g.genmax - 1);
 }
 
 
@@ -1672,32 +1673,32 @@ static CELL *symcell(CELL *cell)
 	int	nrow;
 	int	ncol;
 
-	if(!symmetry)
+	if(!g.symmetry)
 		return NULL;
 
 	row = cell->row;
 	col = cell->col;
-	nrow = rowmax + 1 - row;
-	ncol = colmax + 1 - col;
+	nrow = g.rowmax + 1 - row;
+	ncol = g.colmax + 1 - col;
 
-	if(symmetry==1)  // col sym
+	if(g.symmetry==1)  // col sym
 		return findcell(row,ncol,cell->gen);
 
-	if(symmetry==2) { // row sym
+	if(g.symmetry==2) { // row sym
 		return findcell(nrow,col,cell->gen);
 	}
 
-	if(symmetry==3)       // fwd diag
+	if(g.symmetry==3)       // fwd diag
 		return findcell(ncol,nrow,cell->gen);
 
-	if(symmetry==4)    {   // bwd diag
+	if(g.symmetry==4)    {   // bwd diag
 		return findcell(col,row,cell->gen);
 	}
 
-	if(symmetry==5)       // origin
+	if(g.symmetry==5)       // origin
 		return findcell(nrow, ncol, cell->gen);
 
-	if(symmetry==6) {
+	if(g.symmetry==6) {
 		/*
 		 * Here is there is both row and column symmetry.
 		 * First see if the cell is in the middle row or middle column,
@@ -1717,7 +1718,7 @@ static CELL *symcell(CELL *cell)
 			return findcell(nrow, col, cell->gen);  // quadrant 1 or 3
 	}
 
-	if(symmetry==7) {  // diagonal 4-fold
+	if(g.symmetry==7) {  // diagonal 4-fold
 		// if on a diagonal...
 		if(row==col || row==ncol)
 			return findcell(nrow,ncol,cell->gen);
@@ -1729,12 +1730,12 @@ static CELL *symcell(CELL *cell)
 			return findcell(ncol,nrow,cell->gen);
 	}
 
-	if(symmetry==8) {      // origin*4 symmetry 
+	if(g.symmetry==8) {      // origin*4 symmetry 
 		// this is surprisingly simple
 			return findcell(ncol,row,cell->gen);
 	}
 
-	if(symmetry==9) {    // octagonal, this is gonna be tough
+	if(g.symmetry==9) {    // octagonal, this is gonna be tough
 		// if on an axis
 		if(nrow==row || ncol==col)
 			return findcell(ncol,row,cell->gen);
@@ -1825,11 +1826,11 @@ findcell(row, col, gen)
 	/*
 	 * If the cell is a normal cell, then we know where it is.
 	 */
-	if ((row >= 0) && (row <= rowmax + 1) &&
-		(col >= 0) && (col <= colmax + 1) &&
-		(gen >= 0) && (gen < genmax))
+	if ((row >= 0) && (row <= g.rowmax + 1) &&
+		(col >= 0) && (col <= g.colmax + 1) &&
+		(gen >= 0) && (gen < g.genmax))
 	{
-		return celltable[(col * (rowmax + 2) + row) * genmax + gen];
+		return celltable[(col * (g.rowmax + 2) + row) * g.genmax + gen];
 	}
 
 	/*

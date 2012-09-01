@@ -13,6 +13,8 @@
 #include "wls.h"
 #include <strsafe.h>
 
+extern struct globals_struct g;
+
 extern int origfield[GENMAX][COLMAX][ROWMAX];
 
 /*
@@ -41,19 +43,19 @@ static	long	getnum PROTO((char **, int));
  */
 static	int *param_table[] =
 {
-	&curstatus,
-	&rowmax, &colmax, &genmax, 
-	&rowtrans, &coltrans,
-	&rowsym, &colsym, &pointsym, &fwdsym, &bwdsym,
-	&fliprows, &flipcols, &flipquads,
-	&parent, &allobjects, &nearcols, &maxcount,
-	&userow, &usecol, &colcells, &colwidth, &follow,
-	&orderwide, &ordergens, &ordermiddle, &followgens, 
-	&diagsort, &symmetry, &trans_rotate, &trans_flip, &trans_x, &trans_y,
-	&knightsort,
-	&smart, &smartwindow, &smartthreshold,
+	&g.curstatus,
+	&g.rowmax, &g.colmax, &g.genmax, 
+	&g.rowtrans, &g.coltrans,
+	&g.rowsym, &g.colsym, &g.pointsym, &g.fwdsym, &g.bwdsym,
+	&g.fliprows, &g.flipcols, &g.flipquads,
+	&g.parent, &g.allobjects, &g.nearcols, &g.maxcount,
+	&g.userow, &g.usecol, &g.colcells, &g.colwidth, &g.follow,
+	&g.orderwide, &g.ordergens, &g.ordermiddle, &g.followgens, 
+	&g.diagsort, &g.symmetry, &g.trans_rotate, &g.trans_flip, &g.trans_x, &g.trans_y,
+	&g.knightsort,
+	&g.smart, &g.smartwindow, &g.smartthreshold,
 	&foundcount,
-	&combine, &combining, &combinedcells, &setcombinedcells, &differentcombinedcells, 
+	&g.combine, &g.combining, &combinedcells, &setcombinedcells, &differentcombinedcells, 
 
 	NULL
 };
@@ -74,7 +76,7 @@ freezecell(int row, int col)
 
 	cell0 = findcell(row, col, 0);
 
-	for (gen = 0; gen < genmax; gen++)
+	for (gen = 0; gen < g.genmax; gen++)
 	{
 		cell = findcell(row, col, gen);
 
@@ -237,16 +239,16 @@ void writegen(TCHAR *file1, BOOL append)
 	/*
 	 * First find the minimum bounds on the object.
 	 */
-	minrow = rowmax;
-	mincol = colmax;
+	minrow = g.rowmax;
+	mincol = g.colmax;
 	maxrow = -1;
 	maxcol = -1;
 
-	for (gen=0; gen < genmax; gen++)
+	for (gen=0; gen < g.genmax; gen++)
 	{
-		for (row = 1; row <= rowmax; row++)
+		for (row = 1; row <= g.rowmax; row++)
 		{
-			for (col = 1; col <= colmax; col++)
+			for (col = 1; col <= g.colmax; col++)
 			{
 				cell = findcell(row, col, gen);
 
@@ -285,7 +287,7 @@ void writegen(TCHAR *file1, BOOL append)
 	 */
 	for (row = minrow; row <= maxrow; row++)
 	{
-		for (gen = 0; gen < (saveoutputallgen ? genmax : 1); gen++)
+		for (gen = 0; gen < (saveoutputallgen ? g.genmax : 1); gen++)
 		{
 			for (col = mincol; col <= maxcol; col++)
 			{
@@ -313,7 +315,7 @@ void writegen(TCHAR *file1, BOOL append)
 
 				fputc(ch, fp);
 			}
-			if (saveoutputallgen && (gen < genmax - 1)) fputs(" ... ", fp);
+			if (saveoutputallgen && (gen < g.genmax - 1)) fputs(" ... ", fp);
 		}
 
 		fputc('\n', fp);
@@ -398,9 +400,9 @@ void dumpstate(TCHAR *file1, BOOL echo)
 
 	/* write out the original configuration */
 
-	for(gen=0;gen<genmax;gen++) {
-		for(row=0;row<rowmax;row++) {
-			for(col=0;col<colmax;col++) {
+	for(gen=0;gen<g.genmax;gen++) {
+		for(row=0;row<g.rowmax;row++) {
+			for(col=0;col<g.colmax;col++) {
 				fprintf(fp,"%d ",origfield[gen][col][row]);
 			}
 			fprintf(fp,"\n");
@@ -416,7 +418,7 @@ void dumpstate(TCHAR *file1, BOOL echo)
 	{
 		cell = *set++;
 
-		if (combining && (cell->combined != UNK))
+		if (g.combining && (cell->combined != UNK))
 		{
 			ind = (cell->combined == cell->state) ? '=' : '!';
 		}
@@ -433,11 +435,11 @@ void dumpstate(TCHAR *file1, BOOL echo)
 	 * save combination
 	 */
 
-	if (combining) 
+	if (g.combining) 
 	{
-		for(col=1;col<=colmax;col++) {
-			for(row=1;row<=rowmax;row++) {
-				for(gen=0;gen<genmax;gen++) {
+		for(col=1;col<=g.colmax;col++) {
+			for(row=1;row<=g.rowmax;row++) {
+				for(gen=0;gen<g.genmax;gen++) {
 					cell = findcell(row, col, gen);
 					if (cell->combined != UNK)
 					{
@@ -593,11 +595,11 @@ BOOL loadstate(void)
 // Read the initial state
 //*********************************************
 
-	for(gen=0;gen<genmax;gen++) {
-		for(row=0;row<rowmax;row++) {
+	for(gen=0;gen<g.genmax;gen++) {
+		for(row=0;row<g.rowmax;row++) {
 			fgets(buf, LINESIZE, fp);
 			cp=strtok(buf," ");
-			for(col=0;col<colmax;col++) {
+			for(col=0;col<g.colmax;col++) {
 				if(cp) {
 					currfield[gen][col][row]=atoi(cp);
 					cp=strtok(NULL," ");
