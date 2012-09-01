@@ -47,8 +47,6 @@ int saveoutputallgen;
 int stoponfound;
 int stoponstep;
 
-UINT msg_mswheel;
-
 HINSTANCE hInst;
 HWND hwndFrame,hwndMain,hwndToolbar;
 HWND hwndGen,hwndGenScroll;
@@ -446,8 +444,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	hAccTable=LoadAccelerators(hInst,_T("WLSACCEL"));
 
 	RegisterClasses(hInstance);
-
-	msg_mswheel=RegisterWindowMessage(_T("MSWHEEL_ROLLMSG"));
 
 	InitApp(hInstance,nCmdShow);
 
@@ -1854,6 +1850,19 @@ void copytoclipboard(void)
 	CloseClipboard();
 }
 
+static void handle_MouseWheel(HWND hWnd, WPARAM wParam)
+{
+	signed short delta = (signed short)(HIWORD(wParam));
+	while(delta >= 120) {
+		gen_changeby(-1);
+		delta -= 120;
+	}
+	while(delta <= -120) {
+		gen_changeby(1);
+		delta += 120;
+	}
+}
+
 /****************************************************************************/
 static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -1862,15 +1871,11 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 
 	id=LOWORD(wParam);
 
-	if(msg==msg_mswheel) {
-		if(wParam & (unsigned)0x80000000)
-			gen_changeby(1);
-		else
-			gen_changeby(-1);
-		return 0;
-	}
-
 	switch(msg) {
+
+	case WM_MOUSEWHEEL:
+		handle_MouseWheel(hWnd, wParam);
+		return 0;
 
 	case WM_CREATE:
 #ifdef _DEBUG
