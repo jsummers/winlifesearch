@@ -343,17 +343,49 @@ static int fix_scrollpos(struct wcontext *ctx)
 {
 	RECT r;
 	int changed=0;
+	int n;
 
 	GetClientRect(ctx->hwndMain,&r);
 
+	// If the entire field doesn't fit in the window, there should be no
+	// unused space at the right/bottom of the field.
+	n = g.colmax*CELLWIDTH; // width of field
+	// max scrollpos should be n - r.right
+	if(n>r.right) {
+		if(ctx->scrollpos.x>n-r.right) {
+			ctx->scrollpos.x = n-r.right;
+			changed=1;
+		}
+	}
+	else if(ctx->scrollpos.x!=0) {
+		// Entire field fits in the window, so it should never be scrolled.
+		ctx->scrollpos.x=0;
+		changed=1;
+	}
+
+	n = g.rowmax*CELLHEIGHT;
+	if(n>r.bottom) {
+		if(ctx->scrollpos.y>n-r.bottom) {
+			ctx->scrollpos.y = n-r.bottom;
+			changed = 1;
+		}
+	}
+	else if(ctx->scrollpos.y!=0) {
+		ctx->scrollpos.y=0;
+		changed=1;
+	}
+
+	// scrollpos is never < 0
 	if(ctx->scrollpos.x<0) ctx->scrollpos.x=0;
 	if(ctx->scrollpos.y<0) ctx->scrollpos.y=0;
 
-	if(g.colmax*CELLWIDTH<=r.right && ctx->scrollpos.x!=0) { ctx->scrollpos.x=0; changed=1; }
-	if(g.rowmax*CELLHEIGHT<=r.bottom && ctx->scrollpos.y!=0) { ctx->scrollpos.y=0; changed=1; }
 	return changed;
 }
 
+// Adjust the visible position of the scrollbars to ctx->scrollpos.
+// redraw: Always repaint the window.
+// checkscrollpos: Check if the requested scroll position is valid, and if not,
+//   make it valid and repaint the window.
 static void set_main_scrollbars(struct wcontext *ctx, int redraw, int checkscrollpos)
 {
 	HDC hDC;
@@ -1663,12 +1695,12 @@ static void Handle_Scroll(struct wcontext *ctx, UINT msg, WORD scrollboxpos, WOR
 
 	if(ctx->scrollpos.x==oldscrollpos.x && ctx->scrollpos.y==oldscrollpos.y) return;
 
-	set_main_scrollbars(ctx, 0, 1);
-
 	ScrollWindowEx(ctx->hwndMain,
 		oldscrollpos.x-ctx->scrollpos.x,
 		oldscrollpos.y-ctx->scrollpos.y,
 		NULL,NULL,NULL,NULL,SW_INVALIDATE|SW_ERASE);
+
+	set_main_scrollbars(ctx, 0, 0);
 }
 
 static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
