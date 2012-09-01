@@ -15,7 +15,7 @@
  * The string length is limited to 256 characters.
  */
 void
-ttystatus(char * fmt)
+ttystatus(char * fmt, ...)
 {
 	va_list ap;
 	static char	buf[256];

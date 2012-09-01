@@ -1,0 +1,7 @@
+/scripts/Debug
+/scripts/Release
+/scripts/Debug64
+/scripts/Release64
+/scripts/wls2008.vcproj.*.user
+/scripts/*.ncb
+/scripts/*.suo
