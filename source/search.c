@@ -17,6 +17,7 @@
 
 #include "wls-config.h"
 #include <windows.h>
+#include <tchar.h>
 #include "wls.h"
 #include "lifesrc.h"
 #include <search.h>
@@ -113,7 +114,7 @@ initcells()
 		(rowtrans < -TRANSMAX) || (rowtrans > TRANSMAX) ||
 		(coltrans < -TRANSMAX) || (coltrans > TRANSMAX))
 	{
-		wlsError("ROW, COL, GEN, or TRANS out of range",0);
+		wlsError(_T("ROW, COL, GEN, or TRANS out of range"),0);
 		exit(1);
 	}
 
@@ -1879,7 +1880,7 @@ allocatecell()
 
 		if (newcells == NULL)
 		{
-			wlsError("Cannot allocate cell structure",0);
+			wlsError(_T("Cannot allocate cell structure"),0);
 			exit(1);
 		}
 
@@ -1941,7 +1942,7 @@ initimplic(void)
 							foff=1-(fon+funk); // off future cell
 							desc = sumtodesc((STATE)(funk*UNK+fon*ON+foff*OFF), (STATE)(cunk*UNK+con*ON+coff*OFF), nunk*UNK+non*ON+noff*OFF);
 							if (implic[desc] != IMPVOID) {
-								ttystatus("Duplicate descriptor!!!");
+								ttystatus(_T("Duplicate descriptor!!!"));
 								exit(1);
 							}
 							// here we get all possible descriptors

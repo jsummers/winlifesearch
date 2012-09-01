@@ -24,7 +24,7 @@
 			OutputDirectory="$(SolutionDir)Debug"
 			IntermediateDirectory="$(SolutionDir)Debug"
 			ConfigurationType="1"
-			CharacterSet="2"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -99,7 +99,7 @@
 			OutputDirectory="$(SolutionDir)Debug64"
 			IntermediateDirectory="$(SolutionDir)Debug64"
 			ConfigurationType="1"
-			CharacterSet="2"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -175,7 +175,7 @@
 			OutputDirectory="$(SolutionDir)Release"
 			IntermediateDirectory="$(SolutionDir)Release"
 			ConfigurationType="1"
-			CharacterSet="2"
+			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -255,7 +255,7 @@
 			OutputDirectory="$(SolutionDir)Release64"
 			IntermediateDirectory="$(SolutionDir)Release64"
 			ConfigurationType="1"
-			CharacterSet="2"
+			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
 			<Tool

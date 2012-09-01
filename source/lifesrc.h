@@ -9,14 +9,7 @@
 
 #include <ctype.h>        //JES, for isdigit()
 
-/*
- * Use prototypes if available.
- */
-#ifdef	__STDC__
 #define	PROTO(a)	a
-#else
-#define	PROTO(a)	()
-#endif
 
 
 /*
@@ -246,8 +239,8 @@ EXTERN	long	dumpfreq;	/* how often to perform dumps */
 EXTERN	long	dumpcount;	/* counter for dumps */
 EXTERN	long	viewfreq;	/* how often to view results */
 EXTERN	long	viewcount;	/* counter for viewing */
-EXTERN  char dumpfile[80];
-EXTERN  char outputfile[80];
+EXTERN  TCHAR dumpfile[80];
+EXTERN  TCHAR outputfile[80];
 
 EXTERN  int smartlen0;
 EXTERN  int smartlen1;
@@ -281,8 +274,8 @@ extern	void	getcommands PROTO((void));
 extern	void	initcells PROTO((void));
 extern  void    initsearchorder PROTO((void));
 extern	void	printgen PROTO((void));
-extern	void	writegen PROTO((char *, BOOL));
-extern	void	dumpstate PROTO((char *, BOOL));
+extern	void	writegen PROTO((TCHAR *, BOOL));
+extern	void	dumpstate PROTO((TCHAR *, BOOL));
 extern	void	adjustnear PROTO((CELL *, int));
 extern	STATUS	search PROTO((void));
 extern	BOOL	proceed PROTO((CELL *, STATE, BOOL));
@@ -294,11 +287,12 @@ extern	CELL *	backup PROTO((void));
 extern	BOOL	subperiods PROTO((void));
 extern	void	loopcells PROTO((CELL *, CELL *));
 
-extern	void	ttystatus PROTO((char *, ...));
+extern	void	ttystatus PROTO((TCHAR *, ...));
 
 //JES
 void	freezecell PROTO((int, int));
-BOOL	setrules PROTO((char *));
+BOOL	setrules PROTO((TCHAR *));
+BOOL setrulesA(char *);
 BOOL    loadstate(void);
 void    getbackup(char *cp);
 

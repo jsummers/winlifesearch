@@ -8,6 +8,7 @@
 #include "wls-config.h"
 #define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
+#include <tchar.h>
 #include "lifesrc.h"
 #include "wls.h"
 #include <strsafe.h>
@@ -17,16 +18,14 @@ extern int origfield[GENMAX][COLMAX][ROWMAX];
 /*
  * Local data.
  */
-extern char	rulestring[20];	/* rule string for printouts */
+extern TCHAR rulestring[20];	/* rule string for printouts */
 static	int	foundcount;	/* number of objects found */
 static int writecount; /* number of objects written to a file */
-static	char *	initfile;	/* file containing initial cells */
-static	char *	loadfile;	/* file to load state from */
 extern int saveoutput;
 extern int saveoutputallgen;
 extern int stoponfound;
 extern int origfield[GENMAX][COLMAX][ROWMAX];
-static char filename[MAX_PATH] = {'\0'};
+static TCHAR filename[MAX_PATH] = {'\0'};
 
 /*
  * Local procedures
@@ -102,7 +101,7 @@ getbackup(char *cp)
 
 	if ((count <= 0) || *cp)
 	{
-		ttystatus("Must back up at least one cell\n");
+		ttystatus(_T("Must back up at least one cell\n"));
 
 		return;
 	}
@@ -114,7 +113,7 @@ getbackup(char *cp)
 		if (cell == NULL)
 		{
 			printgen();
-			ttystatus("Backed up over all possibilities\n");
+			ttystatus(_T("Backed up over all possibilities\n"));
 
 			return;
 		}
@@ -129,7 +128,7 @@ getbackup(char *cp)
 		if (!go(cell, state, FALSE))
 		{
 			printgen();
-			ttystatus("Backed up over all possibilities\n");
+			ttystatus(_T("Backed up over all possibilities\n"));
 
 			return;
 		}
@@ -138,7 +137,7 @@ getbackup(char *cp)
 	printgen();
 }
 
-BOOL getfilename_l()
+static BOOL getfilename_l()
 {
 	OPENFILENAME ofn;
 	HWND hWnd;
@@ -149,9 +148,9 @@ BOOL getfilename_l()
 
 	ofn.lStructSize=sizeof(OPENFILENAME);
 	ofn.hwndOwner=hWnd;
-	ofn.lpstrFilter="WLS Dump Files (*.wdf)\0*.wdf\0Text Files (*.txt)\0*.txt\0All files\0*.*\0\0";
+	ofn.lpstrFilter=_T("WLS Dump Files (*.wdf)\0*.wdf\0Text Files (*.txt)\0*.txt\0All files\0*.*\0\0");
 	ofn.nFilterIndex=1;
-	ofn.lpstrTitle="Load state";
+	ofn.lpstrTitle=_T("Load state");
 	ofn.lpstrFile=filename;
 	ofn.nMaxFile=MAX_PATH;
 	ofn.Flags=OFN_FILEMUSTEXIST|OFN_HIDEREADONLY;
@@ -175,10 +174,10 @@ BOOL getfilename_s()
 
 	ofn.lStructSize=sizeof(OPENFILENAME);
 	ofn.hwndOwner=hWnd;
-	ofn.lpstrFilter="WLS Dump Files (*.wdf)\0*.wdf\0Text Files (*.txt)\0*.txt\0All files\0*.*\0\0";
+	ofn.lpstrFilter=_T("WLS Dump Files (*.wdf)\0*.wdf\0Text Files (*.txt)\0*.txt\0All files\0*.*\0\0");
 	ofn.nFilterIndex=1;
-	ofn.lpstrTitle="Save state";
-	ofn.lpstrDefExt="txt";
+	ofn.lpstrTitle=_T("Save state");
+	ofn.lpstrDefExt=_T("txt");
 	ofn.lpstrFile=filename;
 	ofn.nMaxFile=MAX_PATH;
 	ofn.Flags=OFN_HIDEREADONLY|OFN_OVERWRITEPROMPT;
@@ -196,7 +195,7 @@ BOOL getfilename_s()
  * If no file is specified, it is asked for.
  * Filename of "." means write to stdout.
  */
-void writegen(char *file1, BOOL append)
+void writegen(TCHAR *file1, BOOL append)
 /*	char *	file;		 file name (or NULL) */
 /*	BOOL	append;		 TRUE to append instead of create */
 {
@@ -207,16 +206,16 @@ void writegen(char *file1, BOOL append)
 	int gen;
 	int	ch;
 	int	minrow, maxrow, mincol, maxcol;
-	char buf[80];
-	char file[MAX_PATH];
+	TCHAR buf[80];
+	TCHAR file[MAX_PATH];
 
 	if(!saveoutput && !outputcols) return;
 
 	if(file1) {
-		strcpy(file,file1);
+		StringCchCopy(file,MAX_PATH,file1);
 	}
 	else {
-		strcpy(file,"");
+		StringCchCopy(file,MAX_PATH,_T(""));
 		getfilename_s(file);
 	}
 
@@ -225,12 +224,12 @@ void writegen(char *file1, BOOL append)
 
 	fp = stdout;
 
-	if (strcmp(file, "."))
-		fp = fopen(file, append ? "a" : "w");
+	if (_tcscmp(file, _T(".")))
+		fp = _tfopen(file, append ? _T("a") : _T("w"));
 
 	if (fp == NULL)
 	{
-		ttystatus("Cannot create \"%s\"\n", file);
+		ttystatus(_T("Cannot create \"%s\"\n"), file);
 
 		return;
 	}
@@ -306,7 +305,7 @@ void writegen(char *file1, BOOL append)
 					break;
 
 				default:
-					ttystatus("Bad cell state");
+					ttystatus(_T("Bad cell state"));
 					fclose(fp);
 
 					return;
@@ -327,14 +326,14 @@ void writegen(char *file1, BOOL append)
 
 	if ((fp != stdout) && fclose(fp))
 	{
-		ttystatus("Error writing \"%s\"\n", file);
+		ttystatus(_T("Error writing \"%s\"\n"), file);
 
 		return;
 	}
 
 	writecount++;
 	if (fp != stdout) {
-		sprintf(buf,"\"%s\" written (%d)",file, writecount);
+		StringCbPrintf(buf,sizeof(buf),_T("\"%s\" written (%d)"),file,writecount);
 		wlsStatus(buf);
 	}
 }
@@ -344,7 +343,7 @@ void writegen(char *file1, BOOL append)
  * Dump the current state of the search in the specified file.
  * If no file is specified, it is asked for.
  */
-void dumpstate(char *file1, BOOL echo)
+void dumpstate(TCHAR *file1, BOOL echo)
 {
 	FILE *	fp;
 	CELL **	set;
@@ -354,7 +353,7 @@ void dumpstate(char *file1, BOOL echo)
 	int	gen;
 	int **	param;
 	char ind;
-	char *file = filename;
+	TCHAR *file = filename;
 
 	if(file1) {
 		file = file1;
@@ -367,11 +366,11 @@ void dumpstate(char *file1, BOOL echo)
 		}
 	}
 
-	fp = fopen(file, "wt");
+	fp = _tfopen(file, _T("wt"));
 
 	if (fp == NULL)
 	{
-		ttystatus("Cannot create \"%s\"\n", file);
+		ttystatus(_T("Cannot create \"%s\"\n"), file);
 
 		return;
 	}
@@ -457,15 +456,15 @@ void dumpstate(char *file1, BOOL echo)
 
 	if (fclose(fp))
 	{
-		ttystatus("Error writing \"%s\"\n", file);
+		ttystatus(_T("Error writing \"%s\"\n"), file);
 
 		return;
 	}
 
 	if (echo) 
 	{
-		char buf[1000];
-		sprintf(buf, "State dumped to \"%s\"\n", file);
+		TCHAR buf[1000];
+		StringCbPrintf(buf, sizeof(buf), _T("State dumped to \"%s\"\n"), file);
 		wlsStatus(buf);
 	}
 }
@@ -494,11 +493,11 @@ BOOL loadstate(void)
 
 	if (!getfilename_l()) return FALSE;
 
-	fp = fopen(filename, "r");
+	fp = _tfopen(filename, _T("r"));
 
 	if (fp == NULL)
 	{
-		ttystatus("Cannot open state file \"%s\"\n", filename);
+		ttystatus(_T("Cannot open state file \"%s\"\n"), filename);
 
 		return FALSE;
 	}
@@ -512,7 +511,7 @@ BOOL loadstate(void)
 
 	if (buf[0] != 'V')
 	{
-		ttystatus("Missing version line in file \"%s\"\n", filename);
+		ttystatus(_T("Missing version line in file \"%s\"\n"), filename);
 		fclose(fp);
 
 		return FALSE;
@@ -523,7 +522,7 @@ BOOL loadstate(void)
 
 	if (DUMPVERSION != ver)
 	{
-		ttystatus("Incorrect version of the dump file: expected %d, found %d", DUMPVERSION, ver);
+		ttystatus(_T("Incorrect version of the dump file: expected %d, found %d"), DUMPVERSION, ver);
 		fclose(fp);
 		return FALSE;
 	}
@@ -540,7 +539,7 @@ BOOL loadstate(void)
 	 */
 	if (buf[0] != 'P')
 	{
-		ttystatus("Missing parameter line in state file\n");
+		ttystatus(_T("Missing parameter line in state file\n"));
 		fclose(fp);
 
 		return FALSE;
@@ -569,7 +568,7 @@ BOOL loadstate(void)
 	 */
 	if (buf[0] != 'R')
 	{
-		ttystatus("Missing rule line in state file\n");
+		ttystatus(_T("Missing rule line in state file\n"));
 		fclose(fp);
 
 		return FALSE;
@@ -582,9 +581,9 @@ BOOL loadstate(void)
 
 	while (isblank(*cp)) cp++;
 
-	if (!setrules(cp))
+	if (!setrulesA(cp))
 	{
-		ttystatus("Bad Life rules in state file\n");
+		ttystatus(_T("Bad Life rules in state file\n"));
 		fclose(fp);
 
 		return FALSE;
@@ -650,7 +649,7 @@ BOOL loadstate(void)
 		if (!setcell(cell, state, free))
 		{
 			ttystatus(
-				"Inconsistently setting cell at r%d c%d g%d \n",
+				_T("Inconsistently setting cell at r%d c%d g%d \n"),
 				row, col, gen);
 
 			fclose(fp);
@@ -669,7 +668,7 @@ BOOL loadstate(void)
 	} while (status == OK);
 
 	if (status != CONSISTENT) {
-		ttystatus("Inconsistent cell status\n");
+		ttystatus(_T("Inconsistent cell status\n"));
 		fclose(fp);
 
 		return FALSE;
@@ -705,7 +704,7 @@ BOOL loadstate(void)
 
 	if (buf[0] != 'E')
 	{
-		ttystatus("Missing end of file line in state file\n");
+		ttystatus(_T("Missing end of file line in state file\n"));
 		fclose(fp);
 
 		return FALSE;
@@ -713,14 +712,14 @@ BOOL loadstate(void)
 
 	if (fclose(fp))
 	{
-		ttystatus("Error reading \"%s\"\n", filename);
+		ttystatus(_T("Error reading \"%s\"\n"), filename);
 
 		return FALSE;
 	}
 
 	{
-		char buf[1000];
-		sprintf(buf, "State loaded from \"%s\"\n", filename);
+		TCHAR buf[1000];
+		StringCbPrintf(buf, sizeof(buf), _T("State loaded from \"%s\"\n"), filename);
 
 		wlsStatus(buf);
 	}
@@ -782,8 +781,7 @@ getnum(char **cpp, int defnum)
  * or a hex number in the Wolfram encoding.
  */
 BOOL
-setrules(cp)
-	char *	cp;
+setrules(TCHAR *cp)
 {
 	int		i;
 	unsigned int	bits;
@@ -801,7 +799,7 @@ setrules(cp)
 	 * See if the string contains a comma or a slash.
 	 * If not, then assume Wolfram's hex format.
 	 */
-	if ((strchr(cp, ',') == NULL) && (strchr(cp, '/') == NULL))
+	if ((_tcschr(cp, ',') == NULL) && (_tcschr(cp, '/') == NULL))
 	{
 		bits = 0;
 
@@ -885,6 +883,17 @@ setrules(cp)
 	*cp = '\0';
 
 	return TRUE;
+}
+
+BOOL setrulesA(char *rulestringA)
+{
+#ifdef UNICODE
+	WCHAR rulestringW[20];
+	StringCbPrintfW(rulestringW,sizeof(rulestringW),_T("%S"),rulestringA);
+	return setrules(rulestringW);
+#else
+	return setrules(rulestringA);
+#endif
 }
 
 
