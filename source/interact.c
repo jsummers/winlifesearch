@@ -887,21 +887,4 @@ BOOL setrulesA(char *rulestringA)
 #endif
 }
 
-
-/*
- * Print a status message, like printf.
- * The string length is limited to 256 characters.
- */
-void ttystatus(TCHAR * fmt, ...)
-{
-	va_list ap;
-	TCHAR buf[256];
-
-	va_start(ap, fmt);
-	StringCbVPrintf(buf, sizeof(buf), fmt, ap);
-	va_end(ap);
-	wlsMessagef(NULL,_T("%s"),buf);
-}
-
-
 /* END CODE */

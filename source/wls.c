@@ -142,6 +142,15 @@ void wlsMessagef(struct wcontext *ctx, TCHAR *fmt, ...)
 	va_end(ap);
 }
 
+// Essentially an an alias for wlsMessagef.
+void ttystatus(TCHAR * fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	wlsMessagevf(gctx,fmt,ap);
+	va_end(ap);
+}
+
 static void wlsStatusvf(struct wcontext *ctx, TCHAR *fmt, va_list ap)
 {
 	TCHAR buf[500];

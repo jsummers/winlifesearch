@@ -285,8 +285,6 @@ CELL *	backup(void);
 BOOL	subperiods(void);
 void	loopcells(CELL *, CELL *);
 
-void	ttystatus(TCHAR *, ...);
-
 void	freezecell(int, int);
 BOOL	setrules(TCHAR *);
 BOOL setrulesA(char *);
@@ -298,6 +296,7 @@ struct wcontext;
 void wlsErrorf(struct wcontext *ctx, TCHAR *fmt, ...);
 void wlsMessagef(struct wcontext *ctx, TCHAR *fmt, ...);
 void wlsStatusf(struct wcontext *ctx, TCHAR *fmt, ...);
+void ttystatus(TCHAR *, ...);
 void record_malloc(int func,void *m);
 BOOL set_initial_cells(void);
 void showcount(void);
