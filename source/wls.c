@@ -30,7 +30,6 @@
 #include <malloc.h>
 #include <assert.h>
 #include "resource.h"
-#include "wls.h"
 #include "lifesrc.h"
 #include <strsafe.h>
 

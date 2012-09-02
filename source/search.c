@@ -12,7 +12,6 @@
 #include <windows.h>
 #include <tchar.h>
 #include <search.h>
-#include "wls.h"
 #include "lifesrc.h"
 
 

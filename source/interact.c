@@ -10,7 +10,6 @@
 #include <windows.h>
 #include <tchar.h>
 #include "lifesrc.h"
-#include "wls.h"
 #include <strsafe.h>
 
 
