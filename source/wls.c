@@ -256,17 +256,15 @@ static POINT *GetSymmetricCells(int x,int y,int *num)
 	return pt;
 }
 
-static void SetCenter(void)
+static void RecalcCenter(struct wcontext *ctx)
 {
-	struct wcontext *ctx = gctx;
-
 	ctx->centerx= g.colmax/2;
 	ctx->centery= g.rowmax/2;
 	ctx->centerxodd= g.colmax%2;
 	ctx->centeryodd= g.rowmax%2;
 }
 
-static void InitGameSettings(void)
+static void InitGameSettings(struct wcontext *ctx)
 {
 	int i,j,k;
 
@@ -325,15 +323,14 @@ static void InitGameSettings(void)
 	StringCchCopy(g.dumpfile,80,_T("dump.wdf"));
 	StringCchCopy(g.rulestring,WLS_RULESTRING_LEN,_T("B3/S23"));
 
-	SetCenter();
+	RecalcCenter(ctx);
 }
 
-static void set_main_scrollbars(int redraw)
+static void set_main_scrollbars(struct wcontext *ctx, int redraw)
 {
 	SCROLLINFO si;
 	RECT r;
 	HDC hDC;
-	struct wcontext *ctx = gctx;
 
 	GetClientRect(ctx->hwndMain,&r);
 
@@ -381,14 +378,13 @@ static void wlsCreateFonts(struct wcontext *ctx)
 		DEFAULT_QUALITY,VARIABLE_PITCH|FF_SWISS,fontname);
 }
 
-static BOOL InitApp(HANDLE hInstance, int nCmdShow)
+static BOOL InitApp(struct wcontext *ctx, int nCmdShow)
 {
 	RECT r;
-	struct wcontext *ctx = gctx;
 
 	ctx->scrollpos.x=0; ctx->scrollpos.y=0;
 
-	InitGameSettings();
+	InitGameSettings(ctx);
 
 	wlsCreateFonts(ctx);
 
@@ -403,7 +399,7 @@ static BOOL InitApp(HANDLE hInstance, int nCmdShow)
 		CW_USEDEFAULT,		/* height */
 		NULL,	/* parent */
 		NULL,	/* menu */
-		hInstance,
+		ctx->hInst,
 		NULL	/* Pointer not needed */
 	);
 	if (!ctx->hwndFrame) return (FALSE);
@@ -420,7 +416,7 @@ static BOOL InitApp(HANDLE hInstance, int nCmdShow)
 		r.bottom-TOOLBARHEIGHT,		/* height */
 		ctx->hwndFrame,	/* parent */
 		NULL,	/* menu */
-		hInstance,
+		ctx->hInst,
 		NULL	/* Pointer not needed */
 	);
 	if (!ctx->hwndMain) return (FALSE);
@@ -435,12 +431,12 @@ static BOOL InitApp(HANDLE hInstance, int nCmdShow)
 		TOOLBARHEIGHT,		/* height */
 		ctx->hwndFrame,	/* parent */
 		NULL,	/* menu */
-		hInstance,
+		ctx->hInst,
 		NULL	/* Pointer not needed */
 	);
 	if (!ctx->hwndToolbar) return (FALSE);
 
-	set_main_scrollbars(1);
+	set_main_scrollbars(ctx,1);
 	/* Make the window visible; update its client area; and return "success" */
 
 	ShowWindow(ctx->hwndFrame, nCmdShow);		/* Show the window */
@@ -471,7 +467,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	RegisterClasses(ctx);
 
-	InitApp(hInstance,nCmdShow);
+	InitApp(ctx,nCmdShow);
 
 
 	while(GetMessage(&msg,NULL,0,0)){
@@ -488,13 +484,12 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 }
 
 
-static void DrawGuides(HDC hDC)
+static void DrawGuides(struct wcontext *ctx, HDC hDC)
 {
 	int centerpx,centerpy;
 	int px1,py1,px2,py2,px3,py3;
-	struct wcontext *ctx = gctx;
 
-	SetCenter();
+	RecalcCenter(ctx);
 
 	// store the center pixel in some temp vars to make things readable
 	centerpx=ctx->centerx*cellwidth+ctx->centerxodd*(cellwidth/2);
@@ -614,12 +609,11 @@ static void ClearCell(HDC hDC,int x,int y, int dblsize)
 	}
 }
 
-static void DrawCell(HDC hDC,int x,int y)
+static void DrawCell(struct wcontext *ctx, HDC hDC,int x,int y)
 {
 	int allsame=1;
 	int tmp;
 	int i;
-	struct wcontext *ctx = gctx;
 
 	SelectObject(hDC,ctx->pens.celloutline);
 	SelectObject(hDC,ctx->brushes.cell);
@@ -668,7 +662,7 @@ static void DrawCell(HDC hDC,int x,int y)
 }
 
 // Set/reset unknown/unchecked
-static void ChangeChecking(HDC hDC, int x, int y, int allgens, int set)
+static void ChangeChecking(struct wcontext *ctx, HDC hDC, int x, int y, int allgens, int set)
 {
 	POINT *pts;
 	int numpts,i,j;
@@ -704,7 +698,7 @@ static void ChangeChecking(HDC hDC, int x, int y, int allgens, int set)
 			g.currfield[j][x][y] = s2;
 		}
 	}
-	DrawCell(hDC,x,y);
+	DrawCell(ctx,hDC,x,y);
 
 	for(i=0;i<numpts;i++) {
 		for(j=g1;j<=g2;j++)
@@ -714,13 +708,13 @@ static void ChangeChecking(HDC hDC, int x, int y, int allgens, int set)
 				g.currfield[j][pts[i].x][pts[i].y] = s2;
 			}
 		}
-		DrawCell(hDC,pts[i].x,pts[i].y);
+		DrawCell(ctx,hDC,pts[i].x,pts[i].y);
 	}
 }
 
 // set and paint all cells symmetrical to the given cell
 // (including the given cell)
-static void Symmetricalize(HDC hDC,int x,int y,int allgens)
+static void Symmetricalize(struct wcontext *ctx, HDC hDC,int x,int y,int allgens)
 {
 	POINT *pts;
 	int numpts,i,j;
@@ -733,7 +727,7 @@ static void Symmetricalize(HDC hDC,int x,int y,int allgens)
 			g.currfield[j][x][y]=g.currfield[g.curgen][x][y];
 		}
 	}
-	DrawCell(hDC,x,y);
+	DrawCell(ctx,hDC,x,y);
 
 	for(i=0;i<numpts;i++) {
 		g.currfield[g.curgen][pts[i].x][pts[i].y]=g.currfield[g.curgen][x][y];
@@ -743,16 +737,15 @@ static void Symmetricalize(HDC hDC,int x,int y,int allgens)
 				g.currfield[j][pts[i].x][pts[i].y]=g.currfield[g.curgen][x][y];
 			}
 		}
-		DrawCell(hDC,pts[i].x,pts[i].y);
+		DrawCell(ctx,hDC,pts[i].x,pts[i].y);
 	}
 }
 
 
-static void InvertCells(HDC hDC1)
+static void InvertCells(struct wcontext *ctx, HDC hDC1)
 {
 	RECT r;
 	HDC hDC;
-	struct wcontext *ctx = gctx;
 
 	if(ctx->endcell.x>=ctx->startcell.x) {
 		r.left= ctx->startcell.x*cellwidth;
@@ -783,15 +776,13 @@ static void InvertCells(HDC hDC1)
 }
 
 
-static void SelectOff(HDC hDC)
+static void SelectOff(struct wcontext *ctx, HDC hDC)
 {
-	struct wcontext *ctx = gctx;
-
 	if(ctx->selectstate<1) return;
 
 	if(ctx->selectstate) {
 		if(ctx->inverted) {
-			InvertCells(hDC);
+			InvertCells(ctx,hDC);
 			ctx->inverted=0;
 		}
 		ctx->selectstate=0;
@@ -799,24 +790,23 @@ static void SelectOff(HDC hDC)
 }
 
 
-static void DrawWindow(HDC hDC)
+static void DrawWindow(struct wcontext *ctx, HDC hDC)
 {
 	int i,j;
-	struct wcontext *ctx = gctx;
 
 	for(i=0;i<g.colmax;i++) {
 		for(j=0;j<g.rowmax;j++) {
-			DrawCell(hDC,i,j);
+			DrawCell(ctx,hDC,i,j);
 		}
 	}
-	DrawGuides(hDC);
+	DrawGuides(ctx,hDC);
 
 	if(ctx->selectstate>0) {
-		InvertCells(hDC);
+		InvertCells(ctx,hDC);
 	}
 }
 
-static void PaintWindow(HWND hWnd)
+static void PaintWindow(struct wcontext *ctx, HWND hWnd)
 {
 	HDC hdc;
 	HPEN hOldPen;
@@ -827,7 +817,7 @@ static void PaintWindow(HWND hWnd)
 	hOldPen= SelectObject(hdc, GetStockObject(BLACK_PEN));
 	hOldBrush=SelectObject(hdc,GetStockObject(LTGRAY_BRUSH));
 
-	DrawWindow(hdc);
+	DrawWindow(ctx,hdc);
 
 	SelectObject(hdc,hOldPen);
 	SelectObject(hdc,hOldBrush);
@@ -858,7 +848,7 @@ static void FixFrozenCells(void)
 
 
 //returns 0 if processed
-static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
+static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wParam)
 {
 	int x,y;
 	int i,j;
@@ -868,7 +858,6 @@ static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 	int lastval;
 	int allgens=0;
 	int newval;
-	struct wcontext *ctx = gctx;
 
 	newval = -1;
 
@@ -897,7 +886,7 @@ static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 
 		if(x==ctx->startcell.x && y==ctx->startcell.y) {  // cursor over starting cell
 			hDC=GetDC(ctx->hwndMain);
-			InvertCells(hDC); // turn off
+			InvertCells(ctx,hDC); // turn off
 			ReleaseDC(ctx->hwndMain,hDC);
 
 			ctx->inverted=0;
@@ -910,13 +899,13 @@ static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 		// else we're at a different cell
 			
 		hDC=GetDC(ctx->hwndMain);
-		if(ctx->inverted) InvertCells(hDC);    // turn off
+		if(ctx->inverted) InvertCells(ctx,hDC);    // turn off
 		ctx->inverted=0;
 
 		ctx->endcell.x=x;
 		ctx->endcell.y=y;
 
-		InvertCells(hDC);    // turn back on
+		InvertCells(ctx,hDC);    // turn back on
 
 		// record the select region
 		if(ctx->startcell.x<=ctx->endcell.x) {
@@ -945,7 +934,7 @@ static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 
 	case WM_LBUTTONDOWN:
 		if(ctx->selectstate>0) {
-			SelectOff(NULL);
+			SelectOff(ctx,NULL);
 		}
 
 		ctx->selectstate=1;
@@ -1018,7 +1007,7 @@ static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 
 	tmp=ctx->selectstate;
 
-	SelectOff(hDC);
+	SelectOff(ctx,hDC);
 
 	if(ctx->searchstate == 0) {
 		if(tmp==2) {
@@ -1028,9 +1017,9 @@ static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 						if (newval < 10)
 						{
 							g.currfield[g.curgen][i][j]=newval;
-							Symmetricalize(hDC,i,j,allgens);
+							Symmetricalize(ctx,hDC,i,j,allgens);
 						} else {
-							ChangeChecking(hDC,i,j,allgens,newval == 10);
+							ChangeChecking(ctx,hDC,i,j,allgens,newval == 10);
 						}
 					}
 				}
@@ -1041,9 +1030,9 @@ static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 				if (newval < 10)
 				{
 					g.currfield[g.curgen][x][y]=newval;
-					Symmetricalize(hDC,x,y,allgens);
+					Symmetricalize(ctx,hDC,x,y,allgens);
 				} else {
-					ChangeChecking(hDC,x,y,allgens,newval == 10);
+					ChangeChecking(ctx,hDC,x,y,allgens,newval == 10);
 				}
 			}
 		}
@@ -1051,7 +1040,7 @@ static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 
 	FixFrozenCells();
 
-	DrawGuides(hDC);
+	DrawGuides(ctx,hDC);
 
 	ReleaseDC(ctx->hwndMain,hDC);
 	return 0;
@@ -1273,11 +1262,10 @@ static void do_combine(void)
 	g.differentcombinedcells = 0;
 }
 
-static void show_combine(void)
+static void show_combine(struct wcontext *ctx)
 {
 	int i,j,g1;
 	CELL *cell;
-	struct wcontext *ctx = gctx;
 
 	if (g.combinedcells > 0)
 	{
@@ -1303,7 +1291,7 @@ static void show_combine(void)
 	InvalidateRect(ctx->hwndMain,NULL,FALSE);
 }
 
-static void pause_search(void);  // forward decl
+static void pause_search(struct wcontext *ctx);  // forward decl
 
 static DWORD WINAPI search_thread(LPVOID foo)
 {
@@ -1367,7 +1355,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 
 		if (g.combine)
 		{
-			show_combine();
+			show_combine(ctx);
 			if (g.combining)
 			{
 				StringCbPrintf(buf,sizeof(buf),_T("Search completed: %d cell%s found"),
@@ -1411,10 +1399,9 @@ done:
 }
 
 
-static void resume_search(void)
+static void resume_search(struct wcontext *ctx)
 {
 	DWORD threadid;
-	struct wcontext *ctx = gctx;
 
 	SetWindowText(ctx->hwndFrame,_T("WinLifeSearch"));
 	if (g.combine)
@@ -1460,10 +1447,9 @@ static void resume_search(void)
 
 }
 
-static BOOL prepare_search(BOOL load)
+static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 {
 	int i;
-	struct wcontext *ctx = gctx;
 
 	if(ctx->searchstate!=0) {
 		wlsError(_T("A search is already running"),0);
@@ -1541,19 +1527,18 @@ static BOOL prepare_search(BOOL load)
 	return TRUE;
 }
 
-static void start_search(void)
+static void start_search(struct wcontext *ctx)
 {
-	if (prepare_search(FALSE))
+	if (prepare_search(ctx,FALSE))
 	{
-		resume_search();
+		resume_search(ctx);
 	}
 }
 
 
-static void pause_search(void)
+static void pause_search(struct wcontext *ctx)
 {
 	DWORD exitcode;
-	struct wcontext *ctx = gctx;
 
 	if(ctx->searchstate!=2) {
 		wlsError(_T("No search is running"),0);
@@ -1579,10 +1564,9 @@ static void pause_search(void)
 }
 
 
-static void reset_search(void)
+static void reset_search(struct wcontext *ctx)
 {
 	int i,j,k;
-	struct wcontext *ctx = gctx;
 
 	if(ctx->searchstate==0) {
 		wlsError(_T("No search in progress"),0);
@@ -1591,7 +1575,7 @@ static void reset_search(void)
 
 	// stop the search thread if it is running
 	if(ctx->searchstate==2) {
-		pause_search();
+		pause_search(ctx);
 	}
 
 	ctx->searchstate=0;
@@ -1612,19 +1596,16 @@ here:
 
 }
 
-static void open_state(void)
+static void open_state(struct wcontext *ctx)
 {
-	struct wcontext *ctx = gctx;
+	if(ctx->searchstate!=0) reset_search(ctx);
 
-	if(ctx->searchstate!=0) reset_search();
-
-	prepare_search(TRUE);
+	prepare_search(ctx,TRUE);
 }
 
 
-static void gen_changeby(int delta)
+static void gen_changeby(struct wcontext *ctx, int delta)
 {
-	struct wcontext *ctx = gctx;
 	if(g.genmax<2) return;
 	g.curgen+=delta;
 	if(g.curgen>=g.genmax) g.curgen=0;
@@ -1634,9 +1615,9 @@ static void gen_changeby(int delta)
 	InvalidateRect(ctx->hwndMain,NULL,FALSE);
 }
 
-static void hide_selection(void)
+static void hide_selection(struct wcontext *ctx)
 {
-	SelectOff(NULL);
+	SelectOff(ctx,NULL);
 }
 
 static void clear_gen(int g1)
@@ -1646,19 +1627,18 @@ static void clear_gen(int g1)
 			g.currfield[g1][i][j]=2;
 }
 
-static void clear_all(void)
+static void clear_all(struct wcontext *ctx)
 {	int g1;
 	for(g1=0;g1<GENMAX;g1++)
 		clear_gen(g1);
-	hide_selection();
+	hide_selection(ctx);
 }
 
-static void flip_h(int fromgen, int togen)
+static void flip_h(struct wcontext *ctx, int fromgen, int togen)
 {
 	int g1, r, c;
 	int fromrow, torow, fromcol, tocol;
 	int buffer;
-	struct wcontext *ctx = gctx;
 
 	if (ctx->selectstate == 2)
 	{
@@ -1687,12 +1667,11 @@ static void flip_h(int fromgen, int togen)
 	}
 }
 
-static void flip_v(int fromgen, int togen)
+static void flip_v(struct wcontext *ctx, int fromgen, int togen)
 {
 	int g1, r, c;
 	int fromrow, torow, fromcol, tocol;
 	int buffer;
-	struct wcontext *ctx = gctx;
 
 	if (ctx->selectstate == 2)
 	{
@@ -1721,12 +1700,11 @@ static void flip_v(int fromgen, int togen)
 	}
 }
 
-static void transpose(int fromgen, int togen)
+static void transpose(struct wcontext *ctx, int fromgen, int togen)
 {
 	int g1, r, c;
 	int fromrow, torow, fromcol, tocol;
 	int buffer;
-	struct wcontext *ctx = gctx;
 
 	if (ctx->selectstate == 2)
 	{
@@ -1761,12 +1739,11 @@ static void transpose(int fromgen, int togen)
 	}
 }
 
-static void shift_gen(int fromgen, int togen, int gend, int cold, int rowd)
+static void shift_gen(struct wcontext *ctx, int fromgen, int togen, int gend, int cold, int rowd)
 {
 	int g1,r,c;
 	int fromrow, torow, fromcol, tocol;
 	int gx,rx,cx;
-	struct wcontext *ctx = gctx;
 
 	if (ctx->selectstate == 2)
 	{
@@ -1801,14 +1778,13 @@ static void shift_gen(int fromgen, int togen, int gend, int cold, int rowd)
 	}
 }
 
-static void copy_result(void)
+static void copy_result(struct wcontext *ctx)
 {
 	int g1, i, j;
-	struct wcontext *ctx = gctx;
 
 	if (ctx->searchstate == 0) return;
 
-	if (ctx->searchstate != 1) pause_search();
+	if (ctx->searchstate != 1) pause_search(ctx);
 
 	for(g1=0;g1<g.genmax;g1++) {
 		for(i=0;i<g.colmax;i++){
@@ -1818,19 +1794,18 @@ static void copy_result(void)
 		}
 	}
 
-	if (ctx->searchstate != 0) reset_search();
+	if (ctx->searchstate != 0) reset_search(ctx);
 }
 
-static void copy_combination(void)
+static void copy_combination(struct wcontext *ctx)
 {
 	int g1, i, j;
-	struct wcontext *ctx = gctx;
 
 	if (ctx->searchstate == 0) return;
 
-	if (ctx->searchstate != 1) pause_search();
+	if (ctx->searchstate != 1) pause_search(ctx);
 
-	show_combine();
+	show_combine(ctx);
 
 	for(g1=0;g1<g.genmax;g1++) {
 		for(i=0;i<g.colmax;i++){
@@ -1840,21 +1815,19 @@ static void copy_combination(void)
 		}
 	}
 
-	if (ctx->searchstate != 0) reset_search();
+	if (ctx->searchstate != 0) reset_search(ctx);
 }
 
-static void clear_combination(void)
+static void clear_combination(struct wcontext *ctx)
 {
-	struct wcontext *ctx = gctx;
-
 	if (ctx->searchstate == 0) return;
 
-	if (ctx->searchstate != 1) pause_search();
+	if (ctx->searchstate != 1) pause_search(ctx);
 
 	g.combining = 0;
 }
 
-static void copytoclipboard(void)
+static void copytoclipboard(struct wcontext *ctx)
 {
 	DWORD size;
 	HGLOBAL hClip;
@@ -1863,7 +1836,6 @@ static void copytoclipboard(void)
 	TCHAR *s;
 	int i,j;
 	int offset;
-	struct wcontext *ctx = gctx;
 
 	if(ctx->searchstate==0) {
 		// bornrules/liverules may not be set up yet
@@ -1915,15 +1887,15 @@ static void copytoclipboard(void)
 	CloseClipboard();
 }
 
-static void handle_MouseWheel(HWND hWnd, WPARAM wParam)
+static void handle_MouseWheel(struct wcontext *ctx, HWND hWnd, WPARAM wParam)
 {
 	signed short delta = (signed short)(HIWORD(wParam));
 	while(delta >= 120) {
-		gen_changeby(-1);
+		gen_changeby(ctx,-1);
 		delta -= 120;
 	}
 	while(delta <= -120) {
-		gen_changeby(1);
+		gen_changeby(ctx,1);
 		delta += 120;
 	}
 }
@@ -1940,7 +1912,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 	switch(msg) {
 
 	case WM_MOUSEWHEEL:
-		handle_MouseWheel(hWnd, wParam);
+		handle_MouseWheel(ctx, hWnd, wParam);
 		return 0;
 
 	case WM_CREATE:
@@ -1997,7 +1969,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 	case WM_CHAR:
 		GetCursorPos(&pt);
 		ScreenToClient(hWnd,&pt);
-		return ButtonClick(msg,(WORD)pt.x,(WORD)pt.y,wParam);
+		return ButtonClick(ctx,msg,(WORD)pt.x,(WORD)pt.y,wParam);
 
 
 	case WM_COMMAND:
@@ -2027,142 +1999,142 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			DialogBox(ctx->hInst,_T("DLGSEARCHSETTINGS"),hWnd,DlgProcSearch);
 			return 0;
 		case IDC_SEARCHSTART:
-			start_search();
+			start_search(ctx);
 			return 0;
 		case IDC_SEARCHPREPARE:
-			prepare_search(FALSE);
+			prepare_search(ctx,FALSE);
 			return 0;
 		case IDC_SEARCHPAUSE:
-			pause_search();
+			pause_search(ctx);
 			return 0;
 		case IDC_SEARCHRESET:
-			reset_search();
+			reset_search(ctx);
 			return 0;
 		case IDC_SEARCHRESUME:
-			resume_search();
+			resume_search(ctx);
 			return 0;
 		case IDC_SEARCHBACKUP:
 			if (ctx->searchstate==2)
-				pause_search();
+				pause_search(ctx);
 			if(ctx->searchstate==1)
 				getbackup("1 ");
 			return 0;
 		case IDC_SEARCHBACKUP2:
 			if (ctx->searchstate==2)
-				pause_search();
+				pause_search(ctx);
 			if(ctx->searchstate==1)
 				getbackup("20 ");
 			return 0;
 		case IDC_OPENSTATE:
-			open_state();
+			open_state(ctx);
 			return 0;
 		case IDC_SAVEGAME:
 			if (ctx->searchstate==0) {
-				if (prepare_search(FALSE)) {
+				if (prepare_search(ctx,FALSE)) {
 					dumpstate(NULL, FALSE);
-					reset_search();
+					reset_search(ctx);
 				}
 			} else if (ctx->searchstate==1) {
 				dumpstate(NULL, FALSE);
 			} else if (ctx->searchstate==2) {
-				pause_search();
+				pause_search(ctx);
 				dumpstate(NULL, FALSE);
-				resume_search();
+				resume_search(ctx);
 			}
 			return 0;
 		case IDC_NEXTGEN:
-			gen_changeby(1);
+			gen_changeby(ctx,1);
 			return 0;
 		case IDC_PREVGEN:
-			gen_changeby(-1);
+			gen_changeby(ctx,-1);
 			return 0;
 		case IDC_EDITCOPY:
-			copytoclipboard();
+			copytoclipboard(ctx);
 			return 0;
 		case IDC_CLEARGEN:
 			if(ctx->searchstate == 0) clear_gen(g.curgen);
-			hide_selection();
+			hide_selection(ctx);
 			InvalidateRect(ctx->hwndMain,NULL,FALSE);
 			return 0;
 		case IDC_CLEAR:
-			if(ctx->searchstate == 0) clear_all();
+			if(ctx->searchstate == 0) clear_all(ctx);
 			InvalidateRect(ctx->hwndMain,NULL,FALSE);
 			return 0;
 		case IDC_COPYRESULT:
-			if(ctx->searchstate != 0) copy_result();
+			if(ctx->searchstate != 0) copy_result(ctx);
 			return 0;
 		case IDC_COPYCOMBINATION:
-			if (ctx->searchstate != 0) copy_combination();
+			if (ctx->searchstate != 0) copy_combination(ctx);
 			return 0;
 		case IDC_CLEARCOMBINATION:
-			if (ctx->searchstate != 0) clear_combination();
+			if (ctx->searchstate != 0) clear_combination(ctx);
 			return 0;
 		case IDC_SHIFTGUP:
-			if(ctx->searchstate == 0) shift_gen(g.curgen, g.curgen, 0, 0, -1);
+			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 0, -1);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
 			return 0;
 		case IDC_SHIFTGDOWN:
-			if(ctx->searchstate == 0) shift_gen(g.curgen, g.curgen, 0, 0, 1);
+			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 0, 1);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
 			return 0;
 		case IDC_SHIFTGLEFT:
-			if(ctx->searchstate == 0) shift_gen(g.curgen, g.curgen, 0, -1, 0);
+			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, -1, 0);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
 			return 0;
 		case IDC_SHIFTGRIGHT:
-			if(ctx->searchstate == 0) shift_gen(g.curgen, g.curgen, 0, 1, 0);
+			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 1, 0);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
 			return 0;
 		case IDC_SHIFTAUP:
-			if(ctx->searchstate == 0) shift_gen(0, GENMAX-1, 0, 0, -1);
+			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, 0, -1);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
 			return 0;
 		case IDC_SHIFTADOWN:
-			if(ctx->searchstate == 0) shift_gen(0, GENMAX-1, 0, 0, 1);
+			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, 0, 1);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
 			return 0;
 		case IDC_SHIFTALEFT:
-			if(ctx->searchstate == 0) shift_gen(0, GENMAX-1, 0, -1, 0);
+			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, -1, 0);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
 			return 0;
 		case IDC_SHIFTARIGHT:
-			if(ctx->searchstate == 0) shift_gen(0, GENMAX-1, 0, 1, 0);
+			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, 1, 0);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
 			return 0;
 		case IDC_SHIFTAPAST:
-			if(ctx->searchstate == 0) shift_gen(0, g.genmax-1, -1, 0, 0);
+			if(ctx->searchstate == 0) shift_gen(ctx, 0, g.genmax-1, -1, 0, 0);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
 			return 0;
 		case IDC_SHIFTAFUTURE:
-			if(ctx->searchstate == 0) shift_gen(0, g.genmax-1, 1, 0, 0);
+			if(ctx->searchstate == 0) shift_gen(ctx, 0, g.genmax-1, 1, 0, 0);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
 			return 0;
 		case ID_FLIP_GEN_H:
-			if(ctx->searchstate == 0) flip_h(g.curgen, g.curgen);
+			if(ctx->searchstate == 0) flip_h(ctx, g.curgen, g.curgen);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
 			return 0;
 		case ID_FLIP_GEN_V:
-			if(ctx->searchstate == 0) flip_v(g.curgen, g.curgen);
+			if(ctx->searchstate == 0) flip_v(ctx, g.curgen, g.curgen);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
 			return 0;
 		case ID_FLIP_ALL_H:
-			if(ctx->searchstate == 0) flip_h(0, GENMAX - 1);
+			if(ctx->searchstate == 0) flip_h(ctx, 0, GENMAX - 1);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
 			return 0;
 		case ID_FLIP_ALL_V:
-			if(ctx->searchstate == 0) flip_v(0, GENMAX - 1);
+			if(ctx->searchstate == 0) flip_v(ctx, 0, GENMAX - 1);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
 			return 0;
 		case ID_TRANS_GEN:
-			if(ctx->searchstate == 0) transpose(g.curgen, g.curgen);
+			if(ctx->searchstate == 0) transpose(ctx, g.curgen, g.curgen);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
 			return 0;
 		case ID_TRANS_ALL:
-			if(ctx->searchstate == 0) transpose(0, GENMAX - 1);
+			if(ctx->searchstate == 0) transpose(ctx, 0, GENMAX - 1);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
 			return 0;
 		case ID_HIDESEL:
-			hide_selection();
+			hide_selection(ctx);
 			return 0;
 		break;
 		}
@@ -2183,7 +2155,7 @@ static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
 	switch(msg) {
 	case WM_PAINT:
-		PaintWindow(hWnd);
+		PaintWindow(ctx,hWnd);
 		return 0;
 	case WM_HSCROLL:
 		switch(id) {
@@ -2198,7 +2170,7 @@ static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 		default:
 			return 0;
 		}
-		set_main_scrollbars(1);
+		set_main_scrollbars(ctx,1);
 		return 0;
 	case WM_VSCROLL:
 		switch(id) {
@@ -2213,17 +2185,17 @@ static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 		default:
 			return 0;
 		}
-		set_main_scrollbars(1);
+		set_main_scrollbars(ctx,1);
 		return 0;
 	case WM_SIZE:
-		set_main_scrollbars(0);
+		set_main_scrollbars(ctx,0);
 		return 0;
 	case WM_LBUTTONDOWN:
 	case WM_RBUTTONDOWN:
 	case WM_LBUTTONUP:
 	case WM_MOUSEMOVE:
 		if(ctx->searchstate==0) {
-			ButtonClick(msg,LOWORD(lParam),HIWORD(lParam),wParam);
+			ButtonClick(ctx,msg,LOWORD(lParam),HIWORD(lParam),wParam);
 		}
 		return 0;
 	}
@@ -2365,6 +2337,8 @@ static INT_PTR CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
+	struct wcontext *ctx = gctx;
+
 	id=LOWORD(wParam);
 
 	switch (msg) {
@@ -2382,7 +2356,7 @@ static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 			if(g.rowmax<1) g.rowmax=1;
 			if(g.colmax>COLMAX) g.colmax=COLMAX;
 			if(g.rowmax>ROWMAX) g.rowmax=ROWMAX;
-			SetCenter();
+			RecalcCenter(ctx);
 
 			// put these in a separate Validate function
 			if(g.colmax!=g.rowmax) {
@@ -2407,7 +2381,7 @@ static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 				}
 			}
 
-			set_main_scrollbars(1);
+			set_main_scrollbars(ctx,1);
 			// fall through
 		case IDCANCEL:
 			EndDialog(hWnd, TRUE);
