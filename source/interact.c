@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include "lifesrc.h"
-#include "wls.h"
 #include <strsafe.h>
 
 extern struct globals_struct g;

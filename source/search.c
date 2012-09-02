@@ -12,7 +12,6 @@
 #include "wls-config.h"
 #include <windows.h>
 #include <tchar.h>
-#include "wls.h"
 #include "lifesrc.h"
 #include <search.h>
 
