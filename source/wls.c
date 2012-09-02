@@ -1451,6 +1451,10 @@ static void resume_search(void)
 	}
 	else {
 		SetWindowText(ctx->hwndFrame,_T("WinLifeSearch"));
+
+		// Request that the computer not go to sleep while we're searching.
+		SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
+
 		SetThreadPriority(ctx->hthread,THREAD_PRIORITY_BELOW_NORMAL);
 	}
 
@@ -1564,6 +1568,9 @@ static void pause_search(void)
 	} while(exitcode==STILL_ACTIVE);
 	CloseHandle(ctx->hthread);
 	ctx->searchstate=1;
+
+	// Tell Windows we're okay with the computer going to sleep.
+	SetThreadExecutionState(ES_CONTINUOUS);
 
 	printgen();
 
