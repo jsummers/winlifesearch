@@ -99,7 +99,7 @@ initcells()
 	CELL *	cell;
 	CELL *	cell2;
 
-	inited = FALSE;
+	g.inited = FALSE;
 
 	newcellcount=0;
 	auxcellcount=0;
@@ -231,8 +231,8 @@ initcells()
 		for (col = 1; col <= g.colmax; col++)
 		{
 			cell = findcell(row, col, 0);
-			cell->rowinfo = &rowinfo[row];
-			cell->colinfo = &colinfo[col];
+			cell->rowinfo = &g.rowinfo[row];
+			cell->colinfo = &g.colinfo[col];
 		}
 	}
 
@@ -244,15 +244,15 @@ initcells()
 		getunknown = getnormalunknown;
 	}
 
-	newset = settable;
-	nextset = settable;
+	g.newset = g.settable;
+	g.nextset = g.settable;
 
-	searchset = searchtable;
+	g.searchset = g.searchtable;
 
 	g.curstatus = OK;
 	initimplic();
 
-	inited = TRUE;
+	g.inited = TRUE;
 }
 
 
@@ -418,7 +418,7 @@ rescell(CELL *cell)
 
 	if (cell->state == UNK) return;
 
-	--cellcount; // take all loops as a single cell
+	--g.cellcount; // take all loops as a single cell
 
 	c1 = cell;
 
@@ -432,8 +432,8 @@ rescell(CELL *cell)
 				--cell->colinfo->oncount;
 				cell->colinfo->sumpos -= cell->row;
 				if (g.nearcols) adjustnear(cell, -1);
-				--g0oncellcount;
-				if (cell->colinfo->setcount == g.rowmax) --fullcolumns;
+				--g.g0oncellcount;
+				if (cell->colinfo->setcount == g.rowmax) --g.fullcolumns;
 				--cell->colinfo->setcount;
 			}
 
@@ -441,9 +441,9 @@ rescell(CELL *cell)
 			{
 				if (cell->combined == ON) 
 				{
-					++differentcombinedcells;
+					++g.differentcombinedcells;
 				}
-				--setcombinedcells;
+				--g.setcombinedcells;
 			}
 
 			cell = cell->loop;
@@ -455,7 +455,7 @@ rescell(CELL *cell)
 			cell->state = UNK;
 			cell->free = TRUE;
 			if (cell->gen == 0) {
-				if (cell->colinfo->setcount == g.rowmax) --fullcolumns;
+				if (cell->colinfo->setcount == g.rowmax) --g.fullcolumns;
 				--cell->colinfo->setcount;
 
 			}
@@ -464,9 +464,9 @@ rescell(CELL *cell)
 			{
 				if (cell->combined == OFF) 
 				{
-					++differentcombinedcells;
+					++g.differentcombinedcells;
 				}
-				--setcombinedcells;
+				--g.setcombinedcells;
 			}
 
 			cell = cell->loop;
@@ -503,7 +503,7 @@ setcell(CELL *cell, STATE state, BOOL free)
 		return FALSE;
 	}
 
-	if (g.combining && (differentcombinedcells == 0)) return FALSE;
+	if (g.combining && (g.differentcombinedcells == 0)) return FALSE;
 
 	c1 = cell;
 
@@ -513,30 +513,30 @@ setcell(CELL *cell, STATE state, BOOL free)
 		do {
 			if (cell->gen == 0) {
 				if ((g.usecol != 0)
-					&& (colinfo[g.usecol].oncount == 0)
-					&& (colinfo[g.usecol].setcount == g.rowmax) && inited)
+					&& (g.colinfo[g.usecol].oncount == 0)
+					&& (g.colinfo[g.usecol].setcount == g.rowmax) && g.inited)
 				{
 					return FALSE;
 				}
 
-				if ((g.maxcount != 0) && (g0oncellcount >= g.maxcount))
+				if ((g.maxcount != 0) && (g.g0oncellcount >= g.maxcount))
 				{
 					return FALSE;
 				}
 
 				if (g.nearcols && (cell->near1 <= 0) && (cell->col > 1)
-					&& inited)
+					&& g.inited)
 				{
 					return FALSE;
 				}
 
 				if (g.colcells && (cell->colinfo->oncount >= g.colcells)
-					&& inited)
+					&& g.inited)
 				{
 					return FALSE;
 				}
 
-				if (g.colwidth && inited && checkwidth(cell))
+				if (g.colwidth && g.inited && checkwidth(cell))
 					return FALSE;
 
 				if (g.nearcols) adjustnear(cell, 1);
@@ -547,20 +547,20 @@ setcell(CELL *cell, STATE state, BOOL free)
 
 				cell->colinfo->setcount++;
 
-				if (cell->colinfo->setcount == g.rowmax) fullcolumns++;
+				if (cell->colinfo->setcount == g.rowmax) g.fullcolumns++;
 
 				cell->colinfo->sumpos += cell->row;
 
-				g0oncellcount++;
+				g.g0oncellcount++;
 			}
 
 			cell->state = ON;
 			cell->free = free;
 
 			if (cell->active) {
-				*newset++ = cell;
+				*g.newset++ = cell;
 
-				*searchset++ = searchlist;
+				*g.searchset++ = searchlist;
 
 				while ((searchlist != NULL) && (searchlist->state != UNK)) {
 					searchlist = searchlist->search;
@@ -574,10 +574,10 @@ setcell(CELL *cell, STATE state, BOOL free)
 			{
 				if (cell->combined == ON) 
 				{
-					--differentcombinedcells;
+					--g.differentcombinedcells;
 				}
-				++setcombinedcells;
-				if ((setcombinedcells == combinedcells) && (differentcombinedcells == 0)) 
+				++g.setcombinedcells;
+				if ((g.setcombinedcells == g.combinedcells) && (g.differentcombinedcells == 0)) 
 				{
 					return FALSE;
 				}
@@ -590,24 +590,24 @@ setcell(CELL *cell, STATE state, BOOL free)
 		do {
 			if (cell->gen == 0) {
 				if ((g.usecol != 0)
-					&& (colinfo[g.usecol].oncount == 0)
-					&& (colinfo[g.usecol].setcount == g.rowmax) && inited)
+					&& (g.colinfo[g.usecol].oncount == 0)
+					&& (g.colinfo[g.usecol].setcount == g.rowmax) && g.inited)
 				{
 					return FALSE;
 				}
 
 				cell->colinfo->setcount++;
 
-				if (cell->colinfo->setcount == g.rowmax) fullcolumns++;
+				if (cell->colinfo->setcount == g.rowmax) g.fullcolumns++;
 			}
 
 			cell->state = OFF;
 			cell->free = free;
 
 			if (cell->active) {
-				*newset++ = cell;
+				*g.newset++ = cell;
 
-				*searchset++ = searchlist;
+				*g.searchset++ = searchlist;
 
 				while ((searchlist != NULL) && (searchlist->state != UNK)) {
 					searchlist = searchlist->search;
@@ -620,10 +620,10 @@ setcell(CELL *cell, STATE state, BOOL free)
 			{
 				if (cell->combined == OFF) 
 				{
-					--differentcombinedcells;
+					--g.differentcombinedcells;
 				}
-				++setcombinedcells;
-				if ((setcombinedcells == combinedcells) && (differentcombinedcells == 0)) 
+				++g.setcombinedcells;
+				if ((g.setcombinedcells == g.combinedcells) && (g.differentcombinedcells == 0)) 
 				{
 					return FALSE;
 				}
@@ -633,7 +633,7 @@ setcell(CELL *cell, STATE state, BOOL free)
 		} while (c1 != cell);
 	}
 
-	++cellcount; // take whole loop as a single cell
+	++g.cellcount; // take whole loop as a single cell
 
 	return TRUE;
 }
@@ -788,14 +788,14 @@ examinenext()
 	 * If there are no more cells to examine, then what we have
 	 * is consistent.
 	 */
-	if (nextset == newset)
+	if (g.nextset == g.newset)
 		return CONSISTENT;
 
 	/*
 	 * Get the next cell to examine, and check it out for symmetry
 	 * and for consistency with its previous and next generations.
 	 */
-	cell = *nextset++;
+	cell = *g.nextset++;
 
 	DPRINTF4("Examining saved cell %d %d %d (%s) for consistency\n",
 		cell->row, cell->col, cell->gen,
@@ -840,24 +840,24 @@ backup()
 
 	// first let's find how far to backup
 
-	nextset = newset;
+	g.nextset = g.newset;
 
-	while (nextset != settable)
+	while (g.nextset != g.settable)
 	{
-		cell = *--nextset;
-		--searchset;
+		cell = *--g.nextset;
+		--g.searchset;
 
 		if (!cell->free) continue;
 
 		// free cell found
 		// record old status
-		prevstate = cell->state;
+		g.prevstate = cell->state;
 
-		searchlist = *searchset;
+		searchlist = *g.searchset;
 
 		// reset the stack and return the cell
-		while (newset != nextset) {
-			rescell(*--newset);
+		while (g.newset != g.nextset) {
+			rescell(*--g.newset);
 		}
 
 		return cell;
@@ -866,8 +866,8 @@ backup()
 	// free cell not found
 	// let's reset the stack anyway
 
-	while (newset != nextset) {
-		rescell(*--newset);
+	while (g.newset != g.nextset) {
+		rescell(*--g.newset);
 	}
 
 	return NULL;
@@ -886,11 +886,11 @@ go(CELL *cell, STATE state, BOOL free)
 	for (;;)
 	{
 
-		setpos = nextset;
+		setpos = g.nextset;
 
 		if (proceed(cell, state, free)) return TRUE;
 
-		if ((setpos == nextset) && free)
+		if ((setpos == g.nextset) && free)
 		{
 			// no cell added to stack
 			// no backup required
@@ -901,7 +901,7 @@ go(CELL *cell, STATE state, BOOL free)
 
 			if (cell == NULL) return FALSE;
 
-			state = (ON + OFF) - prevstate;
+			state = (ON + OFF) - g.prevstate;
 		}
 		free = FALSE;
 	}
@@ -958,13 +958,13 @@ getaverageunknown()
 
 		testcol = curcol - 1;
 
-		while ((testcol > 0) && (colinfo[testcol].oncount <= 0))
+		while ((testcol > 0) && (g.colinfo[testcol].oncount <= 0))
 			testcol--;
 
 		if (testcol > 0)
 		{
-			wantrow = colinfo[testcol].sumpos /
-				colinfo[testcol].oncount;
+			wantrow = g.colinfo[testcol].sumpos /
+				g.colinfo[testcol].oncount;
 		}
 		else
 			wantrow = (g.rowmax + 1) / 2;
@@ -1007,17 +1007,17 @@ static BOOL getsmartnumbers(CELL *cell)
 	if (cell->state != UNK) return 2;
 
 	// remember set position for proper backup
-	setpos = newset;
+	setpos = g.newset;
 
 	// remember cell count to calculate the change
-	cellno = cellcount;
+	cellno = g.cellcount;
 
-	comb0 = comb1 = differentcombinedcells + setcombinedcells;
+	comb0 = comb1 = g.differentcombinedcells + g.setcombinedcells;
 	// test the cell
 	if (proceed(cell, ON, TRUE))
 	{
-		smartlen1 = cellcount - cellno;
-		comb1 = differentcombinedcells  + setcombinedcells - comb1;
+		g.smartlen1 = g.cellcount - cellno;
+		comb1 = g.differentcombinedcells  + g.setcombinedcells - comb1;
 
 		// back up
 		backup(); 
@@ -1026,31 +1026,31 @@ static BOOL getsmartnumbers(CELL *cell)
 
 		if (proceed(cell, OFF, TRUE))
 		{
-			smartlen0 = cellcount - cellno;
-			comb0 = differentcombinedcells + setcombinedcells - comb0;
+			g.smartlen0 = g.cellcount - cellno;
+			comb0 = g.differentcombinedcells + g.setcombinedcells - comb0;
 
 			if (g.smarton)
 			{
 				if (comb0 == comb1)
 				{
-					smartcomb = comb0;
-					smartchoice = (smartlen1 > smartlen0) ? ON : OFF;
+					g.smartcomb = comb0;
+					g.smartchoice = (g.smartlen1 > g.smartlen0) ? ON : OFF;
 				}
 				else if (comb0 > comb1)
 				{
-					smartcomb = comb0;
-					smartchoice = OFF;
+					g.smartcomb = comb0;
+					g.smartchoice = OFF;
 				}
 				else
 				{
-					smartcomb = comb1;
-					smartchoice = ON;
+					g.smartcomb = comb1;
+					g.smartchoice = ON;
 				}
 			}
 			else
 			{
-				smartcomb = 0;
-				smartchoice = (smartlen1 > smartlen0) ? ON : OFF;
+				g.smartcomb = 0;
+				g.smartchoice = (g.smartlen1 > g.smartlen0) ? ON : OFF;
 			}
 
 			// back up
@@ -1061,10 +1061,10 @@ static BOOL getsmartnumbers(CELL *cell)
 		} else {
 			// OFF state inconsistent
 			// makes a good candidate
-			smartchoice = OFF;
+			g.smartchoice = OFF;
 
 			// back up if something changed
-			if (setpos != newset) backup();
+			if (setpos != g.newset) backup();
 
 			return FALSE;
 		}
@@ -1072,10 +1072,10 @@ static BOOL getsmartnumbers(CELL *cell)
 	} else {
 		// ON state inconsistent
 		// it's actually a good candidate
-		smartchoice = ON;
+		g.smartchoice = ON;
 
 		// back up if something changed
-		if (setpos != newset) backup();
+		if (setpos != g.newset) backup();
 
 		return FALSE;
 
@@ -1124,7 +1124,7 @@ getsmartunknown()
 		{
 			if (getsmartnumbers(cell))
 			{
-				if (bestcomb == smartcomb)
+				if (bestcomb == g.smartcomb)
 				{
 					// (smartlen0, smartlen1) is better than (bestlen0, bestlen1) if
 					// 1/2**smartlen0 + 1/2**smartlen1 < 1/2**bestlen0 + 1/2**bestlen1
@@ -1134,7 +1134,7 @@ getsmartunknown()
 					// both sides are binary numbers with one or two 1's
 					// so let's compare the exponents
 
-					n1 = smartlen0 + smartlen1;
+					n1 = g.smartlen0 + g.smartlen1;
 					n2 = n1 + bestlen1;
 					n1 += bestlen0;
 
@@ -1152,8 +1152,8 @@ getsmartunknown()
 
 					// max = bestlen0 + bestlen1
 
-					n1 = max + smartlen0;
-					n2 = max + smartlen1;
+					n1 = max + g.smartlen0;
+					n2 = max + g.smartlen1;
 
 					if (n1 > n2)
 					{
@@ -1170,26 +1170,26 @@ getsmartunknown()
 					if ((a > c) || ((a = c) && (b > d)))
 					{
 						best = cell;
-						bestchoice = smartchoice;
-						// bestcomb = smartcomb; -- it's equal anyway
-						bestlen1 = smartlen1;
-						bestlen0 = smartlen0;
+						bestchoice = g.smartchoice;
+						// bestcomb = g.smartcomb; -- it's equal anyway
+						bestlen1 = g.smartlen1;
+						bestlen0 = g.smartlen0;
 						max = bestlen0 + bestlen1;
 					}
 				}
-				else if (bestcomb < smartcomb)
+				else if (bestcomb < g.smartcomb)
 				{
 					best = cell;
-					bestchoice = smartchoice;
-					bestcomb = smartcomb;
-					bestlen1 = smartlen1;
-					bestlen0 = smartlen0;
+					bestchoice = g.smartchoice;
+					bestcomb = g.smartcomb;
+					bestlen1 = g.smartlen1;
+					bestlen0 = g.smartlen0;
 					max = bestlen0 + bestlen1;
 				}
 			} else {
 				// the cell can be set only one way
 				best = cell;
-				bestchoice = smartchoice;
+				bestchoice = g.smartchoice;
 				max = MAXCELLS + 1;
 				window = 0;
 			}
@@ -1222,15 +1222,15 @@ getsmartunknown()
 		if (g.smarton)
 		{
 			// propose the shorter tree
-			smartchoice = bestchoice;
+			g.smartchoice = bestchoice;
 		} else {
-			smartchoice = UNK;
+			g.smartchoice = UNK;
 		}
 		return best;
 	}
 
 	// fall back to standard
-	smartchoice = UNK;
+	g.smartchoice = UNK;
 
 	// Just return the first UNK cell
 	// This shouldn't be often anyway
@@ -1254,7 +1254,7 @@ choose(cell)
 	 * use the selection
 	 */
 
-	if (smartchoice != UNK) return smartchoice;
+	if (g.smartchoice != UNK) return g.smartchoice;
 
 	/*
 	 * If we are following cells in other generations,
@@ -1307,7 +1307,7 @@ search()
 			return ERROR1;
 
 		free = FALSE;
-		state = (ON + OFF) - prevstate;
+		state = (ON + OFF) - g.prevstate;
 
 	} else {
 
@@ -1335,10 +1335,10 @@ search()
 
 		// If it is time to dump our state, then do that.
 
-		if (dumpfreq && (++dumpcount >= dumpfreq))
+		if (g.dumpfreq && (++g.dumpcount >= g.dumpfreq))
 		{
-			dumpcount = 0;
-			dumpstate(dumpfile, FALSE);
+			g.dumpcount = 0;
+			dumpstate(g.dumpfile, FALSE);
 		}
 
 
@@ -1348,19 +1348,19 @@ search()
 
 		needwrite = FALSE;
 
-		if (outputcols &&
-			(fullcolumns >= outputlastcols + outputcols))
+		if (g.outputcols &&
+			(g.fullcolumns >= g.outputlastcols + g.outputcols))
 		{
-			outputlastcols = fullcolumns;
+			g.outputlastcols = g.fullcolumns;
 			needwrite = TRUE;
 		}
 
-		if (outputlastcols > fullcolumns)
-			outputlastcols = fullcolumns;
+		if (g.outputlastcols > g.fullcolumns)
+			g.outputlastcols = g.fullcolumns;
 
 		// If it is time to view the progress,then show it.
 
-		if (needwrite || (viewfreq && (++viewcount >= viewfreq)))
+		if (needwrite || (g.viewfreq && (++g.viewcount >= g.viewfreq)))
 		{
 			showcount();
 			printgen();
@@ -1372,7 +1372,7 @@ search()
 
 		if (needwrite)
 		{
-			writegen(outputfile, TRUE);
+			writegen(g.outputfile, TRUE);
 		}
 
 
@@ -1447,7 +1447,7 @@ checkwidth(cell)
 	CELL *	dcp;
 	BOOL	full;
 
-	if (!g.colwidth || !inited || cell->gen)
+	if (!g.colwidth || !g.inited || cell->gen)
 		return FALSE;
 
 	left = cell->colinfo->oncount;
@@ -1960,10 +1960,10 @@ initimplic(void)
 									for (faon = fon; faon <= 1-foff; faon++) { // try future
 										// here we have all possible states for the descriptor
 										// now for the rules
-										if (((caon == 0) && (faon == 0) && !bornrules[naon]) // both dead
-											|| ((caon != 0) && (faon == 0) && !liverules[naon]) // dying
-											|| ((caon == 0) && (faon != 0) && bornrules[naon]) // birth
-											|| ((caon != 0) && (faon != 0) && liverules[naon])) { // survival
+										if (((caon == 0) && (faon == 0) && !g.bornrules[naon]) // both dead
+											|| ((caon != 0) && (faon == 0) && !g.liverules[naon]) // dying
+											|| ((caon == 0) && (faon != 0) && g.bornrules[naon]) // birth
+											|| ((caon != 0) && (faon != 0) && g.liverules[naon])) { // survival
 											// woohoo! we got a valid state
 											valid = TRUE;
 											if (caon == 0) {

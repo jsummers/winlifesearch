@@ -55,7 +55,7 @@ static	int *param_table[] =
 	&g.knightsort,
 	&g.smart, &g.smartwindow, &g.smartthreshold,
 	&foundcount,
-	&g.combine, &g.combining, &combinedcells, &setcombinedcells, &differentcombinedcells, 
+	&g.combine, &g.combining, &g.combinedcells, &g.setcombinedcells, &g.differentcombinedcells, 
 
 	NULL
 };
@@ -211,7 +211,7 @@ void writegen(TCHAR *file1, BOOL append)
 	TCHAR buf[80];
 	TCHAR file[MAX_PATH];
 
-	if(!saveoutput && !outputcols) return;
+	if(!saveoutput && !g.outputcols) return;
 
 	if(file1) {
 		StringCchCopy(file,MAX_PATH,file1);
@@ -412,9 +412,9 @@ void dumpstate(TCHAR *file1, BOOL echo)
 	/*
 	 * Dump out those cells which have a setting.
 	 */
-	set = settable;
+	set = g.settable;
 
-	while (set != nextset)
+	while (set != g.nextset)
 	{
 		cell = *set++;
 
@@ -790,8 +790,8 @@ setrules(TCHAR *cp)
 
 	for (i = 0; i < 9; i++)
 	{
-		bornrules[i] = FALSE;
-		liverules[i] = FALSE;
+		g.bornrules[i] = FALSE;
+		g.liverules[i] = FALSE;
 	}
 
 	if (*cp == '\0')
@@ -825,10 +825,10 @@ setrules(TCHAR *cp)
 		for (i = 0; i < 9; i++)
 		{
 			if (bits & 0x01)
-				bornrules[i] = TRUE;
+				g.bornrules[i] = TRUE;
 
 			if (bits & 0x02)
-				liverules[i] = TRUE;
+				g.liverules[i] = TRUE;
 
 			bits >>= 2;
 		}
@@ -842,7 +842,7 @@ setrules(TCHAR *cp)
 			cp++;
 
 		while ((*cp >= '0') && (*cp <= '8'))
-			bornrules[*cp++ - '0'] = TRUE;
+			g.bornrules[*cp++ - '0'] = TRUE;
 
 		if ((*cp != ',') && (*cp != '/'))
 			return FALSE;
@@ -853,7 +853,7 @@ setrules(TCHAR *cp)
 			cp++;
 
 		while ((*cp >= '0') && (*cp <= '8'))
-			liverules[*cp++ - '0'] = TRUE;
+			g.liverules[*cp++ - '0'] = TRUE;
 
 		if (*cp)
 			return FALSE;
@@ -869,7 +869,7 @@ setrules(TCHAR *cp)
 
 	for (i = 0; i < 9; i++)
 	{
-		if (bornrules[i])
+		if (g.bornrules[i])
 			*cp++ = '0' + i;
 	}
 
@@ -878,7 +878,7 @@ setrules(TCHAR *cp)
 
 	for (i = 0; i < 9; i++)
 	{
-		if (liverules[i])
+		if (g.liverules[i])
 			*cp++ = '0' + i;
 	}
 

@@ -45,12 +45,12 @@
  * Debugging macros
  */
 #if DEBUGFLAG
-#define	DPRINTF0(fmt)			if (debug) printf(fmt)
-#define	DPRINTF1(fmt,a1)		if (debug) printf(fmt,a1)
-#define	DPRINTF2(fmt,a1,a2)		if (debug) printf(fmt,a1,a2)
-#define	DPRINTF3(fmt,a1,a2,a3)		if (debug) printf(fmt,a1,a2,a3)
-#define	DPRINTF4(fmt,a1,a2,a3,a4)	if (debug) printf(fmt,a1,a2,a3,a4)
-#define	DPRINTF5(fmt,a1,a2,a3,a4,a5)	if (debug) printf(fmt,a1,a2,a3,a4,a5)
+#define	DPRINTF0(fmt)			if (g.debug) printf(fmt)
+#define	DPRINTF1(fmt,a1)		if (g.debug) printf(fmt,a1)
+#define	DPRINTF2(fmt,a1,a2)		if (g.debug) printf(fmt,a1,a2)
+#define	DPRINTF3(fmt,a1,a2,a3)		if (g.debug) printf(fmt,a1,a2,a3)
+#define	DPRINTF4(fmt,a1,a2,a3,a4)	if (g.debug) printf(fmt,a1,a2,a3,a4)
+#define	DPRINTF5(fmt,a1,a2,a3,a4,a5)	if (g.debug) printf(fmt,a1,a2,a3,a4,a5)
 #else
 #define	DPRINTF0(fmt)
 #define	DPRINTF1(fmt,a1)
@@ -219,50 +219,50 @@ struct globals_struct {
 	int trans_flip;
 	int trans_x;
 	int trans_y;
+
+	/*
+	 * These values are not affected when dumping and loading since they
+	 * do not affect the status of a search in progress.
+	 * They are either settable on the command line or are computed.
+	 */
+	BOOL debug;		/* enable debugging output (if compiled so) */
+	BOOL inited;		/* initialization has been done */
+	BOOL bornrules[16];	/* rules for whether a cell is to be born */
+	BOOL liverules[16];	/* rules for whether a live cell stays alive */
+	int curgen;		/* current generation for display */
+	int outputcols;	/* number of columns to save for output */
+	int outputlastcols;	/* last number of columns output */
+	int g0oncellcount;	/* number of live cells in generation 0 */
+	int cellcount; /* number of set cells */
+	long dumpfreq;	/* how often to perform dumps */
+	long dumpcount;	/* counter for dumps */
+	long viewfreq;	/* how often to view results */
+	long viewcount;	/* counter for viewing */
+	TCHAR dumpfile[80];
+	TCHAR outputfile[80];
+
+	int smartlen0;
+	int smartlen1;
+	int smartcomb;
+	STATE smartchoice; /* preferred state for the selected cell */
+
+	STATE prevstate; /* the state of the last free cell before backup() */
+
+	/*
+	 * Data about all of the cells.
+	 */
+	CELL * settable[MAXCELLS];	/* table of cells whose value is set */
+	CELL ** newset;		/* where to add new cells into setting table */
+	CELL **	nextset;	/* next cell in setting table to examine */
+	CELL *  searchtable[MAXCELLS]; /* a stack of searchlist positions */
+	CELL ** searchset;
+	ROWINFO	rowinfo[ROWMAX];	/* information about rows of gen 0 */
+	COLINFO	colinfo[COLMAX];	/* information about columns of gen 0 */
+	int	fullcolumns;	/* columns in gen 0 which are fully set */
+	int combinedcells;
+	int setcombinedcells;
+	int differentcombinedcells;
 };
-
-/*
- * These values are not affected when dumping and loading since they
- * do not affect the status of a search in progress.
- * They are either settable on the command line or are computed.
- */
-EXTERN	BOOL	debug;		/* enable debugging output (if compiled so) */
-EXTERN	BOOL	inited;		/* initialization has been done */
-EXTERN	BOOL	bornrules[16];	/* rules for whether a cell is to be born */
-EXTERN	BOOL	liverules[16];	/* rules for whether a live cell stays alive */
-EXTERN	int	curgen;		/* current generation for display */
-EXTERN	int	outputcols;	/* number of columns to save for output */
-EXTERN	int	outputlastcols;	/* last number of columns output */
-EXTERN	int	g0oncellcount;	/* number of live cells in generation 0 */
-EXTERN  int cellcount; /* number of set cells */
-EXTERN	long	dumpfreq;	/* how often to perform dumps */
-EXTERN	long	dumpcount;	/* counter for dumps */
-EXTERN	long	viewfreq;	/* how often to view results */
-EXTERN	long	viewcount;	/* counter for viewing */
-EXTERN  TCHAR dumpfile[80];
-EXTERN  TCHAR outputfile[80];
-
-EXTERN  int smartlen0;
-EXTERN  int smartlen1;
-EXTERN  int smartcomb;
-EXTERN  STATE smartchoice; /* preferred state for the selected cell */
-
-EXTERN  STATE prevstate; /* the state of the last free cell before backup() */
-
-/*
- * Data about all of the cells.
- */
-EXTERN	CELL *	settable[MAXCELLS];	/* table of cells whose value is set */
-EXTERN	CELL **	newset;		/* where to add new cells into setting table */
-EXTERN	CELL **	nextset;	/* next cell in setting table to examine */
-EXTERN  CELL *  searchtable[MAXCELLS]; /* a stack of searchlist positions */
-EXTERN  CELL ** searchset;
-EXTERN	ROWINFO	rowinfo[ROWMAX];	/* information about rows of gen 0 */
-EXTERN	COLINFO	colinfo[COLMAX];	/* information about columns of gen 0 */
-EXTERN	int	fullcolumns;	/* columns in gen 0 which are fully set */
-EXTERN  int combinedcells;
-EXTERN  int setcombinedcells;
-EXTERN  int differentcombinedcells;
 
 
 /*
