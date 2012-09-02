@@ -26,6 +26,7 @@
 #include <windows.h>
 #include <tchar.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <process.h>
 #include <malloc.h>
 #include <assert.h>
@@ -109,29 +110,54 @@ static const int symmap[] = {
 };
 
 
-void wlsError(TCHAR *m,int n)
+static void wlsErrorvf(struct wcontext *ctx, TCHAR *fmt, va_list ap)
 {
-	TCHAR s[80];
-	struct wcontext *ctx = gctx;
-	if(n) StringCbPrintf(s,sizeof(s),_T("%s (%d)"),m,n);
-	else StringCbCopy(s,sizeof(s),m);
-	MessageBox(ctx->hwndFrame,s,_T("Error"),MB_OK|MB_ICONWARNING);
+	TCHAR buf[500];
+	StringCbVPrintf(buf,sizeof(buf),fmt,ap);
+	MessageBox(ctx->hwndFrame,buf,_T("Error"),MB_OK|MB_ICONWARNING);
 }
 
-void wlsMessage(TCHAR *m,int n)
+// Show an error message box.
+void wlsErrorf(struct wcontext *ctx, TCHAR *fmt, ...)
 {
-	TCHAR s[180];
-	struct wcontext *ctx = gctx;
-	if(n) StringCbPrintf(s,sizeof(s),_T("%s (%d)"),m,n);
-	else StringCbCopy(s,sizeof(s),m);
-	MessageBox(ctx->hwndFrame,s,_T("Message"),MB_OK|MB_ICONINFORMATION);
+	va_list ap;
+	if (!ctx) ctx = gctx;
+	va_start(ap,fmt);
+	wlsErrorvf(ctx,fmt,ap);
+	va_end(ap);
 }
 
-void wlsStatus(TCHAR *msg)
+static void wlsMessagevf(struct wcontext *ctx, TCHAR *fmt, va_list ap)
 {
-	struct wcontext *ctx = gctx;
-	if(ctx->hwndStatus)
-		SetWindowText(ctx->hwndStatus,msg);
+	TCHAR buf[500];
+	StringCbVPrintf(buf,sizeof(buf),fmt,ap);
+	MessageBox(ctx->hwndFrame,buf,_T("Message"),MB_OK|MB_ICONINFORMATION);
+}
+
+void wlsMessagef(struct wcontext *ctx, TCHAR *fmt, ...)
+{
+	va_list ap;
+	if(!ctx) ctx = gctx;
+	va_start(ap,fmt);
+	wlsMessagevf(ctx,fmt,ap);
+	va_end(ap);
+}
+
+static void wlsStatusvf(struct wcontext *ctx, TCHAR *fmt, va_list ap)
+{
+	TCHAR buf[500];
+	StringCbVPrintf(buf,sizeof(buf),fmt,ap);
+	SetWindowText(ctx->hwndStatus,buf);
+}
+
+// Show something on the status bar.
+void wlsStatusf(struct wcontext *ctx, TCHAR *fmt, ...)
+{
+	va_list ap;
+	if(!ctx) ctx = gctx;
+	va_start(ap,fmt);
+	wlsStatusvf(ctx,fmt,ap);
+	va_end(ap);
 }
 
 void record_malloc(int func,void *m)
@@ -1099,8 +1125,8 @@ BOOL set_initial_cells(void)
 	CELL *cell;
 	CELL **setpos;
 	BOOL change;
-	TCHAR buf[80];
 	int i,j,g1;
+	struct wcontext *ctx = gctx;
 
 	g.newset = g.settable;
 	g.nextset = g.settable;
@@ -1114,15 +1140,13 @@ BOOL set_initial_cells(void)
 				switch(g.currfield[g1][i][j]) {
 				case 0:  // forced off
 					if(!proceed(findcell(j+1,i+1,g1),OFF,FALSE)) {
-						StringCbPrintf(buf,sizeof(buf),_T("Inconsistent OFF state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
-						wlsMessage(buf,0);
+						wlsMessagef(ctx,_T("Inconsistent OFF state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
 						return FALSE;
 					}
 					break;
 				case 1:  // forced on
 					if(!proceed(findcell(j+1,i+1,g1),ON,FALSE)) {
-						StringCbPrintf(buf,sizeof(buf),_T("Inconsistent ON state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
-						wlsMessage(buf,0);
+						wlsMessagef(ctx,_T("Inconsistent ON state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
 						return FALSE;
 					}
 					break;
@@ -1165,7 +1189,7 @@ BOOL set_initial_cells(void)
 								} else {
 									// we should never get here
 									// because it's already tested that the OFF state is possible
-									wlsMessage(_T("Program inconsistency found"),0);
+									wlsMessagef(ctx,_T("Program inconsistency found"));
 									return FALSE;
 								}
 							}							
@@ -1178,8 +1202,7 @@ BOOL set_initial_cells(void)
 								change = TRUE;
 							} else {
 								// can't set neither ON nor OFF state
-								StringCbPrintf(buf,sizeof(buf),_T("Inconsistent UNK state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
-								wlsMessage(buf,0);
+								wlsMessagef(ctx,_T("Inconsistent UNK state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
 								return FALSE;
 							}
 						}
@@ -1342,7 +1365,6 @@ static void pause_search(struct wcontext *ctx);  // forward decl
 static DWORD WINAPI search_thread(LPVOID foo)
 {
 	BOOL reset = 0;
-	TCHAR buf[180];
 	int i, j, k;
 	struct wcontext *ctx = gctx;
 
@@ -1377,8 +1399,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			++g.foundcount;
             do_combine();
 			writegen(g.outputfile, TRUE);
-			StringCbPrintf(buf,sizeof(buf),_T("Combine: %d cells remaining from %d solutions"), g.combinedcells, g.foundcount);
-			wlsStatus(buf);
+			wlsStatusf(ctx,_T("Combine: %d cells remaining from %d solutions"), g.combinedcells, g.foundcount);
 			continue;
 		}
 
@@ -1391,8 +1412,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			showcount();
 			printgen();
 			++g.foundcount;
-			StringCbPrintf(buf,sizeof(buf),_T("Object %d found.\n"), g.foundcount);
-			wlsStatus(buf);
+			wlsStatusf(ctx,_T("Object %d found.\n"), g.foundcount);
 
 			writegen(g.outputfile, TRUE);
 			if (!g.stoponfound) continue;
@@ -1404,25 +1424,22 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			show_combine(ctx);
 			if (g.combining)
 			{
-				StringCbPrintf(buf,sizeof(buf),_T("Search completed: %d cell%s found"),
-					g.combinedcells, (g.combinedcells == 1) ? _T("") : _T("s"));
 				reset = (g.combinedcells == 0);
+				wlsMessagef(ctx,_T("Search completed: %d cell%s found"),
+					g.combinedcells, (g.combinedcells == 1) ? _T("") : _T("s"));
 			}
 			else
 			{
-				StringCbPrintf(buf,sizeof(buf),_T("Search completed: no solution"));
 				reset = 1;
+				wlsMessagef(ctx,_T("Search completed: no solution"));
 			}
 		} else {
 			showcount();
 			printgen();
-			StringCbPrintf(buf,sizeof(buf),_T("Search completed:  %d object%s found"),
-				g.foundcount, (g.foundcount == 1) ? _T("") : _T("s"));
-
 			reset = (g.foundcount == 0);
+			wlsMessagef(ctx,_T("Search completed:  %d object%s found"),
+				g.foundcount, (g.foundcount == 1) ? _T("") : _T("s"));
 		}
-
-		wlsMessage(buf,0);
 
 		goto done;
 	}
@@ -1454,22 +1471,20 @@ static void resume_search(struct wcontext *ctx)
 	{
 		if (g.combining)
 		{
-			TCHAR buf[80];
-			StringCbPrintf(buf,sizeof(buf),_T("Combine: %d cells remaining"), g.combinedcells);
-			wlsStatus(buf);
+			wlsStatusf(ctx,_T("Combine: %d cells remaining"), g.combinedcells);
 		}
 		else
 		{
-			wlsStatus(_T("Combining..."));
+			wlsStatusf(ctx,_T("Combining..."));
 		}
 	}
 	else
 	{
-		wlsStatus(_T("Searching..."));
+		wlsStatusf(ctx,_T("Searching..."));
 	}
 
 	if(ctx->searchstate!=1) {
-		wlsError(_T("No search is paused"),0);
+		wlsErrorf(ctx,_T("No search is paused"));
 		return;
 	}
 	abortthread=0;
@@ -1479,7 +1494,7 @@ static void resume_search(struct wcontext *ctx)
 
 
 	if(ctx->hthread==NULL) {
-		wlsError(_T("Unable to create search thread"),0);
+		wlsErrorf(ctx,_T("Unable to create search thread"));
 		ctx->searchstate=1;
 	}
 	else {
@@ -1498,13 +1513,13 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 	int i;
 
 	if(ctx->searchstate!=0) {
-		wlsError(_T("A search is already running"),0);
+		wlsErrorf(ctx,_T("A search is already running"));
 		return FALSE;
 	}
 
 	if (!setrules(g.rulestring))
 	{
-		wlsError(_T("Cannot set Life rules!"),0);
+		wlsErrorf(ctx,_T("Cannot set Life rules!"));
 		return FALSE;
 	}
 
@@ -1587,7 +1602,7 @@ static void pause_search(struct wcontext *ctx)
 	DWORD exitcode;
 
 	if(ctx->searchstate!=2) {
-		wlsError(_T("No search is running"),0);
+		wlsErrorf(ctx,_T("No search is running"));
 		return;
 	}
 	abortthread=1;
@@ -1615,7 +1630,7 @@ static void reset_search(struct wcontext *ctx)
 	int i,j,k;
 
 	if(ctx->searchstate==0) {
-		wlsError(_T("No search in progress"),0);
+		wlsErrorf(ctx,_T("No search in progress"));
 		goto here;
 	}
 
@@ -1638,7 +1653,7 @@ here:
 	InvalidateRect(ctx->hwndMain,NULL,FALSE);
 
 	SetWindowText(ctx->hwndFrame,_T("WinLifeSearch"));
-	wlsStatus(_T(""));
+	wlsStatusf(ctx,_T(""));
 
 }
 
@@ -2296,7 +2311,7 @@ static void Handle_ToolbarCreate(struct wcontext *ctx, HWND hWnd, LPARAM lParam)
 	ShowWindow(ctx->hwndStatus,SW_SHOW);
 
 #ifdef _DEBUG
-		wlsStatus(_T("DEBUG BUILD"));
+		wlsStatusf(ctx,_T("DEBUG BUILD"));
 #endif
 		draw_gen_counter(ctx);
 }

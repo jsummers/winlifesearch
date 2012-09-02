@@ -1,9 +1,10 @@
 // wls.h
 
 
-void wlsError(TCHAR *m,int n);
-void wlsMessage(TCHAR *m,int n);
-void wlsStatus(TCHAR *msg);
+struct wcontext;
+void wlsErrorf(struct wcontext *ctx, TCHAR *fmt, ...);
+void wlsMessagef(struct wcontext *ctx, TCHAR *fmt, ...);
+void wlsStatusf(struct wcontext *ctx, TCHAR *fmt, ...);
 void record_malloc(int func,void *m);
 BOOL set_initial_cells(void);
-void showcount();
+void showcount(void);

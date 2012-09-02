@@ -108,7 +108,7 @@ initcells()
 		(g.rowtrans < -TRANSMAX) || (g.rowtrans > TRANSMAX) ||
 		(g.coltrans < -TRANSMAX) || (g.coltrans > TRANSMAX))
 	{
-		wlsError(_T("ROW, COL, GEN, or TRANS out of range"),0);
+		wlsErrorf(NULL,_T("ROW, COL, GEN, or TRANS out of range"));
 		exit(1);
 	}
 
@@ -1874,7 +1874,7 @@ allocatecell()
 
 		if (newcells == NULL)
 		{
-			wlsError(_T("Cannot allocate cell structure"),0);
+			wlsErrorf(NULL,_T("Cannot allocate cell structure"));
 			exit(1);
 		}
 

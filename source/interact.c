@@ -9,6 +9,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include <tchar.h>
+#include <stdio.h>
+#include <stdarg.h>
 #include "lifesrc.h"
 #include "wls.h"
 #include <strsafe.h>
@@ -199,7 +201,6 @@ void writegen(TCHAR *file1, BOOL append)
 	int gen;
 	int	ch;
 	int	minrow, maxrow, mincol, maxcol;
-	TCHAR buf[80];
 	TCHAR file[MAX_PATH];
 
 	if(!g.saveoutput && !g.outputcols) return;
@@ -326,8 +327,7 @@ void writegen(TCHAR *file1, BOOL append)
 
 	g.writecount++;
 	if (fp != stdout) {
-		StringCbPrintf(buf,sizeof(buf),_T("\"%s\" written (%d)"),file,g.writecount);
-		wlsStatus(buf);
+		wlsStatusf(NULL,_T("\"%s\" written (%d)"),file,g.writecount);
 	}
 }
 
@@ -462,9 +462,7 @@ void dumpstate(TCHAR *file1, BOOL echo)
 
 	if (echo) 
 	{
-		TCHAR buf[1000];
-		StringCbPrintf(buf, sizeof(buf), _T("State dumped to \"%s\"\n"), file);
-		wlsStatus(buf);
+		wlsStatusf(NULL,_T("State dumped to \"%s\"\n"), file);
 	}
 }
 
@@ -716,12 +714,7 @@ BOOL loadstate(void)
 		return FALSE;
 	}
 
-	{
-		TCHAR buf[1000];
-		StringCbPrintf(buf, sizeof(buf), _T("State loaded from \"%s\"\n"), filename);
-
-		wlsStatus(buf);
-	}
+	wlsStatusf(NULL,_T("State loaded from \"%s\"\n"), filename);
 	return TRUE;
 }
 
@@ -908,7 +901,7 @@ void ttystatus(TCHAR * fmt, ...)
 	va_start(ap, fmt);
 	StringCbVPrintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
-	wlsMessage(buf,0);
+	wlsMessagef(NULL,_T("%s"),buf);
 }
 
 
