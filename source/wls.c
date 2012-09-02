@@ -77,6 +77,7 @@ struct wcontext {
 	brushes_type brushes;
 	int centerx,centery,centerxodd,centeryodd;
 	POINT scrollpos;
+	HFONT statusfont;
 };
 
 struct globals_struct g;
@@ -362,6 +363,23 @@ static void set_main_scrollbars(int redraw)
 	if(redraw) InvalidateRect(ctx->hwndMain,NULL,TRUE);
 }
 
+static void wlsCreateFonts(struct wcontext *ctx)
+{
+	NONCLIENTMETRICS ncm;
+	BOOL b;
+	TCHAR fontname[100];
+
+	memset(&ncm,0,sizeof(NONCLIENTMETRICS));
+	ncm.cbSize = sizeof(NONCLIENTMETRICS);
+	b=SystemParametersInfo(SPI_GETNONCLIENTMETRICS,sizeof(NONCLIENTMETRICS),&ncm,0);
+	StringCbCopy(fontname,sizeof(fontname),
+		b ? ncm.lfStatusFont.lfFaceName : _T("Arial"));
+
+	ctx->statusfont = CreateFont(TOOLBARHEIGHT-4,0,
+		0,0,FW_DONTCARE,0,0,0,
+		ANSI_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,
+		DEFAULT_QUALITY,VARIABLE_PITCH|FF_SWISS,fontname);
+}
 
 static BOOL InitApp(HANDLE hInstance, int nCmdShow)
 {
@@ -371,6 +389,8 @@ static BOOL InitApp(HANDLE hInstance, int nCmdShow)
 	ctx->scrollpos.x=0; ctx->scrollpos.y=0;
 
 	InitGameSettings();
+
+	wlsCreateFonts(ctx);
 
 	/* Create a main window for this application instance.	*/
 	ctx->hwndFrame = CreateWindow(
@@ -408,7 +428,7 @@ static BOOL InitApp(HANDLE hInstance, int nCmdShow)
 	ctx->hwndToolbar = CreateWindow(
 		_T("WLSCLASSTOOLBAR"),
 		_T("WinLifeSearch - toolbar"),
-		WS_CHILD|WS_VISIBLE,
+		WS_CHILD|WS_VISIBLE|WS_CLIPCHILDREN,
 		0,	/* horizontal position */
 		r.bottom-TOOLBARHEIGHT,	/* vertical position */
 		r.right,	/* width */
@@ -426,6 +446,11 @@ static BOOL InitApp(HANDLE hInstance, int nCmdShow)
 	ShowWindow(ctx->hwndFrame, nCmdShow);		/* Show the window */
 	UpdateWindow(ctx->hwndFrame); 	/* Sends WM_PAINT message */
 	return (TRUE);  /* Returns the value from PostQuitMessage */
+}
+
+static void UninitApp(struct wcontext *ctx)
+{
+	if(ctx->statusfont) DeleteObject((HGDIOBJ)ctx->statusfont);
 }
 
 /****************************/
@@ -455,6 +480,10 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			DispatchMessage(&msg);
 		}
 	}
+
+	UninitApp(ctx);
+
+	free(ctx);
 	return (int)msg.wParam; /* Returns the value from PostQuitMessage */
 }
 
@@ -1131,11 +1160,10 @@ BOOL set_initial_cells(void)
 	return TRUE;
 }
 
-static void draw_gen_counter(void)
+static void draw_gen_counter(struct wcontext *ctx)
 {
 	TCHAR buf[80];
 	SCROLLINFO si;
-	struct wcontext *ctx = gctx;
 
 	si.cbSize=sizeof(SCROLLINFO);
 	si.fMask=SIF_ALL;
@@ -1490,7 +1518,7 @@ static BOOL prepare_search(BOOL load)
 
 		InvalidateRect(ctx->hwndMain,NULL,TRUE);
 
-		draw_gen_counter();
+		draw_gen_counter(ctx);
 	} else {
 		initcells();
 
@@ -1595,7 +1623,7 @@ static void gen_changeby(int delta)
 	if(g.curgen>=g.genmax) g.curgen=0;
 	if(g.curgen<0) g.curgen=g.genmax-1;
 
-	draw_gen_counter();
+	draw_gen_counter(ctx);
 	InvalidateRect(ctx->hwndMain,NULL,FALSE);
 }
 
@@ -2196,6 +2224,47 @@ static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 	return (DefWindowProc(hWnd, msg, wParam, lParam));
 }
 
+static void Handle_ToolbarCreate(struct wcontext *ctx, HWND hWnd, LPARAM lParam)
+{
+	CREATESTRUCT *cs;
+
+	cs = (CREATESTRUCT*)lParam;
+
+	ctx->hwndGen=CreateWindow(_T("Static"),_T("0"),
+		WS_CHILD|WS_BORDER|SS_CENTER|SS_NOPREFIX,
+		1,1,40,TOOLBARHEIGHT-2,
+		hWnd,NULL,ctx->hInst,NULL);
+	SendMessage(ctx->hwndGen,WM_SETFONT,(WPARAM)ctx->statusfont,(LPARAM)FALSE);
+	ShowWindow(ctx->hwndGen,SW_SHOW);
+
+	ctx->hwndGenScroll=CreateWindow(_T("Scrollbar"),_T("wls_gen_scrollbar"),
+		WS_CHILD|WS_VISIBLE|SBS_HORZ,
+		41,1,80,TOOLBARHEIGHT-2,
+		hWnd,NULL,ctx->hInst,NULL);
+
+	ctx->hwndStatus=CreateWindow(_T("Static"),_T(""),
+		WS_CHILD|WS_BORDER|SS_LEFTNOWORDWRAP|SS_NOPREFIX,
+		121,1,cs->cx-121,TOOLBARHEIGHT-2,
+		hWnd,NULL,ctx->hInst,NULL);
+	SendMessage(ctx->hwndStatus,WM_SETFONT,(WPARAM)ctx->statusfont,(LPARAM)FALSE);
+	ShowWindow(ctx->hwndStatus,SW_SHOW);
+
+#ifdef _DEBUG
+		wlsStatus(_T("DEBUG BUILD"));
+#endif
+		draw_gen_counter(ctx);
+}
+
+static void Handle_ToolbarSize(struct wcontext *ctx, HWND hWnd, LPARAM lParam)
+{
+	int newwidth = LOWORD(lParam);
+
+	if(!ctx->hwndStatus) return;
+
+	// Resize the status window accordingly
+	SetWindowPos(ctx->hwndStatus,NULL,0,0,newwidth-121,TOOLBARHEIGHT-2,
+		/*SWP_NOACTIVATE|*/SWP_NOMOVE/*|SWP_NOOWNERZORDER*/|SWP_NOZORDER);
+}
 
 static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -2208,6 +2277,15 @@ static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 	id=LOWORD(wParam);
 
 	switch(msg) {
+
+	case WM_CREATE:
+		Handle_ToolbarCreate(ctx,hWnd,lParam);
+		return 0;
+
+	case WM_SIZE:
+		Handle_ToolbarSize(ctx,hWnd,lParam);
+		return 0;
+
 	case WM_HSCROLL:
 		htmp=(HWND)(lParam);
 		if(htmp==ctx->hwndGenScroll) {
@@ -2225,14 +2303,14 @@ static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			if(g.curgen<0) g.curgen=g.genmax-1;  // wrap around
 			if(g.curgen>=g.genmax) g.curgen=0;
 			if(g.curgen!=ori_gen) {
-				draw_gen_counter();
+				draw_gen_counter(ctx);
 				InvalidateRect(ctx->hwndMain,NULL,FALSE);
 			}
 			return 0;
 		}
 		break;
 
-
+#if 0
 	case WM_CREATE:
 		ctx->hwndGen=CreateWindow(_T("Static"),_T("0"),
 			WS_CHILD|WS_VISIBLE|WS_BORDER,
@@ -2252,7 +2330,7 @@ static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 
 			draw_gen_counter();
 		return 0;
-
+#endif
 	}
 
 	return (DefWindowProc(hWnd, msg, wParam, lParam));
@@ -2356,7 +2434,7 @@ static INT_PTR CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 			if(g.genmax<1) g.genmax=1;
 			if(g.curgen>=g.genmax) g.curgen=g.genmax-1;
 
-			draw_gen_counter();
+			draw_gen_counter(ctx);
 			InvalidateRect(ctx->hwndMain,NULL,TRUE);
 			// fall through
 		case IDCANCEL:
