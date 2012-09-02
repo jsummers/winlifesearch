@@ -7,9 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <ctype.h>        //JES, for isdigit()
-
-#define	PROTO(a)	a
+#include <ctype.h>
 
 
 /*
@@ -270,31 +268,29 @@ struct globals_struct {
  * Global procedures
  */
 
+void	getcommands(void);
+void	initcells(void);
+void    initsearchorder(void);
+void	printgen(void);
+void	writegen(TCHAR *, BOOL);
+void	dumpstate(TCHAR *, BOOL);
+void	adjustnear(CELL *, int);
+STATUS	search(void);
+BOOL	proceed(CELL *, STATE, BOOL);
+BOOL	go(CELL *, STATE, BOOL);
+BOOL	setcell(CELL *, STATE, BOOL);
+STATUS  examinenext(void);
+CELL *	findcell(int, int, int);
+CELL *	backup(void);
+BOOL	subperiods(void);
+void	loopcells(CELL *, CELL *);
 
-extern	void	getcommands PROTO((void));
-extern	void	initcells PROTO((void));
-extern  void    initsearchorder PROTO((void));
-extern	void	printgen PROTO((void));
-extern	void	writegen PROTO((TCHAR *, BOOL));
-extern	void	dumpstate PROTO((TCHAR *, BOOL));
-extern	void	adjustnear PROTO((CELL *, int));
-extern	STATUS	search PROTO((void));
-extern	BOOL	proceed PROTO((CELL *, STATE, BOOL));
-extern	BOOL	go PROTO((CELL *, STATE, BOOL));
-extern	BOOL	setcell PROTO((CELL *, STATE, BOOL));
-extern  STATUS  examinenext PROTO((void));
-extern	CELL *	findcell PROTO((int, int, int));
-extern	CELL *	backup PROTO((void));
-extern	BOOL	subperiods PROTO((void));
-extern	void	loopcells PROTO((CELL *, CELL *));
+void	ttystatus(TCHAR *, ...);
 
-extern	void	ttystatus PROTO((TCHAR *, ...));
-
-void	freezecell PROTO((int, int));
-BOOL	setrules PROTO((TCHAR *));
+void	freezecell(int, int);
+BOOL	setrules(TCHAR *);
 BOOL setrulesA(char *);
 BOOL    loadstate(void);
 void    getbackup(char *cp);
 
-//extern int currfield[GENMAX][COLMAX][ROWMAX];
 /* END CODE */

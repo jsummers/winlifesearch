@@ -23,7 +23,7 @@ static TCHAR filename[MAX_PATH] = {'\0'};
 /*
  * Local procedures
  */
-static	long	getnum PROTO((char **, int));
+static	long	getnum(char **, int);
 
 /*
  * Table of addresses of parameters which are loaded and saved.

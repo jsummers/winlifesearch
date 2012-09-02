@@ -19,7 +19,7 @@
 
 #define SUMCOUNT 8
 
-struct globals_struct g;
+extern struct globals_struct g;
 
 extern volatile int abortthread;
 
@@ -62,21 +62,21 @@ static	COLINFO	dummycolinfo;	/* dummy info for ignored cells */
 /*
  * Local procedures
  */
-static	void	initimplic PROTO((void));
-static	void	linkcell PROTO((CELL *));
-static __inline	STATE	transition PROTO((STATE, int, int));
-static	STATE	choose PROTO((CELL *));
-static	FLAGS	implication PROTO((STATE, int, int));
-static	CELL *	symcell PROTO((CELL *));
-static	CELL *	mapcell PROTO((CELL *));
-static	CELL *	allocatecell PROTO((void));
-static	CELL *	getnormalunknown PROTO((void));
-static	CELL *	getaverageunknown PROTO((void));
-static	CELL *	getsmartunknown PROTO((void)); // KAS
-static	BOOL	consistify PROTO((CELL *));
-static	BOOL	consistify10 PROTO((CELL *));
-static	BOOL	checkwidth PROTO((CELL *));
-static	CELL *	(*getunknown) PROTO((void));
+static	void	initimplic(void);
+static	void	linkcell(CELL *);
+static __inline	STATE	transition(STATE, int, int);
+static	STATE	choose(CELL *);
+static	FLAGS	implication(STATE, int, int);
+static	CELL *	symcell(CELL *);
+static	CELL *	mapcell(CELL *);
+static	CELL *	allocatecell(void);
+static	CELL *	getnormalunknown(void);
+static	CELL *	getaverageunknown(void);
+static	CELL *	getsmartunknown(void); // KAS
+static	BOOL	consistify(CELL *);
+static	BOOL	consistify10(CELL *);
+static	BOOL	checkwidth(CELL *);
+static	CELL *	(*getunknown)(void);
 
 /*
  * Initialize the table of cells.
