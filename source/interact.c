@@ -381,6 +381,7 @@ void dumpstate(TCHAR *file1)
 	int g1;
 	int x,y,z;
 	TCHAR file[MAX_PATH];
+	char buf[80];
 
 	//file = getstr(file, "Dump state to file: ");
 	if(file1) {
@@ -426,8 +427,14 @@ void dumpstate(TCHAR *file1)
 	/*
 	 * Dump out the life rule if it is not the normal one.
 	 */
-	if (!islife)
+	if (!islife) {
+#ifdef UNICODE
+		StringCbPrintfA(buf,sizeof(buf),"%S",g.rulestring);
+		fprintf(fp, "R %s\n", buf);
+#else
 		fprintf(fp, "R %s\n", g.rulestring);
+#endif
+	}
 
 	/*
 	 * Dump out the parameter values.
