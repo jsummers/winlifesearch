@@ -15,18 +15,9 @@
 
 extern struct globals_struct g;
 
-extern int origfield[GENMAX][COLMAX][ROWMAX];
-
 /*
  * Local data.
  */
-extern TCHAR rulestring[20];	/* rule string for printouts */
-static	int	foundcount;	/* number of objects found */
-static int writecount; /* number of objects written to a file */
-extern int saveoutput;
-extern int saveoutputallgen;
-extern int stoponfound;
-extern int origfield[GENMAX][COLMAX][ROWMAX];
 static TCHAR filename[MAX_PATH] = {'\0'};
 
 /*
@@ -54,7 +45,7 @@ static	int *param_table[] =
 	&g.diagsort, &g.symmetry, &g.trans_rotate, &g.trans_flip, &g.trans_x, &g.trans_y,
 	&g.knightsort,
 	&g.smart, &g.smartwindow, &g.smartthreshold,
-	&foundcount,
+	&g.foundcount,
 	&g.combine, &g.combining, &g.combinedcells, &g.setcombinedcells, &g.differentcombinedcells, 
 
 	NULL
@@ -211,7 +202,7 @@ void writegen(TCHAR *file1, BOOL append)
 	TCHAR buf[80];
 	TCHAR file[MAX_PATH];
 
-	if(!saveoutput && !g.outputcols) return;
+	if(!g.saveoutput && !g.outputcols) return;
 
 	if(file1) {
 		StringCchCopy(file,MAX_PATH,file1);
@@ -287,7 +278,7 @@ void writegen(TCHAR *file1, BOOL append)
 	 */
 	for (row = minrow; row <= maxrow; row++)
 	{
-		for (gen = 0; gen < (saveoutputallgen ? g.genmax : 1); gen++)
+		for (gen = 0; gen < (g.saveoutputallgen ? g.genmax : 1); gen++)
 		{
 			for (col = mincol; col <= maxcol; col++)
 			{
@@ -315,7 +306,7 @@ void writegen(TCHAR *file1, BOOL append)
 
 				fputc(ch, fp);
 			}
-			if (saveoutputallgen && (gen < g.genmax - 1)) fputs(" ... ", fp);
+			if (g.saveoutputallgen && (gen < g.genmax - 1)) fputs(" ... ", fp);
 		}
 
 		fputc('\n', fp);
@@ -333,9 +324,9 @@ void writegen(TCHAR *file1, BOOL append)
 		return;
 	}
 
-	writecount++;
+	g.writecount++;
 	if (fp != stdout) {
-		StringCbPrintf(buf,sizeof(buf),_T("\"%s\" written (%d)"),file,writecount);
+		StringCbPrintf(buf,sizeof(buf),_T("\"%s\" written (%d)"),file,g.writecount);
 		wlsStatus(buf);
 	}
 }
@@ -356,6 +347,7 @@ void dumpstate(TCHAR *file1, BOOL echo)
 	int **	param;
 	char ind;
 	TCHAR *file = filename;
+	char buf[80];
 
 	if(file1) {
 		file = file1;
@@ -396,14 +388,19 @@ void dumpstate(TCHAR *file1, BOOL echo)
 	 * Dump out the life rule
 	 */
 
-	fprintf(fp, "R %s\n", rulestring);
+#ifdef UNICODE
+	StringCbPrintfA(buf,sizeof(buf),"%S",g.rulestring);
+	fprintf(fp, "R %s\n", buf);
+#else
+	fprintf(fp, "R %s\n", g.rulestring);
+#endif
 
 	/* write out the original configuration */
 
 	for(gen=0;gen<g.genmax;gen++) {
 		for(row=0;row<g.rowmax;row++) {
 			for(col=0;col<g.colmax;col++) {
-				fprintf(fp,"%d ",origfield[gen][col][row]);
+				fprintf(fp,"%d ",g.origfield[gen][col][row]);
 			}
 			fprintf(fp,"\n");
 		}
@@ -601,10 +598,10 @@ BOOL loadstate(void)
 			cp=strtok(buf," ");
 			for(col=0;col<g.colmax;col++) {
 				if(cp) {
-					currfield[gen][col][row]=atoi(cp);
+					g.currfield[gen][col][row]=atoi(cp);
 					cp=strtok(NULL," ");
 				}
-				else currfield[gen][col][row]=4;  // error
+				else g.currfield[gen][col][row]=4;  // error
 			}
 		}
 	}
@@ -863,7 +860,7 @@ setrules(TCHAR *cp)
 	 * Construct the rule string for printouts and see if this
 	 * is the normal Life rule.
 	 */
-	cp = rulestring;
+	cp = g.rulestring;
 
 	*cp++ = 'B';
 
@@ -890,7 +887,7 @@ setrules(TCHAR *cp)
 BOOL setrulesA(char *rulestringA)
 {
 #ifdef UNICODE
-	WCHAR rulestringW[20];
+	WCHAR rulestringW[WLS_RULESTRING_LEN];
 	StringCbPrintfW(rulestringW,sizeof(rulestringW),_T("%S"),rulestringA);
 	return setrules(rulestringW);
 #else

@@ -41,15 +41,9 @@
 
 #define TOOLBARHEIGHT 24
 
-TCHAR rulestring[20];
-int saveoutput;
-int saveoutputallgen;
-int stoponfound;
-int stoponstep;
-
-HINSTANCE hInst;
-HWND hwndFrame,hwndMain,hwndToolbar;
-HWND hwndGen,hwndGenScroll;
+static HINSTANCE hInst;
+static HWND hwndFrame,hwndMain,hwndToolbar;
+static HWND hwndGen,hwndGenScroll;
 
 static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -64,10 +58,10 @@ static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 
 struct globals_struct g;
 
-int selectstate=0;
-POINT startcell, endcell;
-RECT selectrect;
-int inverted=0;
+static int selectstate=0;
+static POINT startcell, endcell;
+static RECT selectrect;
+static int inverted=0;
 
 typedef struct {
 	HPEN celloutline,cell_off,axes,arrow1,arrow2,unchecked;
@@ -78,21 +72,16 @@ typedef struct {
 } brushes_type;
 
 volatile int abortthread;
-HANDLE hthread;
-int searchstate=0;
-int foundcount;
-int writecount;
+static HANDLE hthread;
+static int searchstate=0;
 
-pens_type pens;
-brushes_type brushes;
+static pens_type pens;
+static brushes_type brushes;
 
-int centerx,centery,centerxodd,centeryodd;
-int origfield[GENMAX][COLMAX][ROWMAX];
-int currfield[GENMAX][COLMAX][ROWMAX];
+static int centerx,centery,centerxodd,centeryodd;
 
-POINT scrollpos;
+static POINT scrollpos;
 
-// This is self-explanatory, right?
 
 /* \2 | 1/    
    3 \|/ 0
@@ -100,7 +89,7 @@ POINT scrollpos;
    4 /|\ 7
    /5 | 6\  */
 
-int symmap[] = { 
+static const int symmap[] = { 
 			// 76543210
 	0x01,	// 00000001  no symmetry
 	0x09,	// 00001001  mirror-x
@@ -131,7 +120,7 @@ void wlsMessage(TCHAR *m,int n)
 	MessageBox(hwndFrame,s,_T("Message"),MB_OK|MB_ICONINFORMATION);
 }
 
-HWND hwndStatus=NULL;
+static HWND hwndStatus=NULL;
 
 void wlsStatus(TCHAR *msg)
 {
@@ -158,7 +147,7 @@ void record_malloc(int func,void *m)
 }
 
 
-BOOL RegisterClasses(HANDLE hInstance)
+static BOOL RegisterClasses(HANDLE hInstance)
 {   WNDCLASS  wc;
 	HICON iconWLS;
 
@@ -208,7 +197,7 @@ BOOL RegisterClasses(HANDLE hInstance)
  * (it will be 0, 1, 3, or 7.)
  *
  */
-POINT *GetSymmetricCells(int x,int y,int *num)
+static POINT *GetSymmetricCells(int x,int y,int *num)
 {
 	static POINT pt[7];
 	int s,n;
@@ -261,8 +250,7 @@ POINT *GetSymmetricCells(int x,int y,int *num)
 	return pt;
 }
 
-// A stupid function
-void SetCenter(void)
+static void SetCenter(void)
 {
 	centerx= g.colmax/2;
 	centery= g.rowmax/2;
@@ -270,15 +258,15 @@ void SetCenter(void)
 	centeryodd= g.rowmax%2;
 }
 
-void InitGameSettings(void)
+static void InitGameSettings(void)
 {
 	int i,j,k;
 
 	for(k=0;k<GENMAX;k++) 
 		for(i=0;i<COLMAX;i++)
 			for(j=0;j<ROWMAX;j++) {
-				origfield[k][i][j]=2;       // set all cells to "don't care"
-				currfield[k][i][j]=2;
+				g.origfield[k][i][j]=2;       // set all cells to "don't care"
+				g.currfield[k][i][j]=2;
 			}
 
 	g.symmetry=0;
@@ -322,17 +310,17 @@ void InitGameSettings(void)
 	g.knightsort=0;
 	g.viewfreq=100000;
 	StringCchCopy(g.outputfile,80,_T("output.txt"));
-	saveoutput=0;
-	saveoutputallgen=0;
-	stoponfound=1;
-	stoponstep=0;
+	g.saveoutput=0;
+	g.saveoutputallgen=0;
+	g.stoponfound=1;
+	g.stoponstep=0;
 	StringCchCopy(g.dumpfile,80,_T("dump.wdf"));
-	StringCchCopy(rulestring,20,_T("B3/S23"));
+	StringCchCopy(g.rulestring,WLS_RULESTRING_LEN,_T("B3/S23"));
 
 	SetCenter();
 }
 
-void set_main_scrollbars(int redraw)
+static void set_main_scrollbars(int redraw)
 {
 	SCROLLINFO si;
 	RECT r;
@@ -367,7 +355,7 @@ void set_main_scrollbars(int redraw)
 }
 
 
-BOOL InitApp(HANDLE hInstance, int nCmdShow)
+static BOOL InitApp(HANDLE hInstance, int nCmdShow)
 {
 	RECT r;
 
@@ -457,7 +445,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 }
 
 
-void DrawGuides(HDC hDC)
+static void DrawGuides(HDC hDC)
 {
 	int centerpx,centerpy;
 	int px1,py1,px2,py2,px3,py3;
@@ -572,7 +560,7 @@ void DrawGuides(HDC hDC)
 }
 
 // pen & brush must already be selected
-void ClearCell(HDC hDC,int x,int y, int dblsize)
+static void ClearCell(HDC hDC,int x,int y, int dblsize)
 {
 	Rectangle(hDC,x*cellwidth+1,y*cellheight+1,
 	    (x+1)*cellwidth,(y+1)*cellheight);
@@ -582,7 +570,7 @@ void ClearCell(HDC hDC,int x,int y, int dblsize)
 	}
 }
 
-void DrawCell(HDC hDC,int x,int y)
+static void DrawCell(HDC hDC,int x,int y)
 {
 	int allsame=1;
 	int tmp;
@@ -591,14 +579,14 @@ void DrawCell(HDC hDC,int x,int y)
 	SelectObject(hDC,pens.celloutline);
 	SelectObject(hDC,brushes.cell);
 
-	tmp=currfield[0][x][y];
+	tmp=g.currfield[0][x][y];
 	for(i=1;i<g.genmax;i++) {
-		if(currfield[i][x][y]!=tmp) allsame=0;
+		if(g.currfield[i][x][y]!=tmp) allsame=0;
 	}
 
 	ClearCell(hDC,x,y,!allsame);
 
-	switch(currfield[g.curgen][x][y]) {
+	switch(g.currfield[g.curgen][x][y]) {
 	case 0:        // must be off
 		SelectObject(hDC,pens.cell_off);
 		SelectObject(hDC,GetStockObject(NULL_BRUSH));
@@ -635,7 +623,7 @@ void DrawCell(HDC hDC,int x,int y)
 }
 
 // Set/reset unknown/unchecked
-void ChangeChecking(HDC hDC, int x, int y, int allgens, int set)
+static void ChangeChecking(HDC hDC, int x, int y, int allgens, int set)
 {
 	POINT *pts;
 	int numpts,i,j;
@@ -666,9 +654,9 @@ void ChangeChecking(HDC hDC, int x, int y, int allgens, int set)
 
 	for(j=g1;j<=g2;j++)
 	{
-		if (currfield[j][x][y] == s1)
+		if (g.currfield[j][x][y] == s1)
 		{
-			currfield[j][x][y] = s2;
+			g.currfield[j][x][y] = s2;
 		}
 	}
 	DrawCell(hDC,x,y);
@@ -676,9 +664,9 @@ void ChangeChecking(HDC hDC, int x, int y, int allgens, int set)
 	for(i=0;i<numpts;i++) {
 		for(j=g1;j<=g2;j++)
 		{
-			if (currfield[j][pts[i].x][pts[i].y] == s1)
+			if (g.currfield[j][pts[i].x][pts[i].y] == s1)
 			{
-				currfield[j][pts[i].x][pts[i].y] = s2;
+				g.currfield[j][pts[i].x][pts[i].y] = s2;
 			}
 		}
 		DrawCell(hDC,pts[i].x,pts[i].y);
@@ -687,7 +675,7 @@ void ChangeChecking(HDC hDC, int x, int y, int allgens, int set)
 
 // set and paint all cells symmetrical to the given cell
 // (including the given cell)
-void Symmetricalize(HDC hDC,int x,int y,int allgens)
+static void Symmetricalize(HDC hDC,int x,int y,int allgens)
 {
 	POINT *pts;
 	int numpts,i,j;
@@ -697,17 +685,17 @@ void Symmetricalize(HDC hDC,int x,int y,int allgens)
 	if(allgens) {
 		for(j=0;j<GENMAX;j++) 
 		{
-			currfield[j][x][y]=currfield[g.curgen][x][y];
+			g.currfield[j][x][y]=g.currfield[g.curgen][x][y];
 		}
 	}
 	DrawCell(hDC,x,y);
 
 	for(i=0;i<numpts;i++) {
-		currfield[g.curgen][pts[i].x][pts[i].y]=currfield[g.curgen][x][y];
+		g.currfield[g.curgen][pts[i].x][pts[i].y]=g.currfield[g.curgen][x][y];
 		if(allgens) {
 			for(j=0;j<GENMAX;j++)
 			{
-				currfield[j][pts[i].x][pts[i].y]=currfield[g.curgen][x][y];
+				g.currfield[j][pts[i].x][pts[i].y]=g.currfield[g.curgen][x][y];
 			}
 		}
 		DrawCell(hDC,pts[i].x,pts[i].y);
@@ -715,7 +703,7 @@ void Symmetricalize(HDC hDC,int x,int y,int allgens)
 }
 
 
-void InvertCells(HDC hDC1)
+static void InvertCells(HDC hDC1)
 {
 	RECT r;
 	HDC hDC;
@@ -749,7 +737,7 @@ void InvertCells(HDC hDC1)
 }
 
 
-void SelectOff(HDC hDC)
+static void SelectOff(HDC hDC)
 {
 	if(selectstate<1) return;
 
@@ -764,7 +752,7 @@ void SelectOff(HDC hDC)
 }
 
 
-void DrawWindow(HDC hDC)
+static void DrawWindow(HDC hDC)
 {
 	int i,j;
 	for(i=0;i<g.colmax;i++) {
@@ -779,7 +767,7 @@ void DrawWindow(HDC hDC)
 	}
 }
 
-void PaintWindow(HWND hWnd)
+static void PaintWindow(HWND hWnd)
 {
 	HDC hdc;
 	HPEN hOldPen;
@@ -798,7 +786,7 @@ void PaintWindow(HWND hWnd)
 }
 
 
-void FixFrozenCells(void)
+static void FixFrozenCells(void)
 {
 	int x,y,z;
 
@@ -806,12 +794,12 @@ void FixFrozenCells(void)
 		for(y=0;y<ROWMAX;y++) {
 			for(z=0;z<GENMAX;z++) {
 				if(z!=g.curgen) {
-					if(currfield[g.curgen][x][y]==4) {
-						currfield[z][x][y]=4;
+					if(g.currfield[g.curgen][x][y]==4) {
+						g.currfield[z][x][y]=4;
 					}
 					else {  // current not frozen
-						if(currfield[z][x][y]==4)
-							currfield[z][x][y]=2;
+						if(g.currfield[z][x][y]==4)
+							g.currfield[z][x][y]=2;
 					}
 				}
 			}
@@ -821,7 +809,7 @@ void FixFrozenCells(void)
 
 
 //returns 0 if processed
-int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
+static int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 {
 	int x,y;
 	int i,j;
@@ -843,7 +831,7 @@ int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 	if(y<0 || y>=g.rowmax) return 1;
 
 
-	lastval= currfield[g.curgen][x][y];
+	lastval= g.currfield[g.curgen][x][y];
 //	if(lastval==4) allgens=1;       // previously frozen
 
 
@@ -921,8 +909,8 @@ int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 		if(wParam & MK_SHIFT) allgens=1;
 		if(x==startcell.x && y==startcell.y) {
 			selectstate=0;
-			if(currfield[g.curgen][x][y]==1) newval=2; //currfield[g.curgen][x][y]=2;
-			else newval=1;  //currfield[g.curgen][x][y]=1;
+			if(g.currfield[g.curgen][x][y]==1) newval=2; //g.currfield[g.curgen][x][y]=2;
+			else newval=1;  //g.currfield[g.curgen][x][y]=1;
 			//Symmetricalize(hDC,x,y,allgens);
 		}
 		else if(selectstate==1) {
@@ -935,7 +923,7 @@ int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 
 	case WM_RBUTTONDOWN:     // toggle off/unchecked
 		if(wParam & MK_SHIFT) allgens=1;
-		if(currfield[g.curgen][x][y]==0) newval=2; //currfield[g.curgen][x][y]=2;
+		if(g.currfield[g.curgen][x][y]==0) newval=2; //currfield[g.curgen][x][y]=2;
 		else newval=0; //currfield[g.curgen][x][y]=0;
 		break;
 
@@ -988,7 +976,7 @@ int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 					for(j=selectrect.top;j<=selectrect.bottom;j++) {
 						if (newval < 10)
 						{
-							currfield[g.curgen][i][j]=newval;
+							g.currfield[g.curgen][i][j]=newval;
 							Symmetricalize(hDC,i,j,allgens);
 						} else {
 							ChangeChecking(hDC,i,j,allgens,newval == 10);
@@ -1001,7 +989,7 @@ int ButtonClick(UINT msg,WORD xp,WORD yp,WPARAM wParam)
 			{
 				if (newval < 10)
 				{
-					currfield[g.curgen][x][y]=newval;
+					g.currfield[g.curgen][x][y]=newval;
 					Symmetricalize(hDC,x,y,allgens);
 				} else {
 					ChangeChecking(hDC,x,y,allgens,newval == 10);
@@ -1035,9 +1023,9 @@ BOOL set_initial_cells(void)
 		for(i=0;i<g.colmax;i++) {
 			for(j=0;j<g.rowmax;j++) {
 
-				origfield[g1][i][j] = currfield[g1][i][j];
+				g.origfield[g1][i][j] = g.currfield[g1][i][j];
 
-				switch(currfield[g1][i][j]) {
+				switch(g.currfield[g1][i][j]) {
 				case 0:  // forced off
 					if(!proceed(findcell(j+1,i+1,g1),OFF,FALSE)) {
 						StringCbPrintf(buf,sizeof(buf),_T("Inconsistent OFF state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
@@ -1121,7 +1109,7 @@ BOOL set_initial_cells(void)
 	return TRUE;
 }
 
-void draw_gen_counter(void)
+static void draw_gen_counter(void)
 {
 	TCHAR buf[80];
 	SCROLLINFO si;
@@ -1176,13 +1164,13 @@ void printgen(void)
 
 				switch (cell->state) {
 				case ON:
-					currfield[g1][i][j] = 1;
+					g.currfield[g1][i][j] = 1;
 					break;
 				case OFF:
-					currfield[g1][i][j] = 0;
+					g.currfield[g1][i][j] = 0;
 					break;
 				case UNK:
-					currfield[g1][i][j] = origfield[g1][i][j];
+					g.currfield[g1][i][j] = g.origfield[g1][i][j];
 				}
 			}
 		}
@@ -1191,7 +1179,7 @@ void printgen(void)
 	InvalidateRect(hwndMain,NULL,FALSE);
 }
 
-void do_combine(void)
+static void do_combine(void)
 {
 	int i,j,g1;
 	CELL *cell;
@@ -1217,7 +1205,7 @@ void do_combine(void)
 			for(i=0;i<g.colmax;i++){
 				for(j=0;j<g.rowmax;j++) {					
 					cell=findcell(j+1,i+1,g1);
-					if ((origfield[g1][i][j] > 1) && ((cell->state == ON) || (cell->state == OFF)))
+					if ((g.origfield[g1][i][j] > 1) && ((cell->state == ON) || (cell->state == OFF)))
 					{
 						++g.combinedcells;
 						cell->combined = cell->state;
@@ -1232,7 +1220,7 @@ void do_combine(void)
 	g.differentcombinedcells = 0;
 }
 
-void show_combine(void)
+static void show_combine(void)
 {
 	int i,j,g1;
 	CELL *cell;
@@ -1245,13 +1233,13 @@ void show_combine(void)
 					cell=findcell(j+1,i+1,g1);
 					switch(cell->combined) {
 					case ON:
-						currfield[g1][i][j] = 1;
+						g.currfield[g1][i][j] = 1;
 						break;
 					case OFF:
-						currfield[g1][i][j] = 0;
+						g.currfield[g1][i][j] = 0;
 						break;
 					case UNK:
-						currfield[g1][i][j] = origfield[g1][i][j];
+						g.currfield[g1][i][j] = g.origfield[g1][i][j];
 					}
 				}
 			}
@@ -1261,9 +1249,9 @@ void show_combine(void)
 	InvalidateRect(hwndMain,NULL,FALSE);
 }
 
-void pause_search(void);  // forward decl
+static void pause_search(void);  // forward decl
 
-DWORD WINAPI search_thread(LPVOID foo)
+static DWORD WINAPI search_thread(LPVOID foo)
 {
 	BOOL reset = 0;
 	TCHAR buf[180];
@@ -1297,10 +1285,10 @@ DWORD WINAPI search_thread(LPVOID foo)
 		if ((g.curstatus == FOUND) && g.combine)
 		{
 			g.curstatus = OK;
-			++foundcount;
+			++g.foundcount;
             do_combine();
 			writegen(g.outputfile, TRUE);
-			StringCbPrintf(buf,sizeof(buf),_T("Combine: %d cells remaining from %d solutions"), g.combinedcells, foundcount);
+			StringCbPrintf(buf,sizeof(buf),_T("Combine: %d cells remaining from %d solutions"), g.combinedcells, g.foundcount);
 			wlsStatus(buf);
 			continue;
 		}
@@ -1313,12 +1301,12 @@ DWORD WINAPI search_thread(LPVOID foo)
 
 			showcount();
 			printgen();
-			++foundcount;
-			StringCbPrintf(buf,sizeof(buf),_T("Object %d found.\n"), foundcount);
+			++g.foundcount;
+			StringCbPrintf(buf,sizeof(buf),_T("Object %d found.\n"), g.foundcount);
 			wlsStatus(buf);
 
 			writegen(g.outputfile, TRUE);
-			if (!stoponfound) continue;
+			if (!g.stoponfound) continue;
 			goto done;
 		}
 
@@ -1340,9 +1328,9 @@ DWORD WINAPI search_thread(LPVOID foo)
 			showcount();
 			printgen();
 			StringCbPrintf(buf,sizeof(buf),_T("Search completed:  %d object%s found"),
-				foundcount, (foundcount == 1) ? _T("") : _T("s"));
+				g.foundcount, (g.foundcount == 1) ? _T("") : _T("s"));
 
-			reset = (foundcount == 0);
+			reset = (g.foundcount == 0);
 		}
 
 		wlsMessage(buf,0);
@@ -1355,7 +1343,7 @@ done:
 		for(k=0;k<GENMAX;k++) 
 			for(i=0;i<COLMAX;i++)
 				for(j=0;j<ROWMAX;j++)
-					currfield[k][i][j]=origfield[k][i][j];
+					g.currfield[k][i][j]=g.origfield[k][i][j];
 		searchstate = 0;
 		InvalidateRect(hwndMain,NULL,FALSE);
 	}
@@ -1368,7 +1356,7 @@ done:
 }
 
 
-void resume_search(void)
+static void resume_search(void)
 {
 	DWORD threadid;
 
@@ -1412,7 +1400,7 @@ void resume_search(void)
 
 }
 
-BOOL prepare_search(BOOL load)
+static BOOL prepare_search(BOOL load)
 {
 	int i;
 
@@ -1421,7 +1409,7 @@ BOOL prepare_search(BOOL load)
 		return FALSE;
 	}
 
-	if (!setrules(rulestring))
+	if (!setrules(g.rulestring))
 	{
 		wlsError(_T("Cannot set Life rules!"),0);
 		return FALSE;
@@ -1456,8 +1444,8 @@ BOOL prepare_search(BOOL load)
 	g.viewcount = -1; // KAS
 	showcount(); // KAS
 
-	foundcount=0;
-	writecount=0;
+	g.foundcount=0;
+	g.writecount=0;
 
 	g.combining = FALSE;
 	g.combinedcells = 0;
@@ -1492,7 +1480,7 @@ BOOL prepare_search(BOOL load)
 	return TRUE;
 }
 
-void start_search(void)
+static void start_search(void)
 {
 	if (prepare_search(FALSE))
 	{
@@ -1501,7 +1489,7 @@ void start_search(void)
 }
 
 
-void pause_search(void)
+static void pause_search(void)
 {
 	DWORD exitcode;
 
@@ -1526,7 +1514,7 @@ void pause_search(void)
 }
 
 
-void reset_search(void)
+static void reset_search(void)
 {
 	int i,j,k;
 
@@ -1548,7 +1536,7 @@ void reset_search(void)
 	for(k=0;k<GENMAX;k++) 
 		for(i=0;i<COLMAX;i++)
 			for(j=0;j<ROWMAX;j++)
-				currfield[k][i][j]=origfield[k][i][j];
+				g.currfield[k][i][j]=g.origfield[k][i][j];
 
 here:
 	InvalidateRect(hwndMain,NULL,FALSE);
@@ -1558,7 +1546,7 @@ here:
 
 }
 
-void open_state(void)
+static void open_state(void)
 {
 	if(searchstate!=0) reset_search();
 
@@ -1566,7 +1554,7 @@ void open_state(void)
 }
 
 
-void gen_changeby(int delta)
+static void gen_changeby(int delta)
 {
 	if(g.genmax<2) return;
 	g.curgen+=delta;
@@ -1577,26 +1565,26 @@ void gen_changeby(int delta)
 	InvalidateRect(hwndMain,NULL,FALSE);
 }
 
-void hide_selection(void)
+static void hide_selection(void)
 {
 	SelectOff(NULL);
 }
 
-void clear_gen(int g1)
+static void clear_gen(int g1)
 {	int i,j;
 	for(i=0;i<COLMAX;i++)
 		for(j=0;j<ROWMAX;j++)
-			currfield[g1][i][j]=2;
+			g.currfield[g1][i][j]=2;
 }
 
-void clear_all(void)
+static void clear_all(void)
 {	int g1;
 	for(g1=0;g1<GENMAX;g1++)
 		clear_gen(g1);
 	hide_selection();
 }
 
-void flip_h(int fromgen, int togen)
+static void flip_h(int fromgen, int togen)
 {
 	int g1, r, c;
 	int fromrow, torow, fromcol, tocol;
@@ -1621,15 +1609,15 @@ void flip_h(int fromgen, int togen)
 		{
 			for (c = (fromcol + tocol) / 2; c >= fromcol; --c)
 			{
-				buffer = currfield[g1][c][r];
-				currfield[g1][c][r] = currfield[g1][tocol + fromcol - c][r];
-				currfield[g1][tocol + fromcol - c][r] = buffer;
+				buffer = g.currfield[g1][c][r];
+				g.currfield[g1][c][r] = g.currfield[g1][tocol + fromcol - c][r];
+				g.currfield[g1][tocol + fromcol - c][r] = buffer;
 			}
 		}	
 	}
 }
 
-void flip_v(int fromgen, int togen)
+static void flip_v(int fromgen, int togen)
 {
 	int g1, r, c;
 	int fromrow, torow, fromcol, tocol;
@@ -1654,15 +1642,15 @@ void flip_v(int fromgen, int togen)
 		{
 			for (c = fromcol; c <= tocol; ++c)
 			{
-				buffer = currfield[g1][c][r];
-				currfield[g1][c][r] = currfield[g1][c][torow + fromrow - r];
-				currfield[g1][c][torow + fromrow - r] = buffer;
+				buffer = g.currfield[g1][c][r];
+				g.currfield[g1][c][r] = g.currfield[g1][c][torow + fromrow - r];
+				g.currfield[g1][c][torow + fromrow - r] = buffer;
 			}
 		}	
 	}
 }
 
-void transpose(int fromgen, int togen)
+static void transpose(int fromgen, int togen)
 {
 	int g1, r, c;
 	int fromrow, torow, fromcol, tocol;
@@ -1693,15 +1681,15 @@ void transpose(int fromgen, int togen)
 		{
 			for (c = fromcol; c < fromcol + (r - fromrow); ++c)
 			{
-				buffer = currfield[g1][c][r];
-				currfield[g1][c][r] = currfield[g1][fromcol - fromrow + r][fromrow - fromcol + c];
-				currfield[g1][fromcol - fromrow + r][fromrow - fromcol + c] = buffer;
+				buffer = g.currfield[g1][c][r];
+				g.currfield[g1][c][r] = g.currfield[g1][fromcol - fromrow + r][fromrow - fromcol + c];
+				g.currfield[g1][fromcol - fromrow + r][fromrow - fromcol + c] = buffer;
 			}
 		}	
 	}
 }
 
-void shift_gen(int fromgen, int togen, int gend, int cold, int rowd)
+static void shift_gen(int fromgen, int togen, int gend, int cold, int rowd)
 {
 	int g1,r,c;
 	int fromrow, torow, fromcol, tocol;
@@ -1723,7 +1711,7 @@ void shift_gen(int fromgen, int togen, int gend, int cold, int rowd)
 	for(g1=fromgen; g1<=togen; g1++) {
 		for(c=fromcol; c<=tocol; c++) {
 			for (r=fromrow; r<=torow; r++) {
-				origfield[g1][c][r] = currfield[g1][c][r];
+				g.origfield[g1][c][r] = g.currfield[g1][c][r];
 			}
 		}
 	}
@@ -1734,13 +1722,13 @@ void shift_gen(int fromgen, int togen, int gend, int cold, int rowd)
 				gx = (g1 + gend - fromgen + togen - fromgen + 1) % (togen - fromgen + 1) + fromgen;
 				cx = (c + cold - fromcol + tocol - fromcol + 1) % (tocol - fromcol + 1) + fromcol;
 				rx = (r + rowd - fromrow + torow - fromrow + 1) % (torow - fromrow + 1) + fromrow;
-				currfield[gx][cx][rx] = origfield[g1][c][r];
+				g.currfield[gx][cx][rx] = g.origfield[g1][c][r];
 			}
 		}
 	}
 }
 
-void copy_result(void)
+static void copy_result(void)
 {
 	int g1, i, j;
 
@@ -1751,7 +1739,7 @@ void copy_result(void)
 	for(g1=0;g1<g.genmax;g1++) {
 		for(i=0;i<g.colmax;i++){
 			for(j=0;j<g.rowmax;j++) {
-				origfield[g1][i][j] = currfield[g1][i][j];
+				g.origfield[g1][i][j] = g.currfield[g1][i][j];
 			}
 		}
 	}
@@ -1759,7 +1747,7 @@ void copy_result(void)
 	if (searchstate != 0) reset_search();
 }
 
-void copy_combination(void)
+static void copy_combination(void)
 {
 	int g1, i, j;
 
@@ -1772,7 +1760,7 @@ void copy_combination(void)
 	for(g1=0;g1<g.genmax;g1++) {
 		for(i=0;i<g.colmax;i++){
 			for(j=0;j<g.rowmax;j++) {
-				origfield[g1][i][j] = currfield[g1][i][j];
+				g.origfield[g1][i][j] = g.currfield[g1][i][j];
 			}
 		}
 	}
@@ -1780,7 +1768,7 @@ void copy_combination(void)
 	if (searchstate != 0) reset_search();
 }
 
-void clear_combination(void)
+static void clear_combination(void)
 {
 	if (searchstate == 0) return;
 
@@ -1789,7 +1777,7 @@ void clear_combination(void)
 	g.combining = 0;
 }
 
-void copytoclipboard(void)
+static void copytoclipboard(void)
 {
 	DWORD size;
 	HGLOBAL hClip;
@@ -1829,7 +1817,7 @@ void copytoclipboard(void)
 
 	for(j=0;j<g.rowmax;j++) {
 		for(i=0;i<g.colmax;i++) {
-			if(currfield[g.curgen][i][j]==1)
+			if(g.currfield[g.curgen][i][j]==1)
 				s[offset+(g.colmax+2)*j+i]='*';
 			else
 				s[offset+(g.colmax+2)*j+i]='.';
@@ -2342,10 +2330,10 @@ static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 		SetDlgItemInt(hWnd,IDC_VIEWFREQ,g.viewfreq,FALSE);
 		SetDlgItemText(hWnd,IDC_DUMPFILE,g.dumpfile);
 		SetDlgItemInt(hWnd,IDC_DUMPFREQ,g.dumpfreq,FALSE);
-		CheckDlgButton(hWnd,IDC_OUTPUTFILEYN,saveoutput?BST_CHECKED:BST_UNCHECKED);
-		CheckDlgButton(hWnd,IDC_OUTPUTALLGEN,saveoutputallgen?BST_CHECKED:BST_UNCHECKED);
-		CheckDlgButton(hWnd,IDC_STOPONFOUND,stoponfound?BST_CHECKED:BST_UNCHECKED);
-		CheckDlgButton(hWnd,IDC_STOPONSTEP,stoponstep?BST_CHECKED:BST_UNCHECKED);
+		CheckDlgButton(hWnd,IDC_OUTPUTFILEYN,g.saveoutput?BST_CHECKED:BST_UNCHECKED);
+		CheckDlgButton(hWnd,IDC_OUTPUTALLGEN,g.saveoutputallgen?BST_CHECKED:BST_UNCHECKED);
+		CheckDlgButton(hWnd,IDC_STOPONFOUND,g.stoponfound?BST_CHECKED:BST_UNCHECKED);
+		CheckDlgButton(hWnd,IDC_STOPONSTEP,g.stoponstep?BST_CHECKED:BST_UNCHECKED);
 		SetDlgItemText(hWnd,IDC_OUTPUTFILE,g.outputfile);
 		SetDlgItemInt(hWnd,IDC_OUTPUTCOLS,g.outputcols,FALSE);
 		return 1;
@@ -2356,10 +2344,10 @@ static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 			g.viewfreq=GetDlgItemInt(hWnd,IDC_VIEWFREQ,NULL,FALSE);
 			g.dumpfreq=GetDlgItemInt(hWnd,IDC_DUMPFREQ,NULL,FALSE);
 			GetDlgItemText(hWnd,IDC_DUMPFILE,g.dumpfile,79);
-			saveoutput=(IsDlgButtonChecked(hWnd,IDC_OUTPUTFILEYN)==BST_CHECKED);
-			saveoutputallgen=(IsDlgButtonChecked(hWnd,IDC_OUTPUTALLGEN)==BST_CHECKED);
-			stoponfound=(IsDlgButtonChecked(hWnd,IDC_STOPONFOUND)==BST_CHECKED);
-			stoponstep=(IsDlgButtonChecked(hWnd,IDC_STOPONSTEP)==BST_CHECKED);
+			g.saveoutput=(IsDlgButtonChecked(hWnd,IDC_OUTPUTFILEYN)==BST_CHECKED);
+			g.saveoutputallgen=(IsDlgButtonChecked(hWnd,IDC_OUTPUTALLGEN)==BST_CHECKED);
+			g.stoponfound=(IsDlgButtonChecked(hWnd,IDC_STOPONFOUND)==BST_CHECKED);
+			g.stoponstep=(IsDlgButtonChecked(hWnd,IDC_STOPONSTEP)==BST_CHECKED);
 			GetDlgItemText(hWnd,IDC_OUTPUTFILE,g.outputfile,79);
 			g.outputcols=GetDlgItemInt(hWnd,IDC_OUTPUTCOLS,NULL,FALSE);
 			// fall through
@@ -2403,7 +2391,7 @@ static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 		SetDlgItemInt(hWnd,IDC_COLCELLS,g.colcells,TRUE);
 		SetDlgItemInt(hWnd,IDC_COLWIDTH,g.colwidth,TRUE);
 
-		SetDlgItemText(hWnd,IDC_RULESTRING,rulestring);
+		SetDlgItemText(hWnd,IDC_RULESTRING,g.rulestring);
 		return 1;
 
 	case WM_COMMAND:
@@ -2431,7 +2419,7 @@ static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 			g.smartwindow=GetDlgItemInt(hWnd,IDC_SMARTWINDOW,NULL,TRUE);
 			g.smartthreshold=GetDlgItemInt(hWnd,IDC_SMARTTHRESHOLD,NULL,TRUE);
 
-			GetDlgItemText(hWnd,IDC_RULESTRING,rulestring,50);
+			GetDlgItemText(hWnd,IDC_RULESTRING,g.rulestring,WLS_RULESTRING_LEN);
 
 			// fall through
 		case IDCANCEL:

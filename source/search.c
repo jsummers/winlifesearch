@@ -9,12 +9,6 @@
   ****** Heavily modified. Modifications not noted consistently.  -JES ******
  */
 
-/*
- * Define this as a null value so as to define the global variables
- * defined in lifesrc.h here.
- */
-#define	EXTERN
-
 #include "wls-config.h"
 #include <windows.h>
 #include <tchar.h>
@@ -28,7 +22,6 @@
 struct globals_struct g;
 
 extern volatile int abortthread;
-extern int stoponstep;
 
 /*
  * IMPLIC flag values.
@@ -1383,7 +1376,7 @@ search()
 		if (cell == NULL)
 			return FOUND;
 
-		if (stoponstep) {
+		if (g.stoponstep) {
 			showcount();
 			printgen();
 			abortthread = 1;

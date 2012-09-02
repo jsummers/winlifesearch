@@ -71,8 +71,6 @@ typedef	unsigned int	STATUS;
  * Status returned by routines
  */
 #define	OK		((STATUS) 0)
-
-// JES
 #define	ERROR1		((STATUS) 1)
 #define	CONSISTENT	((STATUS) 2)
 #define	NOTEXIST	((STATUS) 3)
@@ -155,15 +153,6 @@ struct cell
 
 	STATE combined;
 };
-
-/*
- * Declare this macro so that by default the variables are defined external.
- * In the main program, this is defined as a null value so as to actually
- * define the variables.
- */
-#ifndef	EXTERN
-#define	EXTERN	extern
-#endif
 
 
 struct globals_struct {
@@ -262,6 +251,18 @@ struct globals_struct {
 	int combinedcells;
 	int setcombinedcells;
 	int differentcombinedcells;
+
+	int origfield[GENMAX][COLMAX][ROWMAX];
+	int currfield[GENMAX][COLMAX][ROWMAX];
+
+#define WLS_RULESTRING_LEN 50
+	TCHAR rulestring[WLS_RULESTRING_LEN];
+	int saveoutput;
+	int saveoutputallgen;
+	int stoponfound;
+	int stoponstep;
+	int foundcount;
+	int writecount;
 };
 
 
@@ -289,12 +290,11 @@ extern	void	loopcells PROTO((CELL *, CELL *));
 
 extern	void	ttystatus PROTO((TCHAR *, ...));
 
-//JES
 void	freezecell PROTO((int, int));
 BOOL	setrules PROTO((TCHAR *));
 BOOL setrulesA(char *);
 BOOL    loadstate(void);
 void    getbackup(char *cp);
 
-extern int currfield[GENMAX][COLMAX][ROWMAX];
+//extern int currfield[GENMAX][COLMAX][ROWMAX];
 /* END CODE */
