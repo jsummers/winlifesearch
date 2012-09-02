@@ -326,19 +326,65 @@ static void InitGameSettings(struct wcontext *ctx)
 	RecalcCenter(ctx);
 }
 
-static void set_main_scrollbars(struct wcontext *ctx, int redraw)
+static int fix_scrollpos(struct wcontext *ctx)
 {
-	SCROLLINFO si;
 	RECT r;
-	HDC hDC;
+	int changed=0;
+	int n;
 
 	GetClientRect(ctx->hwndMain,&r);
 
+	// If the entire field doesn't fit in the window, there should be no
+	// unused space at the right/bottom of the field.
+	n = g.colmax*cellwidth; // width of field
+	// max scrollpos should be n - r.right
+	if(n>r.right) {
+		if(ctx->scrollpos.x>n-r.right) {
+			ctx->scrollpos.x = n-r.right;
+			changed=1;
+		}
+	}
+	else if(ctx->scrollpos.x!=0) {
+		// Entire field fits in the window, so it should never be scrolled.
+		ctx->scrollpos.x=0;
+		changed=1;
+	}
+
+	n = g.rowmax*cellheight;
+	if(n>r.bottom) {
+		if(ctx->scrollpos.y>n-r.bottom) {
+			ctx->scrollpos.y = n-r.bottom;
+			changed = 1;
+		}
+	}
+	else if(ctx->scrollpos.y!=0) {
+		ctx->scrollpos.y=0;
+		changed=1;
+	}
+
+	// scrollpos is never < 0
 	if(ctx->scrollpos.x<0) ctx->scrollpos.x=0;
 	if(ctx->scrollpos.y<0) ctx->scrollpos.y=0;
 
-	if(g.colmax*cellwidth<=r.right && ctx->scrollpos.x!=0) { ctx->scrollpos.x=0; redraw=1; }
-	if(g.rowmax*cellheight<=r.bottom && ctx->scrollpos.y!=0) { ctx->scrollpos.y=0; redraw=1; }
+	return changed;
+}
+
+// Adjust the visible position of the scrollbars to ctx->scrollpos.
+// redraw: Always repaint the window.
+// checkscrollpos: Check if the requested scroll position is valid, and if not,
+//   make it valid and repaint the window.
+static void set_main_scrollbars(struct wcontext *ctx, int redraw, int checkscrollpos)
+{
+	HDC hDC;
+	SCROLLINFO si;
+	RECT r;
+
+	if(checkscrollpos) {
+		if(fix_scrollpos(ctx)) redraw = 1;
+	}
+
+	// TODO: We call GetClientRect too many times.
+	GetClientRect(ctx->hwndMain,&r);
 
 	si.cbSize=sizeof(SCROLLINFO);
 	si.fMask=SIF_ALL;
@@ -436,7 +482,7 @@ static BOOL InitApp(struct wcontext *ctx, int nCmdShow)
 	);
 	if (!ctx->hwndToolbar) return (FALSE);
 
-	set_main_scrollbars(ctx,1);
+	set_main_scrollbars(ctx, 1, 1);
 	/* Make the window visible; update its client area; and return "success" */
 
 	ShowWindow(ctx->hwndFrame, nCmdShow);		/* Show the window */
@@ -2143,7 +2189,52 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 	return (DefWindowProc(hWnd, msg, wParam, lParam));
 }
 
+static void Handle_Scroll(struct wcontext *ctx, UINT msg, WORD scrollboxpos, WORD id)
+{
+	POINT oldscrollpos;
 
+	oldscrollpos = ctx->scrollpos;
+
+	if(msg==WM_HSCROLL) {
+		switch(id) {
+		case SB_LINELEFT: ctx->scrollpos.x-=cellwidth; break;
+		case SB_LINERIGHT: ctx->scrollpos.x+=cellwidth; break;
+		case SB_PAGELEFT: ctx->scrollpos.x-=cellwidth*4; break;
+		case SB_PAGERIGHT: ctx->scrollpos.x+=cellwidth*4; break;
+		case SB_THUMBTRACK:
+			if(scrollboxpos==ctx->scrollpos.x) return;
+			ctx->scrollpos.x=scrollboxpos;
+			break;
+		default:
+			return;
+		}
+	}
+	else { // WM_VSCROLL
+		switch(id) {
+		case SB_LINELEFT: ctx->scrollpos.y-=cellheight; break;
+		case SB_LINERIGHT: ctx->scrollpos.y+=cellheight; break;
+		case SB_PAGELEFT: ctx->scrollpos.y-=cellheight*4; break;
+		case SB_PAGERIGHT: ctx->scrollpos.y+=cellheight*4; break;
+		case SB_THUMBTRACK:
+			if(scrollboxpos==ctx->scrollpos.y) return;
+			ctx->scrollpos.y=scrollboxpos;
+			break;
+		default:
+			return;
+		}
+	}
+
+	fix_scrollpos(ctx);
+
+	if(ctx->scrollpos.x==oldscrollpos.x && ctx->scrollpos.y==oldscrollpos.y) return;
+
+	ScrollWindowEx(ctx->hwndMain,
+		oldscrollpos.x-ctx->scrollpos.x,
+		oldscrollpos.y-ctx->scrollpos.y,
+		NULL,NULL,NULL,NULL,SW_INVALIDATE|SW_ERASE);
+
+	set_main_scrollbars(ctx, 0, 0);
+}
 
 static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -2157,38 +2248,14 @@ static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 	case WM_PAINT:
 		PaintWindow(ctx,hWnd);
 		return 0;
+
 	case WM_HSCROLL:
-		switch(id) {
-		case SB_LINELEFT: ctx->scrollpos.x-=cellwidth; break;
-		case SB_LINERIGHT: ctx->scrollpos.x+=cellwidth; break;
-		case SB_PAGELEFT: ctx->scrollpos.x-=cellwidth*4; break;
-		case SB_PAGERIGHT: ctx->scrollpos.x+=cellwidth*4; break;
-		case SB_THUMBTRACK:
-			if(HIWORD(wParam)==ctx->scrollpos.x) return 0;
-			ctx->scrollpos.x=HIWORD(wParam);
-			break;
-		default:
-			return 0;
-		}
-		set_main_scrollbars(ctx,1);
-		return 0;
 	case WM_VSCROLL:
-		switch(id) {
-		case SB_LINELEFT: ctx->scrollpos.y-=cellheight; break;
-		case SB_LINERIGHT: ctx->scrollpos.y+=cellheight; break;
-		case SB_PAGELEFT: ctx->scrollpos.y-=cellheight*4; break;
-		case SB_PAGERIGHT: ctx->scrollpos.y+=cellheight*4; break;
-		case SB_THUMBTRACK:
-			if(HIWORD(wParam)==ctx->scrollpos.y) return 0;
-			ctx->scrollpos.y=HIWORD(wParam);
-			break;
-		default:
-			return 0;
-		}
-		set_main_scrollbars(ctx,1);
+		Handle_Scroll(ctx,msg,HIWORD(wParam),id);
 		return 0;
+
 	case WM_SIZE:
-		set_main_scrollbars(ctx,0);
+		set_main_scrollbars(ctx, 0, 1);
 		return 0;
 	case WM_LBUTTONDOWN:
 	case WM_RBUTTONDOWN:
@@ -2381,7 +2448,7 @@ static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 				}
 			}
 
-			set_main_scrollbars(ctx,1);
+			set_main_scrollbars(ctx, 1, 1);
 			// fall through
 		case IDCANCEL:
 			EndDialog(hWnd, TRUE);
