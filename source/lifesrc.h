@@ -9,14 +9,16 @@
 
 #include <ctype.h>
 
-#ifdef JS
-
 /*
  * Maximum dimensions of the search
  */
 #define	ROWMAX		80	/* maximum rows for search rectangle */
 #define	COLMAX		132	/* maximum columns for search rectangle */
+#ifdef JS
 #define	GENMAX		10	/* maximum number of generations */
+#else
+#define	GENMAX		19	/* maximum number of generations */
+#endif
 #define	TRANSMAX	8	/* largest translation value allowed */
 
 
@@ -31,12 +33,13 @@
 /*
  * Other definitions
  */
+#ifdef JS
 #define	DUMPVERSION	56		/* version of dump file  (was 6) */
+#else
+#define	DUMPVERSION	102		/* version of dump file */
+#endif
 
 #define	ALLOCSIZE	1000		/* chunk size for cell allocation */
-#define	VIEWMULT	1000		/* viewing frequency multiplier */
-#define	DUMPMULT	1000		/* dumping frequency multiplier */
-#define	DUMPFILE	"lifesrc.dmp"	/* default dump file name */
 #define	LINESIZE	1000		/* size of input lines */
 
 #define	MAXCELLS	((COLMAX + 2) * (ROWMAX + 2) * GENMAX)
@@ -66,18 +69,21 @@
 //#define	isdigit(ch)	(((ch) >= '0') && ((ch) <= '9'))
 #define	isblank(ch)	(((ch) == ' ') || ((ch) == '\t'))
 
+#ifdef JS
 typedef	unsigned int  PACKED_BOOL;
 typedef	unsigned int  STATE;
 typedef	unsigned int  STATUS;
-
+#else
+typedef	char		PACKED_BOOL;
+typedef	unsigned char	STATE;
+typedef	unsigned int	STATUS;
+#endif
 
 /*
  * Status returned by routines
  */
 #define	OK		((STATUS) 0)
-
 #define	ERROR1		((STATUS) 1)
-
 #define	CONSISTENT	((STATUS) 2)
 #define	NOTEXIST	((STATUS) 3)
 #define	FOUND		((STATUS) 4)
@@ -86,11 +92,17 @@ typedef	unsigned int  STATUS;
 /*
  * States of a cell
  */
+#ifdef JS
 #define	OFF	((STATE) 0x00)		/* cell is known off */
 #define	ON	((STATE) 0x01)		/* cell is known on */
 #define	UNK	((STATE) 0x10)		/* cell is unknown */
 #define	NSTATES	3			/* number of states */
-
+#else
+#define	UNK	((STATE) 0)		/* cell is unknown */
+#define	ON	((STATE) 1)		/* cell is known on */
+#define	OFF	((STATE) 9)		/* cell is known off */
+#define	NSTATES	3			/* number of states */
+#endif
 
 /*
  * Information about a row.
@@ -116,6 +128,8 @@ typedef struct
  * Information about one cell of the search.
  */
 typedef	struct cell CELL;
+
+#ifdef JS
 
 struct cell
 {
@@ -145,10 +159,57 @@ struct cell
 	ROWINFO * rowinfo;	/* information about this cell's row */
 	COLINFO * colinfo;	/* information about this cell's column */
 };
+#else
+struct cell
+{
+	// state is the most used field so let's put it first
 
+	STATE	state;		/* current state */
+
+	// it makes one byte
+	// let's align the address before the pointers start
+
+	PACKED_BOOL free;	/* TRUE if this cell still has free choice */
+
+	// aligned to two bytes - let's round it up to four
+
+	short	gen;		/* generation number of this cell */
+	short	row;		/* row of this cell */
+	short	col;		/* column of this cell */
+
+	// and now for the pointers
+
+	CELL *	past;		/* cell in the past at this location */
+	CELL *	future;		/* cell in the future at this location */
+	CELL *	cul;		/* cell to up and left */
+	CELL *	cu;			/* cell to up */
+	CELL *	cur;		/* cell to up and right */
+	CELL *	cl;			/* cell to left */
+	CELL *	cr;			/* cell to right */
+	CELL *	cdl;		/* cell to down and left */
+	CELL *	cd;			/* cell to down */
+	CELL *	cdr;		/* cell to down and right */
+	CELL *	loop;		/* next cell in same loop as this one */
+	CELL *	search;		/* cell next to be searched for setting */
+
+	ROWINFO * rowinfo;	/* information about this cell's row */
+	COLINFO * colinfo;	/* information about this cell's column */
+
+	short	near1;		/* count of cells this cell is near */
+
+	PACKED_BOOL frozen;	/* TRUE if this cell is frozen in all gens */
+	PACKED_BOOL active; /* FALSE if mirror by a symmetry */
+	PACKED_BOOL unchecked; /* TRUE for unchecked cells */
+
+	STATE combined;
+};
+#endif
+
+#ifdef JS
 #define	NULL_CELL	((CELL *) 0)
+#endif
 
-
+#ifdef JS
 struct globals_struct {
 /*
  * Current parameter values for the program to be saved over runs.
@@ -276,149 +337,6 @@ void record_malloc(int func,void *m);
 void showcount(int c);
 
 #else // KS:
-
-/*
- * Maximum dimensions of the search
- */
-#define	ROWMAX		80	/* maximum rows for search rectangle */
-#define	COLMAX		132	/* maximum columns for search rectangle */
-#define	GENMAX		19	/* maximum number of generations */
-#define	TRANSMAX	8	/* largest translation value allowed */
-
-
-/*
- * Build options
- */
-#ifndef DEBUGFLAG
-#define	DEBUGFLAG	0	/* nonzero for debugging features */
-#endif
-
-
-/*
- * Other definitions
- */
-#define	DUMPVERSION	102		/* version of dump file */
-
-#define	ALLOCSIZE	1000		/* chunk size for cell allocation */
-#define	LINESIZE	1000		/* size of input lines */
-
-#define	MAXCELLS	((COLMAX + 2) * (ROWMAX + 2) * GENMAX)
-#define	AUXCELLS	(TRANSMAX * (COLMAX + ROWMAX + 4) * 2)
-
-
-/*
- * Debugging macros
- */
-#if DEBUGFLAG
-#define	DPRINTF0(fmt)			if (g.debug) printf(fmt)
-#define	DPRINTF1(fmt,a1)		if (g.debug) printf(fmt,a1)
-#define	DPRINTF2(fmt,a1,a2)		if (g.debug) printf(fmt,a1,a2)
-#define	DPRINTF3(fmt,a1,a2,a3)		if (g.debug) printf(fmt,a1,a2,a3)
-#define	DPRINTF4(fmt,a1,a2,a3,a4)	if (g.debug) printf(fmt,a1,a2,a3,a4)
-#define	DPRINTF5(fmt,a1,a2,a3,a4,a5)	if (g.debug) printf(fmt,a1,a2,a3,a4,a5)
-#else
-#define	DPRINTF0(fmt)
-#define	DPRINTF1(fmt,a1)
-#define	DPRINTF2(fmt,a1,a2)
-#define	DPRINTF3(fmt,a1,a2,a3)
-#define	DPRINTF4(fmt,a1,a2,a3,a4)
-#define	DPRINTF5(fmt,a1,a2,a3,a4,a5)
-#endif
-
-
-#define	isblank(ch)	(((ch) == ' ') || ((ch) == '\t'))
-
-typedef	char		PACKED_BOOL;
-typedef	unsigned char	STATE;
-typedef	unsigned int	STATUS;
-
-/*
- * Status returned by routines
- */
-#define	OK		((STATUS) 0)
-#define	ERROR1		((STATUS) 1)
-#define	CONSISTENT	((STATUS) 2)
-#define	NOTEXIST	((STATUS) 3)
-#define	FOUND		((STATUS) 4)
-
-/*
- * States of a cell
- */
-#define	UNK	((STATE) 0)		/* cell is unknown */
-#define	ON	((STATE) 1)		/* cell is known on */
-#define	OFF	((STATE) 9)		/* cell is known off */
-#define	NSTATES	3			/* number of states */
-
-
-/*
- * Information about a row.
- */
-typedef	struct
-{
-	int	oncount;	/* number of cells which are set on */
-} ROWINFO;
-
-
-/*
- * Information about a column.
- */
-typedef struct
-{
-	int	setcount;	/* number of cells which are set */
-	int	oncount;	/* number of cells which are set on */
-	int	sumpos;		/* sum of row positions for on cells */
-} COLINFO;
-
-
-/*
- * Information about one cell of the search.
- */
-typedef	struct cell CELL;
-
-struct cell
-{
-	// state is the most used field so let's put it first
-
-	STATE	state;		/* current state */
-
-	// it makes one byte
-	// let's align the address before the pointers start
-
-	PACKED_BOOL free;	/* TRUE if this cell still has free choice */
-
-	// aligned to two bytes - let's round it up to four
-
-	short	gen;		/* generation number of this cell */
-	short	row;		/* row of this cell */
-	short	col;		/* column of this cell */
-
-	// and now for the pointers
-
-	CELL *	past;		/* cell in the past at this location */
-	CELL *	future;		/* cell in the future at this location */
-	CELL *	cul;		/* cell to up and left */
-	CELL *	cu;			/* cell to up */
-	CELL *	cur;		/* cell to up and right */
-	CELL *	cl;			/* cell to left */
-	CELL *	cr;			/* cell to right */
-	CELL *	cdl;		/* cell to down and left */
-	CELL *	cd;			/* cell to down */
-	CELL *	cdr;		/* cell to down and right */
-	CELL *	loop;		/* next cell in same loop as this one */
-	CELL *	search;		/* cell next to be searched for setting */
-
-	ROWINFO * rowinfo;	/* information about this cell's row */
-	COLINFO * colinfo;	/* information about this cell's column */
-
-	short	near1;		/* count of cells this cell is near */
-
-	PACKED_BOOL frozen;	/* TRUE if this cell is frozen in all gens */
-	PACKED_BOOL active; /* FALSE if mirror by a symmetry */
-	PACKED_BOOL unchecked; /* TRUE for unchecked cells */
-
-	STATE combined;
-};
-
 
 struct globals_struct {
 	/*
