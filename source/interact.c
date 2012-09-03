@@ -26,7 +26,6 @@ extern struct globals_struct g;
 static	BOOL	nowait;		/* don't wait for commands after loading */
 static	BOOL	setall;		/* set all cells from initial file */
 static	BOOL	islife;		/* whether the rules are for standard Life */
-static	long	foundcount;	/* number of objects found */
 static	char *	initfile;	/* file containing initial cells */
 static	char *	loadfile;	/* file to load state from */
 /*
@@ -247,7 +246,6 @@ void writegen(TCHAR *file1, BOOL append)
 	int	ch;
 	int	minrow, maxrow, mincol, maxcol;
 	TCHAR file[MAX_PATH];
-	static int writecount=0;
 
 	if(!g.saveoutput && !g.outputcols) return;
 
@@ -356,9 +354,9 @@ void writegen(TCHAR *file1, BOOL append)
 		return;
 	}
 
-	writecount++;
+	g.writecount++;
 	if (fp != stdout) {
-		wlsStatusf(NULL,_T("\"%s\" written (%d)"),file,writecount);
+		wlsStatusf(NULL,_T("\"%s\" written (%d)"),file,g.writecount);
 	}
 
 	g.quitok = TRUE;

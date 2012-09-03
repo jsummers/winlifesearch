@@ -333,9 +333,8 @@ struct globals_struct {
 #endif
 
 	int origfield[GENMAX][COLMAX][ROWMAX];
-#ifndef JS
 	int currfield[GENMAX][COLMAX][ROWMAX];
-#endif
+
 #define WLS_RULESTRING_LEN 50
 	TCHAR rulestring[WLS_RULESTRING_LEN];
 	int saveoutput;
@@ -344,8 +343,8 @@ struct globals_struct {
 	int stoponfound;
 	int stoponstep;
 	int foundcount;
-	int writecount;
 #endif
+	int writecount;
 };
 
 

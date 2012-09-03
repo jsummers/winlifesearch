@@ -89,9 +89,6 @@ struct wcontext *gctx;
 
 volatile int abortthread;
 
-#ifdef JS
-static int currfield[GENMAX][COLMAX][ROWMAX];
-#endif
 
 /* \2 | 1/    
    3 \|/ 0
@@ -266,7 +263,7 @@ static void InitGameSettings(struct wcontext *ctx)
 		for(i=0;i<COLMAX;i++)
 			for(j=0;j<ROWMAX;j++) {
 				g.origfield[k][i][j]=2;       // set all cells to "don't care"
-				currfield[k][i][j]=2;
+				g.currfield[k][i][j]=2;
 			}
 
 	g.symmetry=0;
@@ -540,14 +537,14 @@ static void DrawCell(struct wcontext *ctx, HDC hDC,int x,int y)
 	SelectObject(hDC,ctx->pens.celloutline);
 	SelectObject(hDC,ctx->brushes.cell);
 
-	tmp=currfield[0][x][y];
+	tmp=g.currfield[0][x][y];
 	for(i=1;i<g.genmax;i++) {
-		if(currfield[i][x][y]!=tmp) allsame=0;
+		if(g.currfield[i][x][y]!=tmp) allsame=0;
 	}
 
 	ClearCell(ctx,hDC,x,y,!allsame);
 
-	switch(currfield[g.curgen][x][y]) {
+	switch(g.currfield[g.curgen][x][y]) {
 	case 0:        // must be off
 		SelectObject(hDC,ctx->pens.cell_off);
 		SelectObject(hDC,GetStockObject(NULL_BRUSH));
@@ -597,15 +594,15 @@ static void Symmetricalize(struct wcontext *ctx, HDC hDC,int x,int y,int allgens
 
 	if(allgens) {
 		for(j=0;j<GENMAX;j++)
-			currfield[j][x][y]=currfield[g.curgen][x][y];
+			g.currfield[j][x][y]=g.currfield[g.curgen][x][y];
 	}
 	DrawCell(ctx, hDC,x,y);
 
 	for(i=0;i<numpts;i++) {
-		currfield[g.curgen][pts[i].x][pts[i].y]=currfield[g.curgen][x][y];
+		g.currfield[g.curgen][pts[i].x][pts[i].y]=g.currfield[g.curgen][x][y];
 		if(allgens) {
 			for(j=0;j<GENMAX;j++)
-				currfield[j][pts[i].x][pts[i].y]=currfield[g.curgen][x][y];
+				g.currfield[j][pts[i].x][pts[i].y]=g.currfield[g.curgen][x][y];
 		}
 		DrawCell(ctx, hDC,pts[i].x,pts[i].y);
 	}
@@ -703,12 +700,12 @@ static void FixFrozenCells(void)
 		for(y=0;y<ROWMAX;y++) {
 			for(z=0;z<GENMAX;z++) {
 				if(z!=g.curgen) {
-					if(currfield[g.curgen][x][y]==4) {
-						currfield[z][x][y]=4;
+					if(g.currfield[g.curgen][x][y]==4) {
+						g.currfield[z][x][y]=4;
 					}
 					else {  // current not frozen
-						if(currfield[z][x][y]==4)
-							currfield[z][x][y]=2;
+						if(g.currfield[z][x][y]==4)
+							g.currfield[z][x][y]=2;
 					}
 				}
 			}
@@ -740,7 +737,7 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 	if(y<0 || y>=g.rowmax) return 1;
 
 
-	lastval= currfield[g.curgen][x][y];
+	lastval= g.currfield[g.curgen][x][y];
 //	if(lastval==4) allgens=1;       // previously frozen
 
 
@@ -815,7 +812,7 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 		if(wParam & MK_SHIFT) allgens=1;
 		if(x==ctx->startcell.x && y==ctx->startcell.y) {
 			ctx->selectstate=0;
-			if(currfield[g.curgen][x][y]==1) newval=2; //currfield[curgen][x][y]=2;
+			if(g.currfield[g.curgen][x][y]==1) newval=2; //currfield[curgen][x][y]=2;
 			else newval=1;  //currfield[g.curgen][x][y]=1;
 			//Symmetricalize(hDC,x,y,allgens);
 		}
@@ -829,7 +826,7 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 
 	case WM_RBUTTONDOWN:     // toggle off/unchecked
 		if(wParam & MK_SHIFT) allgens=1;
-		if(currfield[g.curgen][x][y]==0) newval=2; //currfield[curgen][x][y]=2;
+		if(g.currfield[g.curgen][x][y]==0) newval=2; //currfield[curgen][x][y]=2;
 		else newval=0; //currfield[curgen][x][y]=0;
 		break;
 
@@ -879,14 +876,14 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 		if(newval>=0) {
 			for(i=ctx->selectrect.left;i<=ctx->selectrect.right;i++) {
 				for(j=ctx->selectrect.top;j<=ctx->selectrect.bottom;j++) {
-					currfield[g.curgen][i][j]=newval;
+					g.currfield[g.curgen][i][j]=newval;
 					Symmetricalize(ctx, hDC,i,j,allgens);
 				}
 			}
 		}
 	}
 	else {
-		if(newval>=0) currfield[g.curgen][x][y]=newval;
+		if(newval>=0) g.currfield[g.curgen][x][y]=newval;
 		Symmetricalize(ctx, hDC,x,y,allgens);
 	}
 
@@ -978,13 +975,13 @@ void printgen(int gen)
 				cell=findcell(j+1,i+1,g1);
 				switch(cell->state) {
 				case OFF:
-					currfield[g1][i][j]=0;
+					g.currfield[g1][i][j]=0;
 					break;
 				case ON:
-					currfield[g1][i][j]=1;
+					g.currfield[g1][i][j]=1;
 					break;
 				case UNK:
-					currfield[g1][i][j]=2;
+					g.currfield[g1][i][j]=2;
 					break;
 				}
 			}
@@ -1120,7 +1117,7 @@ static void start_search(struct wcontext *ctx, TCHAR *statefile)
 	for(k=0;k<GENMAX;k++) 
 		for(i=0;i<COLMAX;i++)
 			for(j=0;j<ROWMAX;j++)
-				g.origfield[k][i][j]=currfield[k][i][j];
+				g.origfield[k][i][j]=g.currfield[k][i][j];
 
 	if (!setrules(g.rulestring))
 	{
@@ -1244,7 +1241,7 @@ static void reset_search(struct wcontext *ctx)
 	for(k=0;k<GENMAX;k++) 
 		for(i=0;i<COLMAX;i++)
 			for(j=0;j<ROWMAX;j++)
-				currfield[k][i][j]=g.origfield[k][i][j];
+				g.currfield[k][i][j]=g.origfield[k][i][j];
 
 here:
 	InvalidateRect(ctx->hwndMain,NULL,TRUE);
@@ -1282,7 +1279,7 @@ static void clear_gen(int g1)
 {	int i,j;
 	for(i=0;i<COLMAX;i++)
 		for(j=0;j<ROWMAX;j++)
-			currfield[g1][i][j]=2;
+			g.currfield[g1][i][j]=2;
 }
 
 static void clear_all(void)
@@ -1331,7 +1328,7 @@ static void copytoclipboard(struct wcontext *ctx)
 
 	for(j=0;j<g.rowmax;j++) {
 		for(i=0;i<g.colmax;i++) {
-			if(currfield[g.curgen][i][j]==1)
+			if(g.currfield[g.curgen][i][j]==1)
 				s[offset+(g.colmax+2)*j+i]='*';
 			else
 				s[offset+(g.colmax+2)*j+i]='.';
