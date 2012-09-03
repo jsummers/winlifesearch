@@ -35,10 +35,6 @@
 #include <strsafe.h>
 
 
-#define cellheight 16
-
-#define cellwidth  16
-
 #define TOOLBARHEIGHT 24
 
 
@@ -75,6 +71,7 @@ struct wcontext {
 	int searchstate;
 	pens_type pens;
 	brushes_type brushes;
+	int cellwidth, cellheight;
 	int centerx,centery,centerxodd,centeryodd;
 	POINT scrollpos;
 	HFONT statusfont;
@@ -370,7 +367,7 @@ static int fix_scrollpos(struct wcontext *ctx)
 
 	// If the entire field doesn't fit in the window, there should be no
 	// unused space at the right/bottom of the field.
-	n = g.colmax*cellwidth; // width of field
+	n = g.colmax*ctx->cellwidth; // width of field
 	// max scrollpos should be n - r.right
 	if(n>r.right) {
 		if(ctx->scrollpos.x>n-r.right) {
@@ -384,7 +381,7 @@ static int fix_scrollpos(struct wcontext *ctx)
 		changed=1;
 	}
 
-	n = g.rowmax*cellheight;
+	n = g.rowmax*ctx->cellheight;
 	if(n>r.bottom) {
 		if(ctx->scrollpos.y>n-r.bottom) {
 			ctx->scrollpos.y = n-r.bottom;
@@ -423,13 +420,13 @@ static void set_main_scrollbars(struct wcontext *ctx, int redraw, int checkscrol
 	si.cbSize=sizeof(SCROLLINFO);
 	si.fMask=SIF_ALL;
 	si.nMin=0;
-	si.nMax=g.colmax*cellwidth;
+	si.nMax=g.colmax*ctx->cellwidth;
 	si.nPage=r.right;
 	si.nPos=ctx->scrollpos.x;
 	si.nTrackPos=0;
 	SetScrollInfo(ctx->hwndMain,SB_HORZ,&si,TRUE);
 
-	si.nMax=g.rowmax*cellheight;
+	si.nMax=g.rowmax*ctx->cellheight;
 	si.nPage=r.bottom;
 	si.nPos=ctx->scrollpos.y;
 	SetScrollInfo(ctx->hwndMain,SB_VERT,&si,TRUE);
@@ -462,6 +459,8 @@ static BOOL InitApp(struct wcontext *ctx, int nCmdShow)
 {
 	RECT r;
 
+	ctx->cellwidth = 16;
+	ctx->cellheight = 16;
 	ctx->scrollpos.x=0; ctx->scrollpos.y=0;
 
 	InitGameSettings(ctx);
@@ -572,8 +571,8 @@ static void DrawGuides(struct wcontext *ctx, HDC hDC)
 	RecalcCenter(ctx);
 
 	// store the center pixel in some temp vars to make things readable
-	centerpx=ctx->centerx*cellwidth+ctx->centerxodd*(cellwidth/2);
-	centerpy=ctx->centery*cellheight+ctx->centeryodd*(cellheight/2);
+	centerpx=ctx->centerx*ctx->cellwidth+ctx->centerxodd*(ctx->cellwidth/2);
+	centerpy=ctx->centery*ctx->cellheight+ctx->centeryodd*(ctx->cellheight/2);
 
 	SelectObject(hDC,ctx->pens.axes);
 
@@ -581,45 +580,45 @@ static void DrawGuides(struct wcontext *ctx, HDC hDC)
 	// horizontal line
 	if(g.symmetry==2 || g.symmetry==6 || g.symmetry==9) {	
 		MoveToEx(hDC,0,centerpy,NULL);
-		LineTo(hDC,g.colmax*cellwidth,centerpy);
+		LineTo(hDC,g.colmax*ctx->cellwidth,centerpy);
 	}
 
 	// vertical line
 	if(g.symmetry==1 || g.symmetry==6 || g.symmetry==9) {
 		MoveToEx(hDC,centerpx,0,NULL);
-		LineTo(hDC,centerpx,g.rowmax*cellheight);
+		LineTo(hDC,centerpx,g.rowmax*ctx->cellheight);
 	}
 
 	// diag - forward
 	if(g.symmetry==3 || g.symmetry==5 || g.symmetry>=7) {
-		MoveToEx(hDC,0,g.rowmax*cellheight,NULL);
-		LineTo(hDC,g.colmax*cellwidth,0);
+		MoveToEx(hDC,0,g.rowmax*ctx->cellheight,NULL);
+		LineTo(hDC,g.colmax*ctx->cellwidth,0);
 	}
 
 	// diag - backward
 	if(g.symmetry==4 || g.symmetry>=7) {
 		MoveToEx(hDC,0,0,NULL);
-		LineTo(hDC,g.colmax*cellwidth,g.rowmax*cellheight);
+		LineTo(hDC,g.colmax*ctx->cellwidth,g.rowmax*ctx->cellheight);
 	}
 	if(g.symmetry==5 || g.symmetry==8) {
-		MoveToEx(hDC,0,g.rowmax*cellheight,NULL);
-		LineTo(hDC,0,(g.rowmax-2)*cellheight);
-		MoveToEx(hDC,g.colmax*cellwidth,0,NULL);
-		LineTo(hDC,g.colmax*cellwidth,2*cellheight);
+		MoveToEx(hDC,0,g.rowmax*ctx->cellheight,NULL);
+		LineTo(hDC,0,(g.rowmax-2)*ctx->cellheight);
+		MoveToEx(hDC,g.colmax*ctx->cellwidth,0,NULL);
+		LineTo(hDC,g.colmax*ctx->cellwidth,2*ctx->cellheight);
 	}
 	if(g.symmetry==8) {
 		MoveToEx(hDC,0,0,NULL);
-		LineTo(hDC,2*cellwidth,0);
-		MoveToEx(hDC,g.colmax*cellwidth,g.rowmax*cellheight,NULL);
-		LineTo(hDC,(g.colmax-2)*cellwidth,g.rowmax*cellheight);
+		LineTo(hDC,2*ctx->cellwidth,0);
+		MoveToEx(hDC,g.colmax*ctx->cellwidth,g.rowmax*ctx->cellheight,NULL);
+		LineTo(hDC,(g.colmax-2)*ctx->cellwidth,g.rowmax*ctx->cellheight);
 	}
 		
 		
 	if(g.trans_rotate || g.trans_flip || g.trans_x || g.trans_y) {
 		// the px & py values are pixels offsets from the center
-		px1=0;           py1=2*cellheight;
+		px1=0;           py1=2*ctx->cellheight;
 		px2=0;           py2=0;
-		px3=cellwidth/2; py3=cellheight/2;
+		px3=ctx->cellwidth/2; py3=ctx->cellheight/2;
 
 		// an arrow indicating the starting position
 		SelectObject(hDC,ctx->pens.arrow1);
@@ -640,7 +639,7 @@ static void DrawGuides(struct wcontext *ctx, HDC hDC)
 
 		switch(g.trans_rotate) {
 		case 1:
-			px1=cellwidth*2;
+			px1=ctx->cellwidth*2;
 			py1=0;
 			if(g.trans_flip)
 				px3= -px3;
@@ -653,7 +652,7 @@ static void DrawGuides(struct wcontext *ctx, HDC hDC)
 			py3= -py3;
 			break;
 		case 3:
-			px1= -cellwidth*2;
+			px1= -ctx->cellwidth*2;
 			py1=0;
 			if(g.trans_flip)
 				py3= -py3;
@@ -663,12 +662,12 @@ static void DrawGuides(struct wcontext *ctx, HDC hDC)
 		}
 
 		// translate if necessary
-		px1+=g.trans_x*cellwidth;
-		px2+=g.trans_x*cellwidth;
-		px3+=g.trans_x*cellwidth;
-		py1+=g.trans_y*cellheight;
-		py2+=g.trans_y*cellheight;
-		py3+=g.trans_y*cellheight;
+		px1+=g.trans_x*ctx->cellwidth;
+		px2+=g.trans_x*ctx->cellwidth;
+		px3+=g.trans_x*ctx->cellwidth;
+		py1+=g.trans_y*ctx->cellheight;
+		py2+=g.trans_y*ctx->cellheight;
+		py3+=g.trans_y*ctx->cellheight;
 		
 		SelectObject(hDC,ctx->pens.arrow2);
 		MoveToEx(hDC,centerpx+px1,centerpy+py1,NULL);
@@ -679,13 +678,13 @@ static void DrawGuides(struct wcontext *ctx, HDC hDC)
 }
 
 // pen & brush must already be selected
-static void ClearCell(HDC hDC,int x,int y, int dblsize)
+static void ClearCell(struct wcontext *ctx, HDC hDC,int x,int y, int dblsize)
 {
-	Rectangle(hDC,x*cellwidth+1,y*cellheight+1,
-	    (x+1)*cellwidth,(y+1)*cellheight);
+	Rectangle(hDC,x*ctx->cellwidth+1,y*ctx->cellheight+1,
+	    (x+1)*ctx->cellwidth,(y+1)*ctx->cellheight);
 	if(dblsize) {
-		Rectangle(hDC,x*cellwidth+2,y*cellheight+2,
-			(x+1)*cellwidth-1,(y+1)*cellheight-1);
+		Rectangle(hDC,x*ctx->cellwidth+2,y*ctx->cellheight+2,
+			(x+1)*ctx->cellwidth-1,(y+1)*ctx->cellheight-1);
 	}
 }
 
@@ -703,37 +702,37 @@ static void DrawCell(struct wcontext *ctx, HDC hDC,int x,int y)
 		if(g.currfield[i][x][y]!=tmp) allsame=0;
 	}
 
-	ClearCell(hDC,x,y,!allsame);
+	ClearCell(ctx,hDC,x,y,!allsame);
 
 	switch(g.currfield[g.curgen][x][y]) {
 	case 0:        // must be off
 		SelectObject(hDC,ctx->pens.cell_off);
 		SelectObject(hDC,GetStockObject(NULL_BRUSH));
-		Ellipse(hDC,x*cellwidth+3,y*cellheight+3,
-			(x+1)*cellwidth-2,(y+1)*cellheight-2);
+		Ellipse(hDC,x*ctx->cellwidth+3,y*ctx->cellheight+3,
+			(x+1)*ctx->cellwidth-2,(y+1)*ctx->cellheight-2);
 		break;
 	case 1:	       // must be on
 		SelectObject(hDC,ctx->brushes.cell_on);
 		SelectObject(hDC,GetStockObject(NULL_PEN));
-		Ellipse(hDC,x*cellwidth+3,y*cellheight+3,
-			(x+1)*cellwidth-1,(y+1)*cellheight-1);
+		Ellipse(hDC,x*ctx->cellwidth+3,y*ctx->cellheight+3,
+			(x+1)*ctx->cellwidth-1,(y+1)*ctx->cellheight-1);
 		break;
 	case 3:       // unchecked
 		SelectObject(hDC,ctx->pens.unchecked);
-		MoveToEx(hDC,(x  )*cellwidth+2,(y  )*cellheight+2,NULL);
-		LineTo(hDC,  (x+1)*cellwidth-2,(y+1)*cellheight-2);
-		MoveToEx(hDC,(x+1)*cellwidth-2,(y  )*cellheight+2,NULL);
-		LineTo(hDC,  (x  )*cellwidth+2,(y+1)*cellheight-2);
+		MoveToEx(hDC,(x  )*ctx->cellwidth+2,(y  )*ctx->cellheight+2,NULL);
+		LineTo(hDC,  (x+1)*ctx->cellwidth-2,(y+1)*ctx->cellheight-2);
+		MoveToEx(hDC,(x+1)*ctx->cellwidth-2,(y  )*ctx->cellheight+2,NULL);
+		LineTo(hDC,  (x  )*ctx->cellwidth+2,(y+1)*ctx->cellheight-2);
 
 		break;
 	case 4:       // frozen
 		SelectObject(hDC,ctx->pens.cell_off);
-		MoveToEx(hDC,x*cellwidth+2*cellwidth/3,y*cellheight+  cellheight/3,NULL);
-		LineTo(hDC,  x*cellwidth+  cellwidth/3,y*cellheight+  cellheight/3);
-		LineTo(hDC,  x*cellwidth+  cellwidth/3,y*cellheight+2*cellheight/3);
+		MoveToEx(hDC,x*ctx->cellwidth+2*ctx->cellwidth/3,y*ctx->cellheight+  ctx->cellheight/3,NULL);
+		LineTo(hDC,  x*ctx->cellwidth+  ctx->cellwidth/3,y*ctx->cellheight+  ctx->cellheight/3);
+		LineTo(hDC,  x*ctx->cellwidth+  ctx->cellwidth/3,y*ctx->cellheight+2*ctx->cellheight/3);
 
-		MoveToEx(hDC,x*cellwidth+2*cellwidth/3,y*cellheight+  cellheight/2,NULL);
-		LineTo(hDC,  x*cellwidth+  cellwidth/3,y*cellheight+  cellheight/2);
+		MoveToEx(hDC,x*ctx->cellwidth+2*ctx->cellwidth/3,y*ctx->cellheight+  ctx->cellheight/2,NULL);
+		LineTo(hDC,  x*ctx->cellwidth+  ctx->cellwidth/3,y*ctx->cellheight+  ctx->cellheight/2);
 
 		break;
 
@@ -828,21 +827,21 @@ static void InvertCells(struct wcontext *ctx, HDC hDC1)
 	HDC hDC;
 
 	if(ctx->endcell.x>=ctx->startcell.x) {
-		r.left= ctx->startcell.x*cellwidth;
-		r.right= (ctx->endcell.x+1)*cellwidth;
+		r.left= ctx->startcell.x*ctx->cellwidth;
+		r.right= (ctx->endcell.x+1)*ctx->cellwidth;
 	}
 	else {
-		r.left= ctx->endcell.x*cellwidth;
-		r.right=(ctx->startcell.x+1)*cellwidth;
+		r.left= ctx->endcell.x*ctx->cellwidth;
+		r.right=(ctx->startcell.x+1)*ctx->cellwidth;
 	}
 
 	if(ctx->endcell.y>=ctx->startcell.y) {
-		r.top= ctx->startcell.y*cellheight;
-		r.bottom= (ctx->endcell.y+1)*cellheight;
+		r.top= ctx->startcell.y*ctx->cellheight;
+		r.bottom= (ctx->endcell.y+1)*ctx->cellheight;
 	}
 	else {
-		r.top=ctx->endcell.y*cellheight;
-		r.bottom=(ctx->startcell.y+1)*cellheight;
+		r.top=ctx->endcell.y*ctx->cellheight;
+		r.bottom=(ctx->startcell.y+1)*ctx->cellheight;
 	}
 
 
@@ -944,8 +943,8 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 	xp+=(WORD)ctx->scrollpos.x;
 	yp+=(WORD)ctx->scrollpos.y;
 
-	x=xp/cellwidth;   // + scroll offset
-	y=yp/cellheight;  // + scroll offset
+	x=xp/ctx->cellwidth;   // + scroll offset
+	y=yp/ctx->cellheight;  // + scroll offset
 
 	if(x<0 || x>=g.colmax) return 1;
 	if(y<0 || y>=g.rowmax) return 1;
@@ -2220,10 +2219,10 @@ static void Handle_Scroll(struct wcontext *ctx, UINT msg, WORD scrollboxpos, WOR
 
 	if(msg==WM_HSCROLL) {
 		switch(id) {
-		case SB_LINELEFT: ctx->scrollpos.x-=cellwidth; break;
-		case SB_LINERIGHT: ctx->scrollpos.x+=cellwidth; break;
-		case SB_PAGELEFT: ctx->scrollpos.x-=cellwidth*4; break;
-		case SB_PAGERIGHT: ctx->scrollpos.x+=cellwidth*4; break;
+		case SB_LINELEFT: ctx->scrollpos.x-=ctx->cellwidth; break;
+		case SB_LINERIGHT: ctx->scrollpos.x+=ctx->cellwidth; break;
+		case SB_PAGELEFT: ctx->scrollpos.x-=ctx->cellwidth*4; break;
+		case SB_PAGERIGHT: ctx->scrollpos.x+=ctx->cellwidth*4; break;
 		case SB_THUMBTRACK:
 			if(scrollboxpos==ctx->scrollpos.x) return;
 			ctx->scrollpos.x=scrollboxpos;
@@ -2234,10 +2233,10 @@ static void Handle_Scroll(struct wcontext *ctx, UINT msg, WORD scrollboxpos, WOR
 	}
 	else { // WM_VSCROLL
 		switch(id) {
-		case SB_LINELEFT: ctx->scrollpos.y-=cellheight; break;
-		case SB_LINERIGHT: ctx->scrollpos.y+=cellheight; break;
-		case SB_PAGELEFT: ctx->scrollpos.y-=cellheight*4; break;
-		case SB_PAGERIGHT: ctx->scrollpos.y+=cellheight*4; break;
+		case SB_LINELEFT: ctx->scrollpos.y-=ctx->cellheight; break;
+		case SB_LINERIGHT: ctx->scrollpos.y+=ctx->cellheight; break;
+		case SB_PAGELEFT: ctx->scrollpos.y-=ctx->cellheight*4; break;
+		case SB_PAGERIGHT: ctx->scrollpos.y+=ctx->cellheight*4; break;
 		case SB_THUMBTRACK:
 			if(scrollboxpos==ctx->scrollpos.y) return;
 			ctx->scrollpos.y=scrollboxpos;
