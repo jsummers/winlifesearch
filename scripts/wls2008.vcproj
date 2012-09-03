@@ -333,8 +333,8 @@
 		</Configuration>
 		<Configuration
 			Name="DebugK|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)DebugK"
+			IntermediateDirectory="$(SolutionDir)DebugK"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -408,8 +408,8 @@
 		</Configuration>
 		<Configuration
 			Name="DebugK|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)DebugK64"
+			IntermediateDirectory="$(SolutionDir)DebugK64"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -484,8 +484,8 @@
 		</Configuration>
 		<Configuration
 			Name="ReleaseK|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)ReleaseK"
+			IntermediateDirectory="$(SolutionDir)ReleaseK"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -559,8 +559,8 @@
 		</Configuration>
 		<Configuration
 			Name="ReleaseK|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)ReleaseK64"
+			IntermediateDirectory="$(SolutionDir)ReleaseK64"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -657,6 +657,38 @@
 			<File
 				RelativePath="..\source\wls.rc"
 				>
+				<FileConfiguration
+					Name="DebugJ|Win32"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						PreprocessorDefinitions="_UNICODE;UNICODE;JS"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="DebugJ|x64"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						PreprocessorDefinitions="_UNICODE;UNICODE;JS"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="ReleaseJ|Win32"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						PreprocessorDefinitions="_UNICODE;UNICODE;JS"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="ReleaseJ|x64"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						PreprocessorDefinitions="_UNICODE;UNICODE;JS"
+					/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
