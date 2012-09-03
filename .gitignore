@@ -1,7 +1,7 @@
-/scripts/Debug
-/scripts/Release
-/scripts/Debug64
-/scripts/Release64
+/scripts/Debug[JK]
+/scripts/Release[JK]
+/scripts/Debug[JK]64
+/scripts/Release[JK]64
 /scripts/wls2008.vcproj.*.user
 /scripts/*.ncb
 /scripts/*.suo
