@@ -129,37 +129,6 @@ typedef struct
  */
 typedef	struct cell CELL;
 
-#ifdef JS
-
-struct cell
-{
-	STATE	state;		/* current state */
-	PACKED_BOOL free;	/* TRUE if this cell still has free choice */
-	PACKED_BOOL frozen;	/* TRUE if this cell is frozen in all gens */
-	PACKED_BOOL choose;	/* TRUE if can choose this cell if unknown */
-	short	gen;		/* generation number of this cell */
-	short	row;		/* row of this cell */
-	short	col;		/* column of this cell */
-	short	near1;		/* count of cells this cell is near */
-
-	int specsym;
-
-	CELL *	search;		/* cell next to be searched for setting */
-	CELL *	past;		/* cell in the past at this location */
-	CELL *	future;		/* cell in the future at this location */
-	CELL *	cul;		/* cell to up and left */
-	CELL *	cu;		/* cell to up */
-	CELL *	cur;		/* cell to up and right */
-	CELL *	cl;		/* cell to left */
-	CELL *	cr;		/* cell to right */
-	CELL *	cdl;		/* cell to down and left */
-	CELL *	cd;		/* cell to down */
-	CELL *	cdr;		/* cell to down and right */
-	CELL *	loop;		/* next cell in same loop as this one */
-	ROWINFO * rowinfo;	/* information about this cell's row */
-	COLINFO * colinfo;	/* information about this cell's column */
-};
-#else
 struct cell
 {
 	// state is the most used field so let's put it first
@@ -198,12 +167,15 @@ struct cell
 	short	near1;		/* count of cells this cell is near */
 
 	PACKED_BOOL frozen;	/* TRUE if this cell is frozen in all gens */
+#ifdef JS
+	PACKED_BOOL choose;	/* TRUE if can choose this cell if unknown */
+#else
 	PACKED_BOOL active; /* FALSE if mirror by a symmetry */
 	PACKED_BOOL unchecked; /* TRUE for unchecked cells */
 
 	STATE combined;
-};
 #endif
+};
 
 #ifdef JS
 #define	NULL_CELL	((CELL *) 0)

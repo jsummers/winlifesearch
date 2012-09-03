@@ -253,56 +253,6 @@ static void RecalcCenter(struct wcontext *ctx)
 	ctx->centeryodd= g.rowmax%2;
 }
 
-#ifdef JS
-
-static void InitGameSettings(struct wcontext *ctx)
-{
-	int i,j,k;
-
-	for(k=0;k<GENMAX;k++) 
-		for(i=0;i<COLMAX;i++)
-			for(j=0;j<ROWMAX;j++) {
-				g.origfield[k][i][j]=2;       // set all cells to "don't care"
-				g.currfield[k][i][j]=2;
-			}
-
-	g.symmetry=0;
-
-	g.trans_rotate=0;  // 1=90 degrees, 2=180, 3=270;
-	g.trans_flip=0;
-	g.trans_x= 0;
-	g.trans_y= 0;
-
-	g.genmax=2;
-
-	g.curgen=0;
-	g.colmax=35;
-	g.rowmax=15;
-	g.parent=0;
-	g.allobjects=0;
-	g.nearcols=0;
-	g.maxcount=0;
-	g.userow=0;
-	g.usecol=0;
-	g.colcells=0;
-	g.colwidth=0;
-	g.followgens=FALSE;
-	g.follow=FALSE;
-	g.orderwide=FALSE;
-	g.ordergens=FALSE;
-	g.ordermiddle=FALSE;
-	g.diagsort=0;
-	g.knightsort=0;
-	g.fastsym=1;
-	g.viewfreq=1000000;
-	StringCchCopy(g.outputfile,80,_T("output.txt"));
-	g.saveoutput=0;
-	StringCchCopy(g.dumpfile,80,_T("dump.txt"));
-	StringCchCopy(g.rulestring,20,_T("B3/S23"));
-
-	RecalcCenter(ctx);
-}
-
 static int fix_scrollpos(struct wcontext *ctx)
 {
 	RECT r;
@@ -381,24 +331,6 @@ static void set_main_scrollbars(struct wcontext *ctx, int redraw, int checkscrol
 	SetViewportOrgEx(hDC,-ctx->scrollpos.x,-ctx->scrollpos.y,NULL);
 	ReleaseDC(ctx->hwndMain,hDC);
 	if(redraw) InvalidateRect(ctx->hwndMain,NULL,TRUE);
-}
-
-static void wlsCreateFonts(struct wcontext *ctx)
-{
-	NONCLIENTMETRICS ncm;
-	BOOL b;
-	TCHAR fontname[100];
-
-	memset(&ncm,0,sizeof(NONCLIENTMETRICS));
-	ncm.cbSize = sizeof(NONCLIENTMETRICS);
-	b=SystemParametersInfo(SPI_GETNONCLIENTMETRICS,sizeof(NONCLIENTMETRICS),&ncm,0);
-	StringCbCopy(fontname,sizeof(fontname),
-		b ? ncm.lfStatusFont.lfFaceName : _T("Arial"));
-
-	ctx->statusfont = CreateFont(TOOLBARHEIGHT-4,0,
-		0,0,FW_DONTCARE,0,0,0,
-		ANSI_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,
-		DEFAULT_QUALITY,VARIABLE_PITCH|FF_SWISS,fontname);
 }
 
 static void DrawGuides(struct wcontext *ctx, HDC hDC)
@@ -515,7 +447,6 @@ static void DrawGuides(struct wcontext *ctx, HDC hDC)
 	}
 }
 
-
 // pen & brush must already be selected
 static void ClearCell(struct wcontext *ctx, HDC hDC,int x,int y, int dblsize)
 {
@@ -526,7 +457,6 @@ static void ClearCell(struct wcontext *ctx, HDC hDC,int x,int y, int dblsize)
 			(x+1)*ctx->cellwidth-1,(y+1)*ctx->cellheight-1);
 	}
 }
-
 
 static void DrawCell(struct wcontext *ctx, HDC hDC,int x,int y)
 {
@@ -557,7 +487,7 @@ static void DrawCell(struct wcontext *ctx, HDC hDC,int x,int y)
 		Ellipse(hDC,x*ctx->cellwidth+3,y*ctx->cellheight+3,
 			(x+1)*ctx->cellwidth-1,(y+1)*ctx->cellheight-1);
 		break;
-	case 3:       // unknown
+	case 3:       // unchecked
 		SelectObject(hDC,ctx->pens.unchecked);
 		MoveToEx(hDC,(x  )*ctx->cellwidth+2,(y  )*ctx->cellheight+2,NULL);
 		LineTo(hDC,  (x+1)*ctx->cellwidth-2,(y+1)*ctx->cellheight-2);
@@ -574,13 +504,13 @@ static void DrawCell(struct wcontext *ctx, HDC hDC,int x,int y)
 		MoveToEx(hDC,x*ctx->cellwidth+2*ctx->cellwidth/3,y*ctx->cellheight+  ctx->cellheight/2,NULL);
 		LineTo(hDC,  x*ctx->cellwidth+  ctx->cellwidth/3,y*ctx->cellheight+  ctx->cellheight/2);
 
-//		MoveToEx(hDC,x*ctx->cellwidth+ctx->cellwidth/3,  y*ctx->cellheight+ctx->cellheight/3,NULL);
-//		LineTo(hDC,  x*ctx->cellwidth+2*ctx->cellwidth/3,y*ctx->cellheight+ctx->cellheight/3);
 		break;
 
 	}
 
 }
+
+#ifdef JS
 
 // set and paint all cells symmetrical to the given cell
 // (including the given cell)
@@ -2019,345 +1949,6 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 }
 
 #else // KS:
-
-static void InitGameSettings(struct wcontext *ctx)
-{
-	int i,j,k;
-
-	for(k=0;k<GENMAX;k++) 
-		for(i=0;i<COLMAX;i++)
-			for(j=0;j<ROWMAX;j++) {
-				g.origfield[k][i][j]=2;       // set all cells to "don't care"
-				g.currfield[k][i][j]=2;
-			}
-
-	g.symmetry=0;
-
-	g.trans_rotate=0;  // 1=90 degrees, 2=180, 3=270;
-	g.trans_flip=0;
-	g.trans_x= 0;
-	g.trans_y= 0;
-
-	g.genmax=2;
-
-	g.curgen=0;
-	g.colmax=35;
-	g.rowmax=15;
-	g.parent=0;
-	g.allobjects=0;
-	g.nearcols=0;
-	g.maxcount=0;
-	g.userow=0;
-	g.usecol=0;
-	g.colcells=0;
-	g.colwidth=0;
-	g.followgens=FALSE;
-	g.follow=FALSE;
-	g.smart=TRUE;
-	g.smartwindow = 50;
-	g.smartthreshold = 4;
-	g.smartstatlen = 0;
-	g.smartstatwnd = 0;
-	g.smartstatsumlen = 0;
-	g.smartstatsumwnd = 0;
-	g.smartstatsumlenc = 0;
-	g.smartstatsumwndc = 0;
-	g.smarton=TRUE;
-	g.combine=FALSE;
-	g.combining=FALSE;
-	g.orderwide=FALSE;
-	g.ordergens=TRUE;
-	g.ordermiddle=FALSE;
-	g.diagsort=0;
-	g.knightsort=0;
-	g.viewfreq=100000;
-	StringCchCopy(g.outputfile,80,_T("output.txt"));
-	g.saveoutput=0;
-	g.saveoutputallgen=0;
-	g.stoponfound=1;
-	g.stoponstep=0;
-	StringCchCopy(g.dumpfile,80,_T("dump.wdf"));
-	StringCchCopy(g.rulestring,WLS_RULESTRING_LEN,_T("B3/S23"));
-
-	RecalcCenter(ctx);
-}
-
-static int fix_scrollpos(struct wcontext *ctx)
-{
-	RECT r;
-	int changed=0;
-	int n;
-
-	GetClientRect(ctx->hwndMain,&r);
-
-	// If the entire field doesn't fit in the window, there should be no
-	// unused space at the right/bottom of the field.
-	n = g.colmax*ctx->cellwidth; // width of field
-	// max scrollpos should be n - r.right
-	if(n>r.right) {
-		if(ctx->scrollpos.x>n-r.right) {
-			ctx->scrollpos.x = n-r.right;
-			changed=1;
-		}
-	}
-	else if(ctx->scrollpos.x!=0) {
-		// Entire field fits in the window, so it should never be scrolled.
-		ctx->scrollpos.x=0;
-		changed=1;
-	}
-
-	n = g.rowmax*ctx->cellheight;
-	if(n>r.bottom) {
-		if(ctx->scrollpos.y>n-r.bottom) {
-			ctx->scrollpos.y = n-r.bottom;
-			changed = 1;
-		}
-	}
-	else if(ctx->scrollpos.y!=0) {
-		ctx->scrollpos.y=0;
-		changed=1;
-	}
-
-	// scrollpos is never < 0
-	if(ctx->scrollpos.x<0) ctx->scrollpos.x=0;
-	if(ctx->scrollpos.y<0) ctx->scrollpos.y=0;
-
-	return changed;
-}
-
-// Adjust the visible position of the scrollbars to ctx->scrollpos.
-// redraw: Always repaint the window.
-// checkscrollpos: Check if the requested scroll position is valid, and if not,
-//   make it valid and repaint the window.
-static void set_main_scrollbars(struct wcontext *ctx, int redraw, int checkscrollpos)
-{
-	HDC hDC;
-	SCROLLINFO si;
-	RECT r;
-
-	if(checkscrollpos) {
-		if(fix_scrollpos(ctx)) redraw = 1;
-	}
-
-	// TODO: We call GetClientRect too many times.
-	GetClientRect(ctx->hwndMain,&r);
-
-	si.cbSize=sizeof(SCROLLINFO);
-	si.fMask=SIF_ALL;
-	si.nMin=0;
-	si.nMax=g.colmax*ctx->cellwidth;
-	si.nPage=r.right;
-	si.nPos=ctx->scrollpos.x;
-	si.nTrackPos=0;
-	SetScrollInfo(ctx->hwndMain,SB_HORZ,&si,TRUE);
-
-	si.nMax=g.rowmax*ctx->cellheight;
-	si.nPage=r.bottom;
-	si.nPos=ctx->scrollpos.y;
-	SetScrollInfo(ctx->hwndMain,SB_VERT,&si,TRUE);
-
-	hDC=GetDC(ctx->hwndMain);
-	SetViewportOrgEx(hDC,-ctx->scrollpos.x,-ctx->scrollpos.y,NULL);
-	ReleaseDC(ctx->hwndMain,hDC);
-	if(redraw) InvalidateRect(ctx->hwndMain,NULL,TRUE);
-}
-
-static void wlsCreateFonts(struct wcontext *ctx)
-{
-	NONCLIENTMETRICS ncm;
-	BOOL b;
-	TCHAR fontname[100];
-
-	memset(&ncm,0,sizeof(NONCLIENTMETRICS));
-	ncm.cbSize = sizeof(NONCLIENTMETRICS);
-	b=SystemParametersInfo(SPI_GETNONCLIENTMETRICS,sizeof(NONCLIENTMETRICS),&ncm,0);
-	StringCbCopy(fontname,sizeof(fontname),
-		b ? ncm.lfStatusFont.lfFaceName : _T("Arial"));
-
-	ctx->statusfont = CreateFont(TOOLBARHEIGHT-4,0,
-		0,0,FW_DONTCARE,0,0,0,
-		ANSI_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,
-		DEFAULT_QUALITY,VARIABLE_PITCH|FF_SWISS,fontname);
-}
-
-/****************************/
-
-static void DrawGuides(struct wcontext *ctx, HDC hDC)
-{
-	int centerpx,centerpy;
-	int px1,py1,px2,py2,px3,py3;
-
-	RecalcCenter(ctx);
-
-	// store the center pixel in some temp vars to make things readable
-	centerpx=ctx->centerx*ctx->cellwidth+ctx->centerxodd*(ctx->cellwidth/2);
-	centerpy=ctx->centery*ctx->cellheight+ctx->centeryodd*(ctx->cellheight/2);
-
-	SelectObject(hDC,ctx->pens.axes);
-
-
-	// horizontal line
-	if(g.symmetry==2 || g.symmetry==6 || g.symmetry==9) {	
-		MoveToEx(hDC,0,centerpy,NULL);
-		LineTo(hDC,g.colmax*ctx->cellwidth,centerpy);
-	}
-
-	// vertical line
-	if(g.symmetry==1 || g.symmetry==6 || g.symmetry==9) {
-		MoveToEx(hDC,centerpx,0,NULL);
-		LineTo(hDC,centerpx,g.rowmax*ctx->cellheight);
-	}
-
-	// diag - forward
-	if(g.symmetry==3 || g.symmetry==5 || g.symmetry>=7) {
-		MoveToEx(hDC,0,g.rowmax*ctx->cellheight,NULL);
-		LineTo(hDC,g.colmax*ctx->cellwidth,0);
-	}
-
-	// diag - backward
-	if(g.symmetry==4 || g.symmetry>=7) {
-		MoveToEx(hDC,0,0,NULL);
-		LineTo(hDC,g.colmax*ctx->cellwidth,g.rowmax*ctx->cellheight);
-	}
-	if(g.symmetry==5 || g.symmetry==8) {
-		MoveToEx(hDC,0,g.rowmax*ctx->cellheight,NULL);
-		LineTo(hDC,0,(g.rowmax-2)*ctx->cellheight);
-		MoveToEx(hDC,g.colmax*ctx->cellwidth,0,NULL);
-		LineTo(hDC,g.colmax*ctx->cellwidth,2*ctx->cellheight);
-	}
-	if(g.symmetry==8) {
-		MoveToEx(hDC,0,0,NULL);
-		LineTo(hDC,2*ctx->cellwidth,0);
-		MoveToEx(hDC,g.colmax*ctx->cellwidth,g.rowmax*ctx->cellheight,NULL);
-		LineTo(hDC,(g.colmax-2)*ctx->cellwidth,g.rowmax*ctx->cellheight);
-	}
-		
-		
-	if(g.trans_rotate || g.trans_flip || g.trans_x || g.trans_y) {
-		// the px & py values are pixels offsets from the center
-		px1=0;           py1=2*ctx->cellheight;
-		px2=0;           py2=0;
-		px3=ctx->cellwidth/2; py3=ctx->cellheight/2;
-
-		// an arrow indicating the starting position
-		SelectObject(hDC,ctx->pens.arrow1);
-		MoveToEx(hDC,centerpx+px1,centerpy+py1,NULL);
-		LineTo(hDC,centerpx+px2,centerpy+py2);
-		LineTo(hDC,centerpx+px3,centerpy+py3);
-
-		// an arrow indicating the ending position
-		// flip (horizontally) if necessary
-		if(g.trans_flip) {
-			px3= -px3;
-		}
-
-		// rotate if necessary
-		// Note: can't rotate by 90 or 270 degrees if centerxodd != centeryodd
-		if(ctx->centerxodd != ctx->centeryodd)
-			assert(g.trans_rotate==0 || g.trans_rotate==2);
-
-		switch(g.trans_rotate) {
-		case 1:
-			px1=ctx->cellwidth*2;
-			py1=0;
-			if(g.trans_flip)
-				px3= -px3;
-			else
-				py3= -py3;
-			break;
-		case 2:
-			py1= -py1;
-			px3= -px3;
-			py3= -py3;
-			break;
-		case 3:
-			px1= -ctx->cellwidth*2;
-			py1=0;
-			if(g.trans_flip)
-				py3= -py3;
-			else
-				px3= -px3;
-			break;
-		}
-
-		// translate if necessary
-		px1+=g.trans_x*ctx->cellwidth;
-		px2+=g.trans_x*ctx->cellwidth;
-		px3+=g.trans_x*ctx->cellwidth;
-		py1+=g.trans_y*ctx->cellheight;
-		py2+=g.trans_y*ctx->cellheight;
-		py3+=g.trans_y*ctx->cellheight;
-		
-		SelectObject(hDC,ctx->pens.arrow2);
-		MoveToEx(hDC,centerpx+px1,centerpy+py1,NULL);
-		LineTo(hDC,centerpx+px2,centerpy+py2);
-		LineTo(hDC,centerpx+px3,centerpy+py3);
-
-	}
-}
-
-// pen & brush must already be selected
-static void ClearCell(struct wcontext *ctx, HDC hDC,int x,int y, int dblsize)
-{
-	Rectangle(hDC,x*ctx->cellwidth+1,y*ctx->cellheight+1,
-	    (x+1)*ctx->cellwidth,(y+1)*ctx->cellheight);
-	if(dblsize) {
-		Rectangle(hDC,x*ctx->cellwidth+2,y*ctx->cellheight+2,
-			(x+1)*ctx->cellwidth-1,(y+1)*ctx->cellheight-1);
-	}
-}
-
-static void DrawCell(struct wcontext *ctx, HDC hDC,int x,int y)
-{
-	int allsame=1;
-	int tmp;
-	int i;
-
-	SelectObject(hDC,ctx->pens.celloutline);
-	SelectObject(hDC,ctx->brushes.cell);
-
-	tmp=g.currfield[0][x][y];
-	for(i=1;i<g.genmax;i++) {
-		if(g.currfield[i][x][y]!=tmp) allsame=0;
-	}
-
-	ClearCell(ctx,hDC,x,y,!allsame);
-
-	switch(g.currfield[g.curgen][x][y]) {
-	case 0:        // must be off
-		SelectObject(hDC,ctx->pens.cell_off);
-		SelectObject(hDC,GetStockObject(NULL_BRUSH));
-		Ellipse(hDC,x*ctx->cellwidth+3,y*ctx->cellheight+3,
-			(x+1)*ctx->cellwidth-2,(y+1)*ctx->cellheight-2);
-		break;
-	case 1:	       // must be on
-		SelectObject(hDC,ctx->brushes.cell_on);
-		SelectObject(hDC,GetStockObject(NULL_PEN));
-		Ellipse(hDC,x*ctx->cellwidth+3,y*ctx->cellheight+3,
-			(x+1)*ctx->cellwidth-1,(y+1)*ctx->cellheight-1);
-		break;
-	case 3:       // unchecked
-		SelectObject(hDC,ctx->pens.unchecked);
-		MoveToEx(hDC,(x  )*ctx->cellwidth+2,(y  )*ctx->cellheight+2,NULL);
-		LineTo(hDC,  (x+1)*ctx->cellwidth-2,(y+1)*ctx->cellheight-2);
-		MoveToEx(hDC,(x+1)*ctx->cellwidth-2,(y  )*ctx->cellheight+2,NULL);
-		LineTo(hDC,  (x  )*ctx->cellwidth+2,(y+1)*ctx->cellheight-2);
-
-		break;
-	case 4:       // frozen
-		SelectObject(hDC,ctx->pens.cell_off);
-		MoveToEx(hDC,x*ctx->cellwidth+2*ctx->cellwidth/3,y*ctx->cellheight+  ctx->cellheight/3,NULL);
-		LineTo(hDC,  x*ctx->cellwidth+  ctx->cellwidth/3,y*ctx->cellheight+  ctx->cellheight/3);
-		LineTo(hDC,  x*ctx->cellwidth+  ctx->cellwidth/3,y*ctx->cellheight+2*ctx->cellheight/3);
-
-		MoveToEx(hDC,x*ctx->cellwidth+2*ctx->cellwidth/3,y*ctx->cellheight+  ctx->cellheight/2,NULL);
-		LineTo(hDC,  x*ctx->cellwidth+  ctx->cellwidth/3,y*ctx->cellheight+  ctx->cellheight/2);
-
-		break;
-
-	}
-
-}
 
 // Set/reset unknown/unchecked
 static void ChangeChecking(struct wcontext *ctx, HDC hDC, int x, int y, int allgens, int set)
@@ -4353,6 +3944,87 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 
 //////////////////////////////////////////////////////////////////
 
+static void InitGameSettings(struct wcontext *ctx)
+{
+	int i,j,k;
+
+	for(k=0;k<GENMAX;k++) 
+		for(i=0;i<COLMAX;i++)
+			for(j=0;j<ROWMAX;j++) {
+				g.origfield[k][i][j]=2;       // set all cells to "don't care"
+				g.currfield[k][i][j]=2;
+			}
+
+	g.symmetry=0;
+
+	g.trans_rotate=0;  // 1=90 degrees, 2=180, 3=270;
+	g.trans_flip=0;
+	g.trans_x= 0;
+	g.trans_y= 0;
+
+	g.genmax=2;
+
+	g.curgen=0;
+	g.colmax=35;
+	g.rowmax=15;
+	g.parent=0;
+	g.allobjects=0;
+	g.nearcols=0;
+	g.maxcount=0;
+	g.userow=0;
+	g.usecol=0;
+	g.colcells=0;
+	g.colwidth=0;
+	g.followgens=FALSE;
+	g.follow=FALSE;
+#ifndef JS
+	g.smart=TRUE;
+	g.smartwindow = 50;
+	g.smartthreshold = 4;
+	g.smartstatlen = 0;
+	g.smartstatwnd = 0;
+	g.smartstatsumlen = 0;
+	g.smartstatsumwnd = 0;
+	g.smartstatsumlenc = 0;
+	g.smartstatsumwndc = 0;
+	g.smarton=TRUE;
+	g.combine=FALSE;
+	g.combining=FALSE;
+#endif
+	g.orderwide=FALSE;
+#ifdef JS
+	g.ordergens=FALSE;
+#else
+	g.ordergens=TRUE;
+#endif
+	g.ordermiddle=FALSE;
+	g.diagsort=0;
+	g.knightsort=0;
+#ifdef JS
+	g.fastsym=1;
+#endif
+#ifdef JS
+	g.viewfreq=1000000;
+#else
+	g.viewfreq=100000;
+#endif
+	StringCchCopy(g.outputfile,80,_T("output.txt"));
+	g.saveoutput=0;
+#ifndef JS
+	g.saveoutputallgen=0;
+	g.stoponfound=1;
+	g.stoponstep=0;
+#endif
+#ifdef JS
+	StringCchCopy(g.dumpfile,80,_T("dump.txt"));
+#else
+	StringCchCopy(g.dumpfile,80,_T("dump.wdf"));
+#endif
+	StringCchCopy(g.rulestring,WLS_RULESTRING_LEN,_T("B3/S23"));
+
+	RecalcCenter(ctx);
+}
+
 static BOOL RegisterClasses(struct wcontext *ctx)
 {   WNDCLASS  wc;
 	HICON iconWLS;
@@ -4395,6 +4067,24 @@ static BOOL RegisterClasses(struct wcontext *ctx)
 	RegisterClass(&wc);
 
 	return 1;
+}
+
+static void wlsCreateFonts(struct wcontext *ctx)
+{
+	NONCLIENTMETRICS ncm;
+	BOOL b;
+	TCHAR fontname[100];
+
+	memset(&ncm,0,sizeof(NONCLIENTMETRICS));
+	ncm.cbSize = sizeof(NONCLIENTMETRICS);
+	b=SystemParametersInfo(SPI_GETNONCLIENTMETRICS,sizeof(NONCLIENTMETRICS),&ncm,0);
+	StringCbCopy(fontname,sizeof(fontname),
+		b ? ncm.lfStatusFont.lfFaceName : _T("Arial"));
+
+	ctx->statusfont = CreateFont(TOOLBARHEIGHT-4,0,
+		0,0,FW_DONTCARE,0,0,0,
+		ANSI_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,
+		DEFAULT_QUALITY,VARIABLE_PITCH|FF_SWISS,fontname);
 }
 
 static BOOL InitApp(struct wcontext *ctx, int nCmdShow)

@@ -1774,7 +1774,7 @@ allocatecell()
 	cell->cdr = deadcell;
 	cell->loop = NULL;
 
-	cell->specsym=0;
+	//cell->specsym=0;
 
 	return cell;
 }
