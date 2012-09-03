@@ -209,7 +209,7 @@ struct cell
 #define	NULL_CELL	((CELL *) 0)
 #endif
 
-#ifdef JS
+
 struct globals_struct {
 /*
  * Current parameter values for the program to be saved over runs.
@@ -245,133 +245,7 @@ struct globals_struct {
 	BOOL ordermiddle; /* ordering tries middle columns first */
 	BOOL followgens;  /* try to follow setting of other gens */
 
-	int diagsort;
-	int knightsort;
-	int fastsym;
-	int symmetry;
-	int trans_rotate;
-	int trans_flip;
-	int trans_x;
-	int trans_y;
-
-/*
- * These values are not affected when dumping and loading since they
- * do not affect the status of a search in progress.
- * They are either settable on the command line or are computed.
- */
-	BOOL quiet;      /* don't output */
-	BOOL debug;      /* enable debugging output (if compiled so) */
-	BOOL quitok;     /* ok to quit without confirming */
-	BOOL inited;     /* initialization has been done */
-	STATE bornrules[16]; /* rules for whether a cell is to be born */
-	STATE liverules[16]; /* rules for whether a live cell stays alive */
-	int curgen;      /* current generation for display */
-	int	outputcols;  /* number of columns to save for output */
-	int	outputlastcols;  /* last number of columns output */
-	int	cellcount;   /* number of live cells in generation 0 */
-	long dumpfreq;   /* how often to perform dumps */
-	long dumpcount;  /* counter for dumps */
-	long viewfreq;   /* how often to view results */
-	long viewcount;  /* counter for viewing */
-	TCHAR dumpfile[80];   /* dump file name */
-	TCHAR outputfile[80]; /* file to output results to */
-
-/*
- * Data about all of the cells.
- */
-	CELL * settable[MAXCELLS];	/* table of cells whose value is set */
-	CELL ** newset;		/* where to add new cells into setting table */
-	CELL ** nextset;	/* next cell in setting table to examine */
-	CELL ** baseset;	/* base of changeable part of setting table */
-	CELL * fullsearchlist;	/* complete list of cells to search */
-	ROWINFO rowinfo[ROWMAX];	/* information about rows of gen 0 */
-	COLINFO colinfo[COLMAX];	/* information about columns of gen 0 */
-	int fullcolumns;	/* columns in gen 0 which are fully set */
-
-
-	int origfield[GENMAX][COLMAX][ROWMAX];
-	TCHAR rulestring[20];
-	int saveoutput;
-};
-
-
-/*
- * Global procedures
- */
-
-void	getcommands (void);
-STATUS initcells(void);
-void	printgen (int);
-void	writegen (TCHAR *, BOOL);
-void	dumpstate (TCHAR *);
-void	adjustnear (CELL *, int);
-STATUS	search (void);
-STATUS	proceed (CELL *, STATE, BOOL);
-STATUS	go (CELL *, STATE, BOOL);
-STATUS	setcell (CELL *, STATE, BOOL);
-CELL *	findcell (int, int, int);
-CELL *	backup (void);
-BOOL	subperiods (void);
-STATUS loopcells(CELL *, CELL *);
-
-void	excludecone (int, int, int);
-STATUS freezecell(int, int);
-
-BOOL	setrules(TCHAR *);
-#ifdef UNICODE
-BOOL	setrulesA(char *);
-#else
-#define setrulesT setrules
-#endif
-
-STATUS  loadstate(TCHAR *file);
-void     getbackup(char *cp);
-
-
-struct wcontext;
-void wlsErrorf(struct wcontext *ctx, TCHAR *fmt, ...);
-void wlsMessagef(struct wcontext *ctx, TCHAR *fmt, ...);
-void wlsStatusf(struct wcontext *ctx, TCHAR *fmt, ...);
-void ttystatus(TCHAR *, ...);
-void record_malloc(int func,void *m);
-void showcount(int c);
-
-#else // KS:
-
-struct globals_struct {
-	/*
-	 * Current parameter values for the program to be saved over runs.
-	 * These values are dumped and loaded by the dump and load commands.
-	 * If you add another parameter, be sure to also add it to param_table,
-	 * preferably at the end so as to minimize dump file incompatibilities.
-	 */
-	STATUS curstatus;	/* current status of search */
-	int rowmax;		/* maximum number of rows */
-	int colmax;		/* maximum number of columns */
-	int genmax;		/* maximum number of generations */
-	int rowtrans;	/* translation of rows */
-	int coltrans;	/* translation of columns */
-	BOOL rowsym;		/* enable row symmetry starting at column */
-	BOOL colsym;		/* enable column symmetry starting at row */
-	BOOL pointsym;	/* enable symmetry with central point */
-	BOOL fwdsym;		/* enable forward diagonal symmetry */
-	BOOL bwdsym;		/* enable backward diagonal symmetry */
-	BOOL fliprows;	/* flip rows at column number from last to first generation */
-	BOOL flipcols;	/* flip columns at row number from last to first generation */
-	BOOL flipquads;	/* flip quadrants from last to first gen */
-	BOOL parent;		/* only look for parents */
-	BOOL allobjects;	/* look for all objects including subperiods */
-	int nearcols;	/* maximum distance to be near columns */
-	int maxcount;	/* maximum number of cells in generation 0 */
-	int userow;		/* row that must have at least one ON cell */
-	int usecol;		/* column that must have at least one ON cell */
-	int colcells;	/* maximum cells in a column */
-	int colwidth;	/* maximum width of each column */
-	BOOL follow;		/* follow average position of previous column */
-	BOOL orderwide;	/* ordering tries to find wide objects */
-	BOOL ordergens;	/* ordering tries all gens first */
-	BOOL ordermiddle;	/* ordering tries middle columns first */
-	BOOL followgens;	/* try to follow setting of other gens */
+#ifndef JS
 	BOOL smart;      /* use smart method (KAS) */
 	BOOL smarton;
 	BOOL combine;
@@ -384,68 +258,94 @@ struct globals_struct {
 	int smartstatsumwnd;
 	int smartstatsumlenc;
 	int smartstatsumwndc;
+#endif
+
 	int diagsort;
 	int knightsort;
+#ifdef JS
+	int fastsym;
+#endif
 	int symmetry;
 	int trans_rotate;
 	int trans_flip;
 	int trans_x;
 	int trans_y;
 
-	/*
-	 * These values are not affected when dumping and loading since they
-	 * do not affect the status of a search in progress.
-	 * They are either settable on the command line or are computed.
-	 */
-	BOOL debug;		/* enable debugging output (if compiled so) */
-	BOOL inited;		/* initialization has been done */
+/*
+ * These values are not affected when dumping and loading since they
+ * do not affect the status of a search in progress.
+ * They are either settable on the command line or are computed.
+ */
+#ifdef JS
+	BOOL quiet;      /* don't output */
+	BOOL quitok;     /* ok to quit without confirming */
+#endif
+	BOOL debug;      /* enable debugging output (if compiled so) */
+	BOOL inited;     /* initialization has been done */
+#ifdef JS
+	STATE bornrules[16]; /* rules for whether a cell is to be born */
+	STATE liverules[16]; /* rules for whether a live cell stays alive */
+#else
 	BOOL bornrules[16];	/* rules for whether a cell is to be born */
 	BOOL liverules[16];	/* rules for whether a live cell stays alive */
-	int curgen;		/* current generation for display */
-	int outputcols;	/* number of columns to save for output */
-	int outputlastcols;	/* last number of columns output */
+#endif
+	int curgen;      /* current generation for display */
+	int	outputcols;  /* number of columns to save for output */
+	int	outputlastcols;  /* last number of columns output */
+#ifndef JS
 	int g0oncellcount;	/* number of live cells in generation 0 */
-	int cellcount; /* number of set cells */
-	long dumpfreq;	/* how often to perform dumps */
-	long dumpcount;	/* counter for dumps */
-	long viewfreq;	/* how often to view results */
-	long viewcount;	/* counter for viewing */
-	TCHAR dumpfile[80];
-	TCHAR outputfile[80];
-
+#endif
+	int	cellcount;   /* number of live cells in generation 0 */
+	long dumpfreq;   /* how often to perform dumps */
+	long dumpcount;  /* counter for dumps */
+	long viewfreq;   /* how often to view results */
+	long viewcount;  /* counter for viewing */
+	TCHAR dumpfile[80];   /* dump file name */
+	TCHAR outputfile[80]; /* file to output results to */
+#ifndef JS
 	int smartlen0;
 	int smartlen1;
 	int smartcomb;
 	STATE smartchoice; /* preferred state for the selected cell */
-
 	STATE prevstate; /* the state of the last free cell before backup() */
+#endif
 
-	/*
-	 * Data about all of the cells.
-	 */
+/*
+ * Data about all of the cells.
+ */
 	CELL * settable[MAXCELLS];	/* table of cells whose value is set */
 	CELL ** newset;		/* where to add new cells into setting table */
-	CELL **	nextset;	/* next cell in setting table to examine */
+	CELL ** nextset;	/* next cell in setting table to examine */
+#ifdef JS
+	CELL ** baseset;	/* base of changeable part of setting table */
+	CELL * fullsearchlist;	/* complete list of cells to search */
+#else
 	CELL *  searchtable[MAXCELLS]; /* a stack of searchlist positions */
 	CELL ** searchset;
-	ROWINFO	rowinfo[ROWMAX];	/* information about rows of gen 0 */
-	COLINFO	colinfo[COLMAX];	/* information about columns of gen 0 */
-	int	fullcolumns;	/* columns in gen 0 which are fully set */
+#endif
+	ROWINFO rowinfo[ROWMAX];	/* information about rows of gen 0 */
+	COLINFO colinfo[COLMAX];	/* information about columns of gen 0 */
+	int fullcolumns;	/* columns in gen 0 which are fully set */
+#ifndef JS
 	int combinedcells;
 	int setcombinedcells;
 	int differentcombinedcells;
+#endif
 
 	int origfield[GENMAX][COLMAX][ROWMAX];
+#ifndef JS
 	int currfield[GENMAX][COLMAX][ROWMAX];
-
+#endif
 #define WLS_RULESTRING_LEN 50
 	TCHAR rulestring[WLS_RULESTRING_LEN];
 	int saveoutput;
+#ifndef JS
 	int saveoutputallgen;
 	int stoponfound;
 	int stoponstep;
 	int foundcount;
 	int writecount;
+#endif
 };
 
 
@@ -453,29 +353,66 @@ struct globals_struct {
  * Global procedures
  */
 
-void	getcommands(void);
-void	initcells(void);
-void    initsearchorder(void);
-void	printgen(void);
-void	writegen(TCHAR *, BOOL);
-void	dumpstate(TCHAR *, BOOL);
-void	adjustnear(CELL *, int);
-STATUS	search(void);
-BOOL	proceed(CELL *, STATE, BOOL);
-BOOL	go(CELL *, STATE, BOOL);
-BOOL	setcell(CELL *, STATE, BOOL);
-STATUS  examinenext(void);
-CELL *	findcell(int, int, int);
-CELL *	backup(void);
-BOOL	subperiods(void);
-void	loopcells(CELL *, CELL *);
+void getcommands(void);
 
-void	freezecell(int, int);
-BOOL	setrules(TCHAR *);
+#ifdef JS
+STATUS initcells(void);
+#else
+void initcells(void);
+#endif
+
+#ifndef JS
+void initsearchorder(void);
+#endif
+
+#ifdef JS
+void printgen(int);
+#else
+void printgen(void);
+#endif
+
+void writegen(TCHAR *, BOOL);
+#ifdef JS
+void dumpstate(TCHAR *);
+#else
+void dumpstate(TCHAR *, BOOL);
+#endif
+
+void adjustnear(CELL *, int);
+STATUS search(void);
+#ifdef JS
+STATUS proceed(CELL *, STATE, BOOL);
+STATUS go(CELL *, STATE, BOOL);
+STATUS setcell(CELL *, STATE, BOOL);
+#else
+BOOL proceed(CELL *, STATE, BOOL);
+BOOL go(CELL *, STATE, BOOL);
+BOOL setcell(CELL *, STATE, BOOL);
+STATUS examinenext(void);
+#endif
+
+CELL * findcell(int, int, int);
+CELL * backup(void);
+BOOL subperiods(void);
+#ifdef JS
+STATUS loopcells(CELL *, CELL *);
+#else
+void loopcells(CELL *, CELL *);
+#endif
+#ifdef JS
+void excludecone(int, int, int);
+STATUS freezecell(int, int);
+#else
+void freezecell(int, int);
+#endif
+BOOL setrules(TCHAR *);
 BOOL setrulesA(char *);
-BOOL    loadstate(void);
-void    getbackup(char *cp);
-
+#ifdef JS
+STATUS loadstate(TCHAR *file);
+#else
+BOOL loadstate(void);
+#endif
+void getbackup(char *cp);
 
 struct wcontext;
 void wlsErrorf(struct wcontext *ctx, TCHAR *fmt, ...);
@@ -483,7 +420,11 @@ void wlsMessagef(struct wcontext *ctx, TCHAR *fmt, ...);
 void wlsStatusf(struct wcontext *ctx, TCHAR *fmt, ...);
 void ttystatus(TCHAR *, ...);
 void record_malloc(int func,void *m);
+#ifndef JS
 BOOL set_initial_cells(void);
+#endif
+#ifdef JS
+void showcount(int c);
+#else
 void showcount(void);
-
-#endif // JS/KS
+#endif
