@@ -190,53 +190,6 @@ void record_malloc(int func,void *m)
 	}
 }
 
-#ifdef JS
-
-static BOOL RegisterClasses(struct wcontext *ctx)
-{   WNDCLASS  wc;
-	HICON iconWLS;
-
-	wc.style = 0;
-	wc.lpfnWndProc = WndProcFrame;
-	wc.cbClsExtra = 0;
-	wc.cbWndExtra = 0;
-	wc.hInstance = ctx->hInst;
-	iconWLS = LoadIcon(ctx->hInst,_T("ICONWLS"));
-	wc.hIcon = iconWLS;
-	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.hbrBackground = GetStockObject(WHITE_BRUSH);
-	wc.lpszMenuName =  _T("WLSMenu");
-	wc.lpszClassName = _T("WLSCLASSFRAME");
-	RegisterClass(&wc);
-
-	wc.style = CS_OWNDC;
-	wc.lpfnWndProc = WndProcMain;
-	wc.cbClsExtra = 0;
-	wc.cbWndExtra = 0;
-	wc.hInstance = ctx->hInst;
-	wc.hIcon=NULL;
-	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.hbrBackground = GetStockObject(WHITE_BRUSH);
-	wc.lpszMenuName =  NULL;
-	wc.lpszClassName = _T("WLSCLASSMAIN");
-	RegisterClass(&wc);
-	
-	wc.style = 0;
-	wc.lpfnWndProc = WndProcToolbar;
-	wc.cbClsExtra = 0;
-	wc.cbWndExtra = 0;
-	wc.hInstance = ctx->hInst;
-	wc.hIcon=NULL;
-	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.hbrBackground = GetStockObject(LTGRAY_BRUSH);
-	wc.lpszMenuName =  NULL;
-	wc.lpszClassName = _T("WLSCLASSTOOLBAR");
-	RegisterClass(&wc);
-
-	return 1;
-}
-
-
 /* Returns all the cells symmetric to the given cell.
  * Returns an array irs of (x,y) coords.
  * (it will be 0, 1, 3, or 7.)
@@ -276,16 +229,6 @@ static POINT *GetSymmetricCells(int x,int y,int *num)
 		assert(g.colmax==g.rowmax);
 		pt[n].x=y;                // back diag
 		pt[n].y=x;
-/* special symmetry
-		if(x>=y) {
-			pt[n].x=y-1;         
-			pt[n].y=x;
-		}
-		else {
-			pt[n].x=y;                
-			pt[n].y=x+1;
-		}
-*/
 		n++;
 	}
 	if(s & 0x40) {
@@ -312,6 +255,8 @@ static void RecalcCenter(struct wcontext *ctx)
 	ctx->centerxodd= g.colmax%2;
 	ctx->centeryodd= g.rowmax%2;
 }
+
+#ifdef JS
 
 static void InitGameSettings(struct wcontext *ctx)
 {
@@ -458,114 +403,6 @@ static void wlsCreateFonts(struct wcontext *ctx)
 		ANSI_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,
 		DEFAULT_QUALITY,VARIABLE_PITCH|FF_SWISS,fontname);
 }
-
-static BOOL InitApp(struct wcontext *ctx, int nCmdShow)
-{
-	RECT r;
-
-	ctx->cellwidth = 15;
-	ctx->cellheight = 15;
-	ctx->scrollpos.x=0; ctx->scrollpos.y=0;
-
-	InitGameSettings(ctx);
-
-	wlsCreateFonts(ctx);
-
-	/* Create a main window for this application instance.	*/
-	ctx->hwndFrame = CreateWindow(
-		_T("WLSCLASSFRAME"),
-		WLS_APPNAME,
-		WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT,	/* horizontal position */
-		CW_USEDEFAULT,	/* vertical position */
-		CW_USEDEFAULT,	/* width */
-		CW_USEDEFAULT,		/* height */
-		NULL,	/* parent */
-		NULL,	/* menu */
-		ctx->hInst,
-		NULL	/* Pointer not needed */
-	);
-	if (!ctx->hwndFrame) return (FALSE);
-
-	GetClientRect(ctx->hwndFrame,&r);
-	// create the main window pane (a child window)
-	ctx->hwndMain = CreateWindow(
-		_T("WLSCLASSMAIN"),
-		_T("WinLifeSearch - main window"),
-		WS_CHILD|WS_VISIBLE|WS_HSCROLL|WS_VSCROLL,
-		0,	/* horizontal position */
-		0,	/* vertical position */
-		r.right,	/* width */
-		r.bottom-TOOLBARHEIGHT,		/* height */
-		ctx->hwndFrame,	/* parent */
-		NULL,	/* menu */
-		ctx->hInst,
-		NULL	/* Pointer not needed */
-	);
-	if (!ctx->hwndMain) return (FALSE);
-
-	ctx->hwndToolbar = CreateWindow(
-		_T("WLSCLASSTOOLBAR"),
-		_T("WinLifeSearch - toolbar"),
-		WS_CHILD|WS_VISIBLE|WS_CLIPCHILDREN,
-		0,	/* horizontal position */
-		r.bottom-TOOLBARHEIGHT,	/* vertical position */
-		r.right,	/* width */
-		TOOLBARHEIGHT,		/* height */
-		ctx->hwndFrame,	/* parent */
-		NULL,	/* menu */
-		ctx->hInst,
-		NULL	/* Pointer not needed */
-	);
-	if (!ctx->hwndToolbar) return (FALSE);
-
-	set_main_scrollbars(ctx, 1, 1);
-	/* Make the window visible; update its client area; and return "success" */
-
-	ShowWindow(ctx->hwndFrame, nCmdShow);		/* Show the window */
-	UpdateWindow(ctx->hwndFrame); 	/* Sends WM_PAINT message */
-	return (TRUE);  /* Returns the value from PostQuitMessage */
-}
-
-static void UninitApp(struct wcontext *ctx)
-{
-	if(ctx->statusfont) DeleteObject((HGDIOBJ)ctx->statusfont);
-}
-
-/****************************/
-int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
-						  int nCmdShow)
-{
-	MSG msg;	/* message */
-	HACCEL hAccTable;
-	struct wcontext *ctx = NULL;
-
-	memset(&g,0,sizeof(struct globals_struct));
-	ctx = calloc(1,sizeof(struct wcontext));
-	gctx = ctx;
-
-	ctx->hInst = hInstance;
-
-	hAccTable=LoadAccelerators(ctx->hInst,_T("WLSACCEL"));
-
-	RegisterClasses(ctx);
-
-	InitApp(ctx,nCmdShow);
-
-
-	while(GetMessage(&msg,NULL,0,0)){
-		if (!TranslateAccelerator(ctx->hwndFrame, hAccTable, &msg)) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-	}
-
-	UninitApp(ctx);
-
-	free(ctx);
-	return (int)msg.wParam; /* Returns the value from PostQuitMessage */
-}
-
 
 static void DrawGuides(struct wcontext *ctx, HDC hDC)
 {
@@ -2186,117 +2023,6 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 
 #else // KS:
 
-static BOOL RegisterClasses(struct wcontext *ctx)
-{   WNDCLASS  wc;
-	HICON iconWLS;
-
-	wc.style = 0;
-	wc.lpfnWndProc = WndProcFrame;
-	wc.cbClsExtra = 0;
-	wc.cbWndExtra = 0;
-	wc.hInstance = ctx->hInst;
-	iconWLS = LoadIcon(ctx->hInst,_T("ICONWLS"));
-	wc.hIcon = iconWLS;
-	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.hbrBackground = GetStockObject(WHITE_BRUSH);
-	wc.lpszMenuName =  _T("WLSMenu");
-	wc.lpszClassName = _T("WLSCLASSFRAME");
-	RegisterClass(&wc);
-
-	wc.style = CS_OWNDC;
-	wc.lpfnWndProc = WndProcMain;
-	wc.cbClsExtra = 0;
-	wc.cbWndExtra = 0;
-	wc.hInstance = ctx->hInst;
-	wc.hIcon=NULL;
-	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.hbrBackground = GetStockObject(WHITE_BRUSH);
-	wc.lpszMenuName =  NULL;
-	wc.lpszClassName = _T("WLSCLASSMAIN");
-	RegisterClass(&wc);
-	
-	wc.style = 0;
-	wc.lpfnWndProc = WndProcToolbar;
-	wc.cbClsExtra = 0;
-	wc.cbWndExtra = 0;
-	wc.hInstance = ctx->hInst;
-	wc.hIcon=NULL;
-	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.hbrBackground = GetStockObject(LTGRAY_BRUSH);
-	wc.lpszMenuName =  NULL;
-	wc.lpszClassName = _T("WLSCLASSTOOLBAR");
-	RegisterClass(&wc);
-
-	return 1;
-}
-
-
-/* Returns all the cells symmetric to the given cell.
- * Returns an array irs of (x,y) coords.
- * (it will be 0, 1, 3, or 7.)
- *
- */
-static POINT *GetSymmetricCells(int x,int y,int *num)
-{
-	static POINT pt[7];
-	int s,n;
-
-	s=symmap[g.symmetry];
-	n=0;
-
-	if(s & 0x02) {
-		assert(g.colmax==g.rowmax);
-		pt[n].x=g.rowmax-1-y; // forward diag
-		pt[n].y=g.colmax-1-x;
-		n++;
-	}
-	if(s & 0x04) {
-		assert(g.colmax==g.rowmax);
-		pt[n].x=y;               // rotate90
-		pt[n].y=g.colmax-1-x;
-		n++;
-	}
-	if(s & 0x08) {
-		pt[n].x=g.colmax-1-x;  // mirrorx
-		pt[n].y=y;
-		n++;
-	}
-	if(s & 0x10) {
-		pt[n].x=g.colmax-1-x;  // rotate180
-		pt[n].y=g.rowmax-1-y;
-		n++;
-	}
-	if(s & 0x20) {
-		assert(g.colmax==g.rowmax);
-		pt[n].x=y;                // back diag
-		pt[n].y=x;
-		n++;
-	}
-	if(s & 0x40) {
-		assert(g.colmax==g.rowmax);
-		pt[n].x=g.rowmax-1-y; // rotate270
-		pt[n].y=x;
-		n++;
-	}
-	if(s & 0x80) {
-		pt[n].x=x;               // mirrory
-		pt[n].y=g.rowmax-1-y;
-		n++;
-	}
-
-	*num=n;
-
-	return pt;
-}
-
-static void RecalcCenter(struct wcontext *ctx)
-{
-	ctx->centerx= g.colmax/2;
-	ctx->centery= g.rowmax/2;
-	ctx->centerxodd= g.colmax%2;
-	ctx->centeryodd= g.rowmax%2;
-}
-
 static void InitGameSettings(struct wcontext *ctx)
 {
 	int i,j,k;
@@ -2457,113 +2183,7 @@ static void wlsCreateFonts(struct wcontext *ctx)
 		DEFAULT_QUALITY,VARIABLE_PITCH|FF_SWISS,fontname);
 }
 
-static BOOL InitApp(struct wcontext *ctx, int nCmdShow)
-{
-	RECT r;
-
-	ctx->cellwidth = 16;
-	ctx->cellheight = 16;
-	ctx->scrollpos.x=0; ctx->scrollpos.y=0;
-
-	InitGameSettings(ctx);
-
-	wlsCreateFonts(ctx);
-
-	/* Create a main window for this application instance.	*/
-	ctx->hwndFrame = CreateWindow(
-		_T("WLSCLASSFRAME"),
-		WLS_APPNAME,
-		WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT,	/* horizontal position */
-		CW_USEDEFAULT,	/* vertical position */
-		CW_USEDEFAULT,	/* width */
-		CW_USEDEFAULT,		/* height */
-		NULL,	/* parent */
-		NULL,	/* menu */
-		ctx->hInst,
-		NULL	/* Pointer not needed */
-	);
-	if (!ctx->hwndFrame) return (FALSE);
-
-	GetClientRect(ctx->hwndFrame,&r);
-	// create the main window pane (a child window)
-	ctx->hwndMain = CreateWindow(
-		_T("WLSCLASSMAIN"),
-		_T("WinLifeSearch - main window"),
-		WS_CHILD|WS_VISIBLE|WS_HSCROLL|WS_VSCROLL,
-		0,	/* horizontal position */
-		0,	/* vertical position */
-		r.right,	/* width */
-		r.bottom-TOOLBARHEIGHT,		/* height */
-		ctx->hwndFrame,	/* parent */
-		NULL,	/* menu */
-		ctx->hInst,
-		NULL	/* Pointer not needed */
-	);
-	if (!ctx->hwndMain) return (FALSE);
-
-	ctx->hwndToolbar = CreateWindow(
-		_T("WLSCLASSTOOLBAR"),
-		_T("WinLifeSearch - toolbar"),
-		WS_CHILD|WS_VISIBLE|WS_CLIPCHILDREN,
-		0,	/* horizontal position */
-		r.bottom-TOOLBARHEIGHT,	/* vertical position */
-		r.right,	/* width */
-		TOOLBARHEIGHT,		/* height */
-		ctx->hwndFrame,	/* parent */
-		NULL,	/* menu */
-		ctx->hInst,
-		NULL	/* Pointer not needed */
-	);
-	if (!ctx->hwndToolbar) return (FALSE);
-
-	set_main_scrollbars(ctx, 1, 1);
-	/* Make the window visible; update its client area; and return "success" */
-
-	ShowWindow(ctx->hwndFrame, nCmdShow);		/* Show the window */
-	UpdateWindow(ctx->hwndFrame); 	/* Sends WM_PAINT message */
-	return (TRUE);  /* Returns the value from PostQuitMessage */
-}
-
-static void UninitApp(struct wcontext *ctx)
-{
-	if(ctx->statusfont) DeleteObject((HGDIOBJ)ctx->statusfont);
-}
-
 /****************************/
-int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
-						  int nCmdShow)
-{
-	MSG msg;	/* message */
-	HACCEL hAccTable;
-	struct wcontext *ctx = NULL;
-
-	memset(&g,0,sizeof(struct globals_struct));
-	ctx = calloc(1,sizeof(struct wcontext));
-	gctx = ctx;
-
-	ctx->hInst = hInstance;
-
-	hAccTable=LoadAccelerators(ctx->hInst,_T("WLSACCEL"));
-
-	RegisterClasses(ctx);
-
-	InitApp(ctx,nCmdShow);
-
-
-	while(GetMessage(&msg,NULL,0,0)){
-		if (!TranslateAccelerator(ctx->hwndFrame, hAccTable, &msg)) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-	}
-
-	UninitApp(ctx);
-
-	free(ctx);
-	return (int)msg.wParam; /* Returns the value from PostQuitMessage */
-}
-
 
 static void DrawGuides(struct wcontext *ctx, HDC hDC)
 {
@@ -4733,3 +4353,155 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 }
 
 #endif // JS/KS
+
+//////////////////////////////////////////////////////////////////
+
+static BOOL RegisterClasses(struct wcontext *ctx)
+{   WNDCLASS  wc;
+	HICON iconWLS;
+
+	wc.style = 0;
+	wc.lpfnWndProc = WndProcFrame;
+	wc.cbClsExtra = 0;
+	wc.cbWndExtra = 0;
+	wc.hInstance = ctx->hInst;
+	iconWLS = LoadIcon(ctx->hInst,_T("ICONWLS"));
+	wc.hIcon = iconWLS;
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hbrBackground = GetStockObject(WHITE_BRUSH);
+	wc.lpszMenuName =  _T("WLSMenu");
+	wc.lpszClassName = _T("WLSCLASSFRAME");
+	RegisterClass(&wc);
+
+	wc.style = CS_OWNDC;
+	wc.lpfnWndProc = WndProcMain;
+	wc.cbClsExtra = 0;
+	wc.cbWndExtra = 0;
+	wc.hInstance = ctx->hInst;
+	wc.hIcon=NULL;
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hbrBackground = GetStockObject(WHITE_BRUSH);
+	wc.lpszMenuName =  NULL;
+	wc.lpszClassName = _T("WLSCLASSMAIN");
+	RegisterClass(&wc);
+	
+	wc.style = 0;
+	wc.lpfnWndProc = WndProcToolbar;
+	wc.cbClsExtra = 0;
+	wc.cbWndExtra = 0;
+	wc.hInstance = ctx->hInst;
+	wc.hIcon=NULL;
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hbrBackground = GetStockObject(LTGRAY_BRUSH);
+	wc.lpszMenuName =  NULL;
+	wc.lpszClassName = _T("WLSCLASSTOOLBAR");
+	RegisterClass(&wc);
+
+	return 1;
+}
+
+static BOOL InitApp(struct wcontext *ctx, int nCmdShow)
+{
+	RECT r;
+
+	ctx->cellwidth = 16;
+	ctx->cellheight = 16;
+	ctx->scrollpos.x=0; ctx->scrollpos.y=0;
+
+	InitGameSettings(ctx);
+
+	wlsCreateFonts(ctx);
+
+	/* Create a main window for this application instance.	*/
+	ctx->hwndFrame = CreateWindow(
+		_T("WLSCLASSFRAME"),
+		WLS_APPNAME,
+		WS_OVERLAPPEDWINDOW,
+		CW_USEDEFAULT,	/* horizontal position */
+		CW_USEDEFAULT,	/* vertical position */
+		CW_USEDEFAULT,	/* width */
+		CW_USEDEFAULT,		/* height */
+		NULL,	/* parent */
+		NULL,	/* menu */
+		ctx->hInst,
+		NULL	/* Pointer not needed */
+	);
+	if (!ctx->hwndFrame) return (FALSE);
+
+	GetClientRect(ctx->hwndFrame,&r);
+	// create the main window pane (a child window)
+	ctx->hwndMain = CreateWindow(
+		_T("WLSCLASSMAIN"),
+		_T("WinLifeSearch - main window"),
+		WS_CHILD|WS_VISIBLE|WS_HSCROLL|WS_VSCROLL,
+		0,	/* horizontal position */
+		0,	/* vertical position */
+		r.right,	/* width */
+		r.bottom-TOOLBARHEIGHT,		/* height */
+		ctx->hwndFrame,	/* parent */
+		NULL,	/* menu */
+		ctx->hInst,
+		NULL	/* Pointer not needed */
+	);
+	if (!ctx->hwndMain) return (FALSE);
+
+	ctx->hwndToolbar = CreateWindow(
+		_T("WLSCLASSTOOLBAR"),
+		_T("WinLifeSearch - toolbar"),
+		WS_CHILD|WS_VISIBLE|WS_CLIPCHILDREN,
+		0,	/* horizontal position */
+		r.bottom-TOOLBARHEIGHT,	/* vertical position */
+		r.right,	/* width */
+		TOOLBARHEIGHT,		/* height */
+		ctx->hwndFrame,	/* parent */
+		NULL,	/* menu */
+		ctx->hInst,
+		NULL	/* Pointer not needed */
+	);
+	if (!ctx->hwndToolbar) return (FALSE);
+
+	set_main_scrollbars(ctx, 1, 1);
+	/* Make the window visible; update its client area; and return "success" */
+
+	ShowWindow(ctx->hwndFrame, nCmdShow);		/* Show the window */
+	UpdateWindow(ctx->hwndFrame); 	/* Sends WM_PAINT message */
+	return (TRUE);  /* Returns the value from PostQuitMessage */
+}
+
+static void UninitApp(struct wcontext *ctx)
+{
+	if(ctx->statusfont) DeleteObject((HGDIOBJ)ctx->statusfont);
+}
+
+int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
+						  int nCmdShow)
+{
+	MSG msg;	/* message */
+	HACCEL hAccTable;
+	struct wcontext *ctx = NULL;
+
+	memset(&g,0,sizeof(struct globals_struct));
+	ctx = calloc(1,sizeof(struct wcontext));
+	gctx = ctx;
+
+	ctx->hInst = hInstance;
+
+	hAccTable=LoadAccelerators(ctx->hInst,_T("WLSACCEL"));
+
+	RegisterClasses(ctx);
+
+	InitApp(ctx,nCmdShow);
+
+
+	while(GetMessage(&msg,NULL,0,0)){
+		if (!TranslateAccelerator(ctx->hwndFrame, hAccTable, &msg)) {
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
+
+	UninitApp(ctx);
+
+	free(ctx);
+	return (int)msg.wParam; /* Returns the value from PostQuitMessage */
+}
