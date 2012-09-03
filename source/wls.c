@@ -34,8 +34,10 @@
 #include <strsafe.h>
 
 #ifdef JS
-
 #define WLS_APPNAME _T("WinLifeSearchJ")
+#else
+#define WLS_APPNAME _T("WinLifeSearchK")
+#endif
 
 #define TOOLBARHEIGHT 24
 
@@ -49,7 +51,6 @@ static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 static INT_PTR CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
 
 typedef struct {
 	HPEN celloutline,cell_off,axes,arrow1,arrow2,unchecked;
@@ -70,14 +71,16 @@ struct wcontext {
 	int inverted;
 	HANDLE hthread;
 	int searchstate;
-	int foundcount;
 	pens_type pens;
 	brushes_type brushes;
 	int cellwidth, cellheight;
 	int centerx,centery,centerxodd,centeryodd;
 	POINT scrollpos;
-	__int64 showcount_tot;
 	HFONT statusfont;
+#ifdef JS
+	int foundcount;
+	__int64 showcount_tot;
+#endif
 };
 
 struct globals_struct g;
@@ -86,8 +89,9 @@ struct wcontext *gctx;
 
 volatile int abortthread;
 
+#ifdef JS
 static int currfield[GENMAX][COLMAX][ROWMAX];
-
+#endif
 
 /* \2 | 1/    
    3 \|/ 0
@@ -108,7 +112,6 @@ static int symmap[] = {
 	0x55,	// 01010101  origin-2
 	0xff	// 11111111  octagonal
 };
-
 
 static void wlsErrorvf(struct wcontext *ctx, TCHAR *fmt, va_list ap)
 {
@@ -187,6 +190,7 @@ void record_malloc(int func,void *m)
 	}
 }
 
+#ifdef JS
 
 static BOOL RegisterClasses(struct wcontext *ctx)
 {   WNDCLASS  wc;
@@ -2181,157 +2185,6 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 }
 
 #else // KS:
-
-#define WLS_APPNAME _T("WinLifeSearchK")
-
-#define TOOLBARHEIGHT 24
-
-
-static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-static INT_PTR CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-static INT_PTR CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-static INT_PTR CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-
-typedef struct {
-	HPEN celloutline,cell_off,axes,arrow1,arrow2,unchecked;
-} pens_type;
-
-typedef struct {
-	HBRUSH cell,cell_on;
-} brushes_type;
-
-struct wcontext {
-	HINSTANCE hInst;
-	HWND hwndFrame,hwndMain,hwndToolbar;
-	HWND hwndGen,hwndGenScroll;
-	HWND hwndStatus;
-	int selectstate;
-	POINT startcell, endcell;
-	RECT selectrect;
-	int inverted;
-	HANDLE hthread;
-	int searchstate;
-	pens_type pens;
-	brushes_type brushes;
-	int cellwidth, cellheight;
-	int centerx,centery,centerxodd,centeryodd;
-	POINT scrollpos;
-	HFONT statusfont;
-};
-
-struct globals_struct g;
-
-static struct wcontext *gctx;
-
-volatile int abortthread;
-
-
-
-/* \2 | 1/    
-   3 \|/ 0
-   ---+---
-   4 /|\ 7
-   /5 | 6\  */
-
-static const int symmap[] = { 
-			// 76543210
-	0x01,	// 00000001  no symmetry
-	0x09,	// 00001001  mirror-x
-	0x81,	// 10000001  mirror-y
-	0x03,	// 00000011  diag-forward
-	0x21,	// 00100001  diag-backward
-	0x11,	// 00010001  origin
-	0x99,	// 10011001  mirror-both
-	0x33,	// 00110011  diag-both
-	0x55,	// 01010101  origin-2
-	0xff	// 11111111  octagonal
-};
-
-
-static void wlsErrorvf(struct wcontext *ctx, TCHAR *fmt, va_list ap)
-{
-	TCHAR buf[500];
-	StringCbVPrintf(buf,sizeof(buf),fmt,ap);
-	MessageBox(ctx->hwndFrame,buf,_T("Error"),MB_OK|MB_ICONWARNING);
-}
-
-// Show an error message box.
-void wlsErrorf(struct wcontext *ctx, TCHAR *fmt, ...)
-{
-	va_list ap;
-	if (!ctx) ctx = gctx;
-	va_start(ap,fmt);
-	wlsErrorvf(ctx,fmt,ap);
-	va_end(ap);
-}
-
-static void wlsMessagevf(struct wcontext *ctx, TCHAR *fmt, va_list ap)
-{
-	TCHAR buf[500];
-	StringCbVPrintf(buf,sizeof(buf),fmt,ap);
-	MessageBox(ctx->hwndFrame,buf,_T("Message"),MB_OK|MB_ICONINFORMATION);
-}
-
-void wlsMessagef(struct wcontext *ctx, TCHAR *fmt, ...)
-{
-	va_list ap;
-	if(!ctx) ctx = gctx;
-	va_start(ap,fmt);
-	wlsMessagevf(ctx,fmt,ap);
-	va_end(ap);
-}
-
-// Essentially an an alias for wlsMessagef.
-void ttystatus(TCHAR * fmt, ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
-	wlsMessagevf(gctx,fmt,ap);
-	va_end(ap);
-}
-
-static void wlsStatusvf(struct wcontext *ctx, TCHAR *fmt, va_list ap)
-{
-	TCHAR buf[500];
-	StringCbVPrintf(buf,sizeof(buf),fmt,ap);
-	SetWindowText(ctx->hwndStatus,buf);
-}
-
-// Show something on the status bar.
-void wlsStatusf(struct wcontext *ctx, TCHAR *fmt, ...)
-{
-	va_list ap;
-	if(!ctx) ctx = gctx;
-	va_start(ap,fmt);
-	wlsStatusvf(ctx,fmt,ap);
-	va_end(ap);
-}
-
-void record_malloc(int func,void *m)
-{
-	static void *memblks[2000];
-	static int used=0;
-	int i;
-
-	switch(func) {
-	case 0:
-		for(i=0;i<used;i++)
-			free(memblks[i]);
-		used=0;
-		break;
-	case 1:      // record this pointer
-		memblks[used++]=m;
-		break;
-	}
-}
-
 
 static BOOL RegisterClasses(struct wcontext *ctx)
 {   WNDCLASS  wc;
@@ -4526,28 +4379,6 @@ static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			return 0;
 		}
 		break;
-
-#if 0
-	case WM_CREATE:
-		ctx->hwndGen=CreateWindow(_T("Static"),_T("0"),
-			WS_CHILD|WS_VISIBLE|WS_BORDER,
-			1,1,40,TOOLBARHEIGHT-2,
-			hWnd,NULL,ctx->hInst,NULL);
-		ctx->hwndGenScroll=CreateWindow(_T("Scrollbar"),_T("wls_gen_scrollbar"),
-			WS_CHILD|WS_VISIBLE|SBS_HORZ,
-			41,1,80,TOOLBARHEIGHT-2,
-			hWnd,NULL,ctx->hInst,NULL);
-		ctx->hwndStatus=CreateWindow(_T("Static"),_T(""),
-			WS_CHILD|WS_VISIBLE|WS_BORDER,
-			120,1,800,TOOLBARHEIGHT-2,
-			hWnd,NULL,ctx->hInst,NULL);
-#ifdef _DEBUG
-			wlsStatus(_T("DEBUG BUILD"));
-#endif
-
-			draw_gen_counter();
-		return 0;
-#endif
 	}
 
 	return (DefWindowProc(hWnd, msg, wParam, lParam));
