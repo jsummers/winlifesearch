@@ -32,6 +32,7 @@
 #define IDC_SYM7                        1007
 #define IDC_SYM8                        1008
 #define IDC_SYM9                        1009
+#define IDC_ABOUTTEXT                   1010
 #define IDC_COLUMNS                     1015
 #define IDC_TRANS0                      1016
 #define IDC_TRANSX                      1017

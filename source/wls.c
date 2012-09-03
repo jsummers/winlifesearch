@@ -2412,6 +2412,9 @@ static INT_PTR CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 
 	switch (msg) {
 	case WM_INITDIALOG:
+		SetDlgItemText(hWnd,IDC_ABOUTTEXT,_T("WinLifeSearch v0.61+\r\n\r\n")
+			_T("A Windows port of David Bell\x2019s LIFESRC v3.5\r\n\r\n")
+			_T("By Jason Summers and Karel Suhajda"));
 		return 1;   // didn't call SetFocus
 
 	case WM_COMMAND:

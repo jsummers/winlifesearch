@@ -196,8 +196,7 @@ CAPTION "About"
 FONT 8, "MS Shell Dlg"
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,188,7,50,14
-    LTEXT           "WinLifeSearch v0.61+\r\n\r\nA Windows port of David Bell's LIFESRC v3.5\r\n\r\nBy Jason Summers and Karel Suhajda",
-                    IDC_STATIC,7,7,171,57
+    LTEXT           "",IDC_ABOUTTEXT,7,7,171,57
     ICON            "ICONWLS",IDC_STATIC,201,34,21,20,SS_REALSIZEIMAGE
 END
 
