@@ -108,46 +108,63 @@ static int symmap[] = {
 };
 
 
-void wlsError(TCHAR *m,int n)
+static void wlsErrorvf(struct wcontext *ctx, TCHAR *fmt, va_list ap)
 {
-	TCHAR s[80];
-	if(n) StringCbPrintf(s,sizeof(s),_T("%s (%d)"),m,n);
-	else StringCbCopy(s,sizeof(s),m);
-	MessageBox(gctx->hwndFrame,s,_T("Error"),MB_OK|MB_ICONWARNING);
+	TCHAR buf[500];
+	StringCbVPrintf(buf,sizeof(buf),fmt,ap);
+	MessageBox(ctx->hwndFrame,buf,_T("Error"),MB_OK|MB_ICONWARNING);
 }
 
-void wlsWarning(TCHAR *m,int n)
+// Show an error message box.
+void wlsErrorf(struct wcontext *ctx, TCHAR *fmt, ...)
 {
-	TCHAR s[80];
-	if(n) StringCbPrintf(s,sizeof(s),_T("%s (%d)"),m,n);
-	else StringCbCopy(s,sizeof(s),m);
-	MessageBox(gctx->hwndFrame,s,_T("Warning"),MB_OK|MB_ICONWARNING);
+	va_list ap;
+	if (!ctx) ctx = gctx;
+	va_start(ap,fmt);
+	wlsErrorvf(ctx,fmt,ap);
+	va_end(ap);
 }
 
-void wlsMessage(TCHAR *m,int n)
+static void wlsMessagevf(struct wcontext *ctx, TCHAR *fmt, va_list ap)
 {
-	TCHAR s[180];
-	if(n) StringCbPrintf(s,sizeof(s),_T("%s (%d)"),m,n);
-	else StringCbCopy(s,sizeof(s),m);
-	MessageBox(gctx->hwndFrame,s,_T("Message"),MB_OK|MB_ICONINFORMATION);
+	TCHAR buf[500];
+	StringCbVPrintf(buf,sizeof(buf),fmt,ap);
+	MessageBox(ctx->hwndFrame,buf,_T("Message"),MB_OK|MB_ICONINFORMATION);
 }
 
-int wlsQuery(TCHAR *m,int n)
+void wlsMessagef(struct wcontext *ctx, TCHAR *fmt, ...)
 {
-	TCHAR s[180];
-	if(n) StringCbPrintf(s,sizeof(s),_T("%s (%d)"),m,n);
-	else StringCbCopy(s,sizeof(s),m);
-	if(MessageBox(gctx->hwndFrame,s,_T("Query"),MB_OKCANCEL|MB_ICONQUESTION)
-		==IDCANCEL)
-		return 0;
-	return 1;
+	va_list ap;
+	if(!ctx) ctx = gctx;
+	va_start(ap,fmt);
+	wlsMessagevf(ctx,fmt,ap);
+	va_end(ap);
 }
 
-
-void wlsStatus(TCHAR *msg)
+// Essentially an an alias for wlsMessagef.
+void ttystatus(TCHAR * fmt, ...)
 {
-	if(gctx->hwndStatus)
-		SetWindowText(gctx->hwndStatus,msg);
+	va_list ap;
+	va_start(ap, fmt);
+	wlsMessagevf(gctx,fmt,ap);
+	va_end(ap);
+}
+
+static void wlsStatusvf(struct wcontext *ctx, TCHAR *fmt, va_list ap)
+{
+	TCHAR buf[500];
+	StringCbVPrintf(buf,sizeof(buf),fmt,ap);
+	SetWindowText(ctx->hwndStatus,buf);
+}
+
+// Show something on the status bar.
+void wlsStatusf(struct wcontext *ctx, TCHAR *fmt, ...)
+{
+	va_list ap;
+	if(!ctx) ctx = gctx;
+	va_start(ap,fmt);
+	wlsStatusvf(ctx,fmt,ap);
+	va_end(ap);
 }
 
 void record_malloc(int func,void *m)
@@ -1037,8 +1054,8 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 // copy my format to dbells format...
 static int set_initial_cells(void)
 {
-	TCHAR buf[80];
 	int i,j,g1;
+	struct wcontext *ctx = gctx;
 
 	for(g1=0;g1<g.genmax;g1++) 
 		for(i=0;i<g.colmax;i++)
@@ -1046,15 +1063,13 @@ static int set_initial_cells(void)
 				switch(g.origfield[g1][i][j]) {
 				case 0:  // forced off
 					if(proceed(findcell(j+1,i+1,g1),OFF,FALSE)!=OK) {
-						StringCbPrintf(buf,sizeof(buf),_T("Inconsistent OFF state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
-						wlsMessage(buf,0);
+						wlsMessagef(ctx,_T("Inconsistent OFF state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
 						return 0;
 					}
 					break;
 				case 1:  // forced on
 					if(proceed(findcell(j+1,i+1,g1),ON,FALSE)!=OK) {
-						StringCbPrintf(buf,sizeof(buf),_T("Inconsistent ON state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
-						wlsMessage(buf,0);
+						wlsMessagef(ctx,_T("Inconsistent ON state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
 						return 0;
 					}
 					break;
@@ -1138,7 +1153,6 @@ static void pause_search(struct wcontext *ctx);  // forward decl
 static DWORD WINAPI search_thread(LPVOID foo)
 {
 //	int i,j,k;
-	TCHAR buf[180];
 	struct wcontext *ctx = gctx;
 
 	/*
@@ -1183,9 +1197,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 
 			if (!g.quiet) {
 				printgen(0);
-//				ttystatus("Object %ld found.\n", ++foundcount);
-				StringCbPrintf(buf,sizeof(buf),_T("Object %ld found."), ++ctx->foundcount);
-				wlsStatus(buf);
+				wlsStatusf(ctx,_T("Object %d found."), ++ctx->foundcount);
 			}
 
 			writegen(g.outputfile, TRUE);
@@ -1195,16 +1207,14 @@ static DWORD WINAPI search_thread(LPVOID foo)
 		}
 
 		if (ctx->foundcount == 0) {
-			wlsWarning(_T("No objects found"),0);
+			wlsStatusf(ctx,_T(""));
+			wlsMessagef(ctx,_T("No objects found"));
 			goto done;
 		}
 
 		if (!g.quiet) {
-//			sprintf(buf,"Search completed, file \"%s\" contains %ld object%s\n",
-//				outputfile, foundcount, (foundcount == 1) ? "" : "s");
-			StringCbPrintf(buf,sizeof(buf),_T("Search completed: %ld object%s found"),
+			wlsMessagef(ctx,_T("Search completed: %d object%s found"),
 				ctx->foundcount, (ctx->foundcount == 1) ? _T("") : _T("s"));
-			wlsMessage(buf,0);
 		}
 
 		goto done;
@@ -1222,10 +1232,10 @@ static void resume_search(struct wcontext *ctx)
 	DWORD threadid;
 
 	SetWindowText(ctx->hwndFrame,_T("WinLifeSearch"));
-	wlsStatus(_T("Searching..."));
+	wlsStatusf(ctx,_T("Searching..."));
 
 	if(ctx->searchstate!=1) {
-		wlsError(_T("No search is paused"),0);
+		wlsErrorf(ctx,_T("No search is paused"));
 		return;
 	}
 	abortthread=0;
@@ -1235,7 +1245,7 @@ static void resume_search(struct wcontext *ctx)
 
 
 	if(ctx->hthread==NULL) {
-		wlsError(_T("Unable to create search thread"),0);
+		wlsErrorf(ctx,_T("Unable to create search thread"));
 		ctx->searchstate=1;
 	}
 	else {
@@ -1255,7 +1265,7 @@ static void start_search(struct wcontext *ctx, TCHAR *statefile)
 //	CELL *cell;
 
 	if(ctx->searchstate!=0) {
-		wlsError(_T("A search is already running"),0);
+		wlsErrorf(ctx,_T("A search is already running"));
 		return;
 	}
 
@@ -1269,7 +1279,7 @@ static void start_search(struct wcontext *ctx, TCHAR *statefile)
 
 	if (!setrules(g.rulestring))
 	{
-		wlsError(_T("Cannot set Life rules!"),0);
+		wlsErrorf(ctx,_T("Cannot set Life rules!"));
 		return; //exit(1);
 	}
 
@@ -1344,7 +1354,7 @@ static void pause_search(struct wcontext *ctx)
 	DWORD exitcode;
 
 	if(ctx->searchstate!=2) {
-		wlsError(_T("No search is running"),0);
+		wlsErrorf(ctx,_T("No search is running"));
 		return;
 	}
 
@@ -1371,7 +1381,7 @@ static void reset_search(struct wcontext *ctx)
 	int i,j,k;
 
 	if(ctx->searchstate==0) {
-		wlsError(_T("No search in progress"),0);
+		wlsErrorf(ctx,_T("No search in progress"));
 		goto here;
 	}
 
@@ -1395,7 +1405,7 @@ here:
 	InvalidateRect(ctx->hwndMain,NULL,TRUE);
 
 	SetWindowText(ctx->hwndFrame,_T("WinLifeSearch"));
-	wlsStatus(_T(""));
+	wlsStatusf(ctx,_T(""));
 }
 
 static void open_state(struct wcontext *ctx)
@@ -1765,7 +1775,7 @@ static void Handle_ToolbarCreate(struct wcontext *ctx, HWND hWnd, LPARAM lParam)
 	ShowWindow(ctx->hwndStatus,SW_SHOW);
 
 #ifdef _DEBUG
-		wlsStatus(_T("DEBUG BUILD"));
+		wlsStatusf(ctx,_T("DEBUG BUILD"));
 #endif
 		draw_gen_counter(ctx);
 }

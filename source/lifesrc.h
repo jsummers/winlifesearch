@@ -252,8 +252,6 @@ CELL *	backup (void);
 BOOL	subperiods (void);
 STATUS loopcells(CELL *, CELL *);
 
-void	ttystatus (TCHAR *, ...);
-
 void	excludecone (int, int, int);
 STATUS freezecell(int, int);
 
@@ -268,11 +266,11 @@ STATUS  loadstate(TCHAR *file);
 void     getbackup(char *cp);
 
 
-void wlsError(TCHAR *m,int n);
-void wlsWarning(TCHAR *m,int n);
-void wlsMessage(TCHAR *m,int n);
-int wlsQuery(TCHAR *m,int n);
-void wlsStatus(TCHAR *msg);
+struct wcontext;
+void wlsErrorf(struct wcontext *ctx, TCHAR *fmt, ...);
+void wlsMessagef(struct wcontext *ctx, TCHAR *fmt, ...);
+void wlsStatusf(struct wcontext *ctx, TCHAR *fmt, ...);
+void ttystatus(TCHAR *, ...);
 void record_malloc(int func,void *m);
 void showcount(int c);
 

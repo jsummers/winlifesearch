@@ -145,7 +145,7 @@ initcells()
 		(g.rowtrans < -TRANSMAX) || (g.rowtrans > TRANSMAX) ||
 		(g.coltrans < -TRANSMAX) || (g.coltrans > TRANSMAX))
 	{
-		wlsError(_T("ROW, COL, GEN, or TRANS out of range"),0);
+		wlsErrorf(NULL,_T("ROW, COL, GEN, or TRANS out of range"));
 		return ERROR1;
 	}
 
@@ -1403,7 +1403,7 @@ STATUS loopcells(CELL *cell1, CELL *cell2)
 	 */
 	if ((cell1 == deadcell) || (cell2 == deadcell))
 	{
-		wlsError(_T("Attemping to use deadcell in a loop"),0);
+		wlsErrorf(NULL,_T("Attemping to use deadcell in a loop"));
 		return ERROR1;
 	}
 
@@ -1733,7 +1733,7 @@ allocatecell()
 
 		if (newcells == NULL)
 		{
-			wlsError(_T("Cannot allocate cell structure"),0);
+			wlsErrorf(NULL,_T("Cannot allocate cell structure"));
 			exit(1);
 		}
 

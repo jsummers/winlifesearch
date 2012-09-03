@@ -243,7 +243,6 @@ void writegen(TCHAR *file1, BOOL append)
 	int	col;
 	int	ch;
 	int	minrow, maxrow, mincol, maxcol;
-	TCHAR buf[80];
 	TCHAR file[MAX_PATH];
 	static int writecount=0;
 
@@ -356,8 +355,7 @@ void writegen(TCHAR *file1, BOOL append)
 
 	writecount++;
 	if (fp != stdout) {
-		StringCbPrintf(buf,sizeof(buf),_T("\"%s\" written (%d)"),file,writecount);
-		wlsStatus(buf);
+		wlsStatusf(NULL,_T("\"%s\" written (%d)"),file,writecount);
 	}
 
 	g.quitok = TRUE;
@@ -1082,22 +1080,6 @@ BOOL setrulesA(char *rulestringA)
 #else
 	return setrules(rulestringA);
 #endif
-}
-
-
-/*
- * Print a status message, like printf.
- * The string length is limited to 256 characters.
- */
-void ttystatus(TCHAR * fmt, ...)
-{
-	va_list ap;
-	TCHAR buf[256];
-
-	va_start(ap, fmt);
-	StringCbVPrintf(buf, sizeof(buf), fmt, ap);
-	va_end(ap);
-	wlsMessage(buf,0);
 }
 
 
