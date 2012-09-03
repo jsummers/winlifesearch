@@ -510,34 +510,85 @@ static void DrawCell(struct wcontext *ctx, HDC hDC,int x,int y)
 
 }
 
-#ifdef JS
+#ifndef JS
+// Set/reset unknown/unchecked
+static void ChangeChecking(struct wcontext *ctx, HDC hDC, int x, int y, int allgens, int set)
+{
+	POINT *pts;
+	int numpts,i,j;
+	int s1, s2;
+	int g1, g2;
+
+	if (set)
+	{
+		s1 = 2;
+		s2 = 3;
+	} else {
+		s1 = 3;
+		s2 = 2;
+	}
+
+	if (allgens)
+	{
+		g1 = 0;
+		g2 = GENMAX - 1;
+	}
+	else
+	{
+		g1 = g.curgen;
+		g2 = g.curgen;
+	}
+
+	pts=GetSymmetricCells(x,y,&numpts);
+
+	for(j=g1;j<=g2;j++)
+	{
+		if (g.currfield[j][x][y] == s1)
+		{
+			g.currfield[j][x][y] = s2;
+		}
+	}
+	DrawCell(ctx,hDC,x,y);
+
+	for(i=0;i<numpts;i++) {
+		for(j=g1;j<=g2;j++)
+		{
+			if (g.currfield[j][pts[i].x][pts[i].y] == s1)
+			{
+				g.currfield[j][pts[i].x][pts[i].y] = s2;
+			}
+		}
+		DrawCell(ctx,hDC,pts[i].x,pts[i].y);
+	}
+}
+#endif
 
 // set and paint all cells symmetrical to the given cell
 // (including the given cell)
 static void Symmetricalize(struct wcontext *ctx, HDC hDC,int x,int y,int allgens)
 {
-
 	POINT *pts;
 	int numpts,i,j;
 
 	pts=GetSymmetricCells(x,y,&numpts);
 
 	if(allgens) {
-		for(j=0;j<GENMAX;j++)
+		for(j=0;j<GENMAX;j++) {
 			g.currfield[j][x][y]=g.currfield[g.curgen][x][y];
+		}
 	}
-	DrawCell(ctx, hDC,x,y);
+	DrawCell(ctx,hDC,x,y);
 
 	for(i=0;i<numpts;i++) {
 		g.currfield[g.curgen][pts[i].x][pts[i].y]=g.currfield[g.curgen][x][y];
 		if(allgens) {
-			for(j=0;j<GENMAX;j++)
+			for(j=0;j<GENMAX;j++) {
 				g.currfield[j][pts[i].x][pts[i].y]=g.currfield[g.curgen][x][y];
+			}
 		}
-		DrawCell(ctx, hDC,pts[i].x,pts[i].y);
+		DrawCell(ctx,hDC,pts[i].x,pts[i].y);
 	}
 }
-
 
 static void InvertCells(struct wcontext *ctx, HDC hDC1)
 {
@@ -558,7 +609,7 @@ static void InvertCells(struct wcontext *ctx, HDC hDC1)
 		r.bottom= (ctx->endcell.y+1)*ctx->cellheight;
 	}
 	else {
-		r.top=   ctx->endcell.y*ctx->cellheight;
+		r.top=ctx->endcell.y*ctx->cellheight;
 		r.bottom=(ctx->startcell.y+1)*ctx->cellheight;
 	}
 
@@ -572,31 +623,29 @@ static void InvertCells(struct wcontext *ctx, HDC hDC1)
 
 }
 
-
 static void SelectOff(struct wcontext *ctx, HDC hDC)
 {
 	if(ctx->selectstate<1) return;
 
-
 	if(ctx->selectstate) {
 		if(ctx->inverted) {
-			InvertCells(ctx, hDC);
+			InvertCells(ctx,hDC);
 			ctx->inverted=0;
 		}
 		ctx->selectstate=0;
 	}
 }
 
-
 static void DrawWindow(struct wcontext *ctx, HDC hDC)
 {
 	int i,j;
+
 	for(i=0;i<g.colmax;i++) {
 		for(j=0;j<g.rowmax;j++) {
-			DrawCell(ctx, hDC,i,j);
+			DrawCell(ctx,hDC,i,j);
 		}
 	}
-	DrawGuides(ctx, hDC);
+	DrawGuides(ctx,hDC);
 
 	if(ctx->selectstate>0) {
 		InvertCells(ctx, hDC);
@@ -621,7 +670,6 @@ static void PaintWindow(struct wcontext *ctx, HWND hWnd)
 	EndPaint(hWnd,&ps);
 }
 
-
 static void FixFrozenCells(void)
 {
 	int x,y,z;
@@ -643,6 +691,7 @@ static void FixFrozenCells(void)
 	}
 }
 
+#ifdef JS
 
 //returns 0 if processed
 static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wParam)
@@ -655,6 +704,7 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 	int lastval;
 	int allgens=0;
 	int newval;
+
 	newval = -1;
 
 	xp+=(WORD)ctx->scrollpos.x;
@@ -728,7 +778,7 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 
 	case WM_LBUTTONDOWN:
 		if(ctx->selectstate>0) {
-			SelectOff(ctx, NULL);
+			SelectOff(ctx,NULL);
 		}
 
 		ctx->selectstate=1;
@@ -742,8 +792,8 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 		if(wParam & MK_SHIFT) allgens=1;
 		if(x==ctx->startcell.x && y==ctx->startcell.y) {
 			ctx->selectstate=0;
-			if(g.currfield[g.curgen][x][y]==1) newval=2; //currfield[curgen][x][y]=2;
-			else newval=1;  //currfield[g.curgen][x][y]=1;
+			if(g.currfield[g.curgen][x][y]==1) newval=2; //g.currfield[g.curgen][x][y]=2;
+			else newval=1;  //g.currfield[g.curgen][x][y]=1;
 			//Symmetricalize(hDC,x,y,allgens);
 		}
 		else if(ctx->selectstate==1) {
@@ -756,8 +806,8 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 
 	case WM_RBUTTONDOWN:     // toggle off/unchecked
 		if(wParam & MK_SHIFT) allgens=1;
-		if(g.currfield[g.curgen][x][y]==0) newval=2; //currfield[curgen][x][y]=2;
-		else newval=0; //currfield[curgen][x][y]=0;
+		if(g.currfield[g.curgen][x][y]==0) newval=2; //g.currfield[g.curgen][x][y]=2;
+		else newval=0; //g.currfield[g.curgen][x][y]=0;
 		break;
 
 
@@ -823,6 +873,208 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 	return 0;
 }
 
+#else
+
+//returns 0 if processed
+static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wParam)
+{
+	int x,y;
+	int i,j;
+	HDC hDC;
+	int vkey;
+	int tmp;
+	int lastval;
+	int allgens=0;
+	int newval;
+
+	newval = -1;
+
+	xp+=(WORD)ctx->scrollpos.x;
+	yp+=(WORD)ctx->scrollpos.y;
+
+	x=xp/ctx->cellwidth;   // + scroll offset
+	y=yp/ctx->cellheight;  // + scroll offset
+
+	if(x<0 || x>=g.colmax) return 1;
+	if(y<0 || y>=g.rowmax) return 1;
+
+
+	lastval= g.currfield[g.curgen][x][y];
+//	if(lastval==4) allgens=1;       // previously frozen
+
+
+	switch(msg) {
+
+	case WM_MOUSEMOVE:
+		if(ctx->selectstate!=1) return 1;
+
+		if(x==ctx->endcell.x && y==ctx->endcell.y) {   // cursor hasn't moved to a new cell
+			return 0;
+		}
+
+		if(x==ctx->startcell.x && y==ctx->startcell.y) {  // cursor over starting cell
+			hDC=GetDC(ctx->hwndMain);
+			InvertCells(ctx,hDC); // turn off
+			ReleaseDC(ctx->hwndMain,hDC);
+
+			ctx->inverted=0;
+			ctx->endcell.x=x;
+			ctx->endcell.y=y;
+			return 0;
+		}
+
+
+		// else we're at a different cell
+			
+		hDC=GetDC(ctx->hwndMain);
+		if(ctx->inverted) InvertCells(ctx,hDC);    // turn off
+		ctx->inverted=0;
+
+		ctx->endcell.x=x;
+		ctx->endcell.y=y;
+
+		InvertCells(ctx,hDC);    // turn back on
+
+		// record the select region
+		if(ctx->startcell.x<=ctx->endcell.x) {
+			ctx->selectrect.left= ctx->startcell.x;
+			ctx->selectrect.right=ctx->endcell.x;
+		}
+		else {
+			ctx->selectrect.left=ctx->endcell.x;
+			ctx->selectrect.right=ctx->startcell.x;
+		}
+		if(ctx->startcell.y<=ctx->endcell.y) {
+			ctx->selectrect.top= ctx->startcell.y;
+			ctx->selectrect.bottom=ctx->endcell.y;
+		}
+		else {
+			ctx->selectrect.top=ctx->endcell.y;
+			ctx->selectrect.bottom=ctx->startcell.y;
+		}
+
+		ctx->inverted=1;
+		ReleaseDC(ctx->hwndMain,hDC);
+		
+		return 0;
+
+	case WM_LBUTTONDOWN:
+		if(ctx->selectstate>0) {
+			SelectOff(ctx,NULL);
+		}
+
+		ctx->selectstate=1;
+		ctx->startcell.x=x;
+		ctx->startcell.y=y;
+		ctx->endcell.x=x;
+		ctx->endcell.y=y;
+		return 0;
+
+	case WM_LBUTTONUP:
+		if(wParam & MK_SHIFT) allgens=1;
+		if(x==ctx->startcell.x && y==ctx->startcell.y) {
+			ctx->selectstate=0;
+			if(g.currfield[g.curgen][x][y]==1) newval=2; //g.currfield[g.curgen][x][y]=2;
+			else newval=1;  //g.currfield[g.curgen][x][y]=1;
+			//Symmetricalize(hDC,x,y,allgens);
+		}
+		else if(ctx->selectstate==1) {
+			// selecting an area
+			ctx->selectstate=2;
+			return 0;
+
+		}
+		break;
+
+	case WM_RBUTTONDOWN:     // toggle off/unchecked
+		if(wParam & MK_SHIFT) allgens=1;
+		if(g.currfield[g.curgen][x][y]==0) newval=2; //g.currfield[g.curgen][x][y]=2;
+		else newval=0; //g.currfield[g.curgen][x][y]=0;
+		break;
+
+
+	case WM_CHAR:
+		vkey=(int)wParam;
+
+		if(vkey=='C' || vkey=='X' || vkey=='A' || vkey=='S' || vkey=='F' || vkey=='I' || vkey=='O')
+			allgens=1;
+
+		if(vkey=='C' || vkey=='c') {
+			newval=2;
+		}
+		else if(vkey=='X' || vkey=='x') {
+			newval=3;
+		}
+		else if(vkey=='A' || vkey=='a') {
+			newval=0;
+		}
+		else if(vkey=='S' || vkey=='s') {
+			newval=1;
+		}
+		else if(vkey=='F' || vkey=='f') {
+			newval=4;
+			allgens=1;
+		} else if(vkey=='I' || vkey=='i') {
+			newval=11;
+		} else if(vkey=='O' || vkey=='o') {
+			newval=10;
+		} else {
+			return 1;
+		}
+
+		break;
+
+	default:
+		return 1;
+	}
+
+	hDC=GetDC(ctx->hwndMain);
+
+	tmp=ctx->selectstate;
+
+	SelectOff(ctx,hDC);
+
+	if(ctx->searchstate == 0) {
+		if(tmp==2) {
+			if(newval>=0) {
+				for(i=ctx->selectrect.left;i<=ctx->selectrect.right;i++) {
+					for(j=ctx->selectrect.top;j<=ctx->selectrect.bottom;j++) {
+						if (newval < 10)
+						{
+							g.currfield[g.curgen][i][j]=newval;
+							Symmetricalize(ctx,hDC,i,j,allgens);
+						} else {
+							ChangeChecking(ctx,hDC,i,j,allgens,newval == 10);
+						}
+					}
+				}
+			}
+		} else {
+			if(newval>=0) 
+			{
+				if (newval < 10)
+				{
+					g.currfield[g.curgen][x][y]=newval;
+					Symmetricalize(ctx,hDC,x,y,allgens);
+				} else {
+					ChangeChecking(ctx,hDC,x,y,allgens,newval == 10);
+				}
+			}
+		}
+	}
+
+	FixFrozenCells();
+
+	DrawGuides(ctx,hDC);
+
+	ReleaseDC(ctx->hwndMain,hDC);
+	return 0;
+}
+
+#endif
+
+#ifdef JS
+
 // copy my format to dbells format...
 static int set_initial_cells(void)
 {
@@ -859,6 +1111,110 @@ static int set_initial_cells(void)
 
 }
 
+#else
+
+// copy my format to dbells format...
+// ... and make a backup of the current state (KAS)
+BOOL set_initial_cells(void)
+{
+	CELL *cell;
+	CELL **setpos;
+	BOOL change;
+	int i,j,g1;
+	struct wcontext *ctx = gctx;
+
+	g.newset = g.settable;
+	g.nextset = g.settable;
+
+	for(g1=0;g1<g.genmax;g1++) {
+		for(i=0;i<g.colmax;i++) {
+			for(j=0;j<g.rowmax;j++) {
+
+				g.origfield[g1][i][j] = g.currfield[g1][i][j];
+
+				switch(g.currfield[g1][i][j]) {
+				case 0:  // forced off
+					if(!proceed(findcell(j+1,i+1,g1),OFF,FALSE)) {
+						wlsMessagef(ctx,_T("Inconsistent OFF state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
+						return FALSE;
+					}
+					break;
+				case 1:  // forced on
+					if(!proceed(findcell(j+1,i+1,g1),ON,FALSE)) {
+						wlsMessagef(ctx,_T("Inconsistent ON state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
+						return FALSE;
+					}
+					break;
+				case 3: // unchecked
+					cell = findcell(j+1,i+1,g1);
+					cell->unchecked = TRUE;
+					break;
+				case 4: // frozen cells
+					freezecell(j+1, i+1);
+					break;
+				}
+
+			}
+		}
+	}
+
+	// now let's try all UNK cells for ON and OFF state
+	// set those which allow only one
+
+	setpos = g.newset;
+	do {
+		change = FALSE;
+		for(g1=0;g1<g.genmax;g1++) {
+			for(i=0;i<g.colmax;i++) {
+				for(j=0;j<g.rowmax;j++) {
+					cell = findcell(j+1,i+1,g1);
+					if (cell->active && (cell->state == UNK)) {
+						if (proceed(cell, OFF, TRUE))
+						{
+							backup();
+							if (proceed(cell, ON, TRUE))
+							{
+								backup();
+							} else {
+								// OFF possible, ON impossible
+								if (setpos != g.newset) backup();
+								if (proceed(cell, OFF, TRUE))
+								{
+									change = TRUE;
+								} else {
+									// we should never get here
+									// because it's already tested that the OFF state is possible
+									wlsMessagef(ctx,_T("Program inconsistency found"));
+									return FALSE;
+								}
+							}							
+						} else {
+							// can't set OFF state
+							// let's try ON state
+							if (setpos != g.newset) backup();
+							if (proceed(cell, ON, TRUE))
+							{
+								change = TRUE;
+							} else {
+								// can't set neither ON nor OFF state
+								wlsMessagef(ctx,_T("Inconsistent UNK state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
+								return FALSE;
+							}
+						}
+					}
+				}
+			}
+		}
+	} while (change);
+
+	g.newset = g.settable;
+	g.nextset = g.settable;
+
+	return TRUE;
+}
+
+#endif
+
 static void draw_gen_counter(struct wcontext *ctx)
 {
 	TCHAR buf[80];
@@ -878,6 +1234,8 @@ static void draw_gen_counter(struct wcontext *ctx)
 	SetWindowText(ctx->hwndGen,buf);
 }
 
+#ifdef JS
+
 void showcount(int c)
 {
 	TCHAR buf[80];
@@ -890,6 +1248,28 @@ void showcount(int c)
 	SetWindowText(gctx->hwndFrame,buf);
 }
 
+#else
+
+void showcount(void)
+{
+	TCHAR buf[80];
+	struct wcontext *ctx = gctx;
+	static int tot=0;
+
+	if (g.viewcount<0) {
+		tot=0;
+	} else {
+		tot += g.viewcount;
+	}
+	g.viewcount = 0;
+
+	StringCbPrintf(buf,sizeof(buf),WLS_APPNAME _T(" [%d]"),tot);
+	SetWindowText(ctx->hwndFrame,buf);
+}
+
+#endif
+
+#ifdef JS
 
 void printgen(int gen)
 {
@@ -919,8 +1299,122 @@ void printgen(int gen)
 	InvalidateRect(gctx->hwndMain,NULL,TRUE);
 }
 
+#else
+
+// possible values for type:
+// 0 - nothing happens
+// 1 - store the generation as a solution
+// 2 - copy solution
+
+void printgen(void)
+{
+	int i,j,g1;
+	CELL *cell;
+	struct wcontext *ctx = gctx;
+
+	// copy dbell's format back into mine
+	for(g1=0;g1<g.genmax;g1++) {
+		for(i=0;i<g.colmax;i++){
+			for(j=0;j<g.rowmax;j++) {
+
+				cell=findcell(j+1,i+1,g1);
+
+				switch (cell->state) {
+				case ON:
+					g.currfield[g1][i][j] = 1;
+					break;
+				case OFF:
+					g.currfield[g1][i][j] = 0;
+					break;
+				case UNK:
+					g.currfield[g1][i][j] = g.origfield[g1][i][j];
+				}
+			}
+		}
+	}
+
+	InvalidateRect(ctx->hwndMain,NULL,FALSE);
+}
+
+#endif
+
+#ifndef JS
+
+static void do_combine(void)
+{
+	int i,j,g1;
+	CELL *cell;
+
+	if (g.combining)
+	{
+		for(g1=0;g1<g.genmax;g1++) {
+			for(i=0;i<g.colmax;i++){
+				for(j=0;j<g.rowmax;j++) {
+					cell=findcell(j+1,i+1,g1);
+					if ((cell->combined != UNK) && (cell->combined != cell->state))
+					{
+						--g.combinedcells;
+						cell->combined = UNK;
+					}
+				}
+			}
+		}
+	} else {
+		g.combining = TRUE;
+		g.combinedcells = 0;
+		for(g1=0;g1<g.genmax;g1++) {
+			for(i=0;i<g.colmax;i++){
+				for(j=0;j<g.rowmax;j++) {					
+					cell=findcell(j+1,i+1,g1);
+					if ((g.origfield[g1][i][j] > 1) && ((cell->state == ON) || (cell->state == OFF)))
+					{
+						++g.combinedcells;
+						cell->combined = cell->state;
+					} else {
+						cell->combined = UNK;
+					}
+				}
+			}
+		}
+	}
+	g.setcombinedcells = g.combinedcells;
+	g.differentcombinedcells = 0;
+}
+
+static void show_combine(struct wcontext *ctx)
+{
+	int i,j,g1;
+	CELL *cell;
+
+	if (g.combinedcells > 0)
+	{
+		for(g1=0;g1<g.genmax;g1++) {
+			for(i=0;i<g.colmax;i++){
+				for(j=0;j<g.rowmax;j++) {					
+					cell=findcell(j+1,i+1,g1);
+					switch(cell->combined) {
+					case ON:
+						g.currfield[g1][i][j] = 1;
+						break;
+					case OFF:
+						g.currfield[g1][i][j] = 0;
+						break;
+					case UNK:
+						g.currfield[g1][i][j] = g.origfield[g1][i][j];
+					}
+				}
+			}
+		}
+	}
+
+	InvalidateRect(ctx->hwndMain,NULL,FALSE);
+}
+
+#endif
 
 static void pause_search(struct wcontext *ctx);  // forward decl
+
+#ifdef JS
 
 static DWORD WINAPI search_thread(LPVOID foo)
 {
@@ -1950,634 +2444,6 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 
 #else // KS:
 
-// Set/reset unknown/unchecked
-static void ChangeChecking(struct wcontext *ctx, HDC hDC, int x, int y, int allgens, int set)
-{
-	POINT *pts;
-	int numpts,i,j;
-	int s1, s2;
-	int g1, g2;
-
-	if (set)
-	{
-		s1 = 2;
-		s2 = 3;
-	} else {
-		s1 = 3;
-		s2 = 2;
-	}
-
-	if (allgens)
-	{
-		g1 = 0;
-		g2 = GENMAX - 1;
-	}
-	else
-	{
-		g1 = g.curgen;
-		g2 = g.curgen;
-	}
-
-	pts=GetSymmetricCells(x,y,&numpts);
-
-	for(j=g1;j<=g2;j++)
-	{
-		if (g.currfield[j][x][y] == s1)
-		{
-			g.currfield[j][x][y] = s2;
-		}
-	}
-	DrawCell(ctx,hDC,x,y);
-
-	for(i=0;i<numpts;i++) {
-		for(j=g1;j<=g2;j++)
-		{
-			if (g.currfield[j][pts[i].x][pts[i].y] == s1)
-			{
-				g.currfield[j][pts[i].x][pts[i].y] = s2;
-			}
-		}
-		DrawCell(ctx,hDC,pts[i].x,pts[i].y);
-	}
-}
-
-// set and paint all cells symmetrical to the given cell
-// (including the given cell)
-static void Symmetricalize(struct wcontext *ctx, HDC hDC,int x,int y,int allgens)
-{
-	POINT *pts;
-	int numpts,i,j;
-
-	pts=GetSymmetricCells(x,y,&numpts);
-
-	if(allgens) {
-		for(j=0;j<GENMAX;j++) 
-		{
-			g.currfield[j][x][y]=g.currfield[g.curgen][x][y];
-		}
-	}
-	DrawCell(ctx,hDC,x,y);
-
-	for(i=0;i<numpts;i++) {
-		g.currfield[g.curgen][pts[i].x][pts[i].y]=g.currfield[g.curgen][x][y];
-		if(allgens) {
-			for(j=0;j<GENMAX;j++)
-			{
-				g.currfield[j][pts[i].x][pts[i].y]=g.currfield[g.curgen][x][y];
-			}
-		}
-		DrawCell(ctx,hDC,pts[i].x,pts[i].y);
-	}
-}
-
-
-static void InvertCells(struct wcontext *ctx, HDC hDC1)
-{
-	RECT r;
-	HDC hDC;
-
-	if(ctx->endcell.x>=ctx->startcell.x) {
-		r.left= ctx->startcell.x*ctx->cellwidth;
-		r.right= (ctx->endcell.x+1)*ctx->cellwidth;
-	}
-	else {
-		r.left= ctx->endcell.x*ctx->cellwidth;
-		r.right=(ctx->startcell.x+1)*ctx->cellwidth;
-	}
-
-	if(ctx->endcell.y>=ctx->startcell.y) {
-		r.top= ctx->startcell.y*ctx->cellheight;
-		r.bottom= (ctx->endcell.y+1)*ctx->cellheight;
-	}
-	else {
-		r.top=ctx->endcell.y*ctx->cellheight;
-		r.bottom=(ctx->startcell.y+1)*ctx->cellheight;
-	}
-
-
-	if(hDC1)  hDC=hDC1;
-	else      hDC=GetDC(ctx->hwndMain);
-
-	InvertRect(hDC,&r);
-
-	if(!hDC1) ReleaseDC(ctx->hwndMain,hDC);
-
-}
-
-
-static void SelectOff(struct wcontext *ctx, HDC hDC)
-{
-	if(ctx->selectstate<1) return;
-
-	if(ctx->selectstate) {
-		if(ctx->inverted) {
-			InvertCells(ctx,hDC);
-			ctx->inverted=0;
-		}
-		ctx->selectstate=0;
-	}
-}
-
-
-static void DrawWindow(struct wcontext *ctx, HDC hDC)
-{
-	int i,j;
-
-	for(i=0;i<g.colmax;i++) {
-		for(j=0;j<g.rowmax;j++) {
-			DrawCell(ctx,hDC,i,j);
-		}
-	}
-	DrawGuides(ctx,hDC);
-
-	if(ctx->selectstate>0) {
-		InvertCells(ctx,hDC);
-	}
-}
-
-static void PaintWindow(struct wcontext *ctx, HWND hWnd)
-{
-	HDC hdc;
-	HPEN hOldPen;
-	HBRUSH hOldBrush;
-	PAINTSTRUCT ps;
-
-	hdc= BeginPaint(hWnd,&ps);
-	hOldPen= SelectObject(hdc, GetStockObject(BLACK_PEN));
-	hOldBrush=SelectObject(hdc,GetStockObject(LTGRAY_BRUSH));
-
-	DrawWindow(ctx,hdc);
-
-	SelectObject(hdc,hOldPen);
-	SelectObject(hdc,hOldBrush);
-	EndPaint(hWnd,&ps);
-}
-
-
-static void FixFrozenCells(void)
-{
-	int x,y,z;
-
-	for(x=0;x<COLMAX;x++) {
-		for(y=0;y<ROWMAX;y++) {
-			for(z=0;z<GENMAX;z++) {
-				if(z!=g.curgen) {
-					if(g.currfield[g.curgen][x][y]==4) {
-						g.currfield[z][x][y]=4;
-					}
-					else {  // current not frozen
-						if(g.currfield[z][x][y]==4)
-							g.currfield[z][x][y]=2;
-					}
-				}
-			}
-		}
-	}
-}
-
-
-//returns 0 if processed
-static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wParam)
-{
-	int x,y;
-	int i,j;
-	HDC hDC;
-	int vkey;
-	int tmp;
-	int lastval;
-	int allgens=0;
-	int newval;
-
-	newval = -1;
-
-	xp+=(WORD)ctx->scrollpos.x;
-	yp+=(WORD)ctx->scrollpos.y;
-
-	x=xp/ctx->cellwidth;   // + scroll offset
-	y=yp/ctx->cellheight;  // + scroll offset
-
-	if(x<0 || x>=g.colmax) return 1;
-	if(y<0 || y>=g.rowmax) return 1;
-
-
-	lastval= g.currfield[g.curgen][x][y];
-//	if(lastval==4) allgens=1;       // previously frozen
-
-
-	switch(msg) {
-
-	case WM_MOUSEMOVE:
-		if(ctx->selectstate!=1) return 1;
-
-		if(x==ctx->endcell.x && y==ctx->endcell.y) {   // cursor hasn't moved to a new cell
-			return 0;
-		}
-
-		if(x==ctx->startcell.x && y==ctx->startcell.y) {  // cursor over starting cell
-			hDC=GetDC(ctx->hwndMain);
-			InvertCells(ctx,hDC); // turn off
-			ReleaseDC(ctx->hwndMain,hDC);
-
-			ctx->inverted=0;
-			ctx->endcell.x=x;
-			ctx->endcell.y=y;
-			return 0;
-		}
-
-
-		// else we're at a different cell
-			
-		hDC=GetDC(ctx->hwndMain);
-		if(ctx->inverted) InvertCells(ctx,hDC);    // turn off
-		ctx->inverted=0;
-
-		ctx->endcell.x=x;
-		ctx->endcell.y=y;
-
-		InvertCells(ctx,hDC);    // turn back on
-
-		// record the select region
-		if(ctx->startcell.x<=ctx->endcell.x) {
-			ctx->selectrect.left= ctx->startcell.x;
-			ctx->selectrect.right=ctx->endcell.x;
-		}
-		else {
-			ctx->selectrect.left=ctx->endcell.x;
-			ctx->selectrect.right=ctx->startcell.x;
-		}
-		if(ctx->startcell.y<=ctx->endcell.y) {
-			ctx->selectrect.top= ctx->startcell.y;
-			ctx->selectrect.bottom=ctx->endcell.y;
-		}
-		else {
-			ctx->selectrect.top=ctx->endcell.y;
-			ctx->selectrect.bottom=ctx->startcell.y;
-		}
-
-
-
-		ctx->inverted=1;
-		ReleaseDC(ctx->hwndMain,hDC);
-		
-		return 0;
-
-	case WM_LBUTTONDOWN:
-		if(ctx->selectstate>0) {
-			SelectOff(ctx,NULL);
-		}
-
-		ctx->selectstate=1;
-		ctx->startcell.x=x;
-		ctx->startcell.y=y;
-		ctx->endcell.x=x;
-		ctx->endcell.y=y;
-		return 0;
-		
-
-	case WM_LBUTTONUP:
-		if(wParam & MK_SHIFT) allgens=1;
-		if(x==ctx->startcell.x && y==ctx->startcell.y) {
-			ctx->selectstate=0;
-			if(g.currfield[g.curgen][x][y]==1) newval=2; //g.currfield[g.curgen][x][y]=2;
-			else newval=1;  //g.currfield[g.curgen][x][y]=1;
-			//Symmetricalize(hDC,x,y,allgens);
-		}
-		else if(ctx->selectstate==1) {
-			// selecting an area
-			ctx->selectstate=2;
-			return 0;
-
-		}
-		break;
-
-	case WM_RBUTTONDOWN:     // toggle off/unchecked
-		if(wParam & MK_SHIFT) allgens=1;
-		if(g.currfield[g.curgen][x][y]==0) newval=2; //currfield[g.curgen][x][y]=2;
-		else newval=0; //currfield[g.curgen][x][y]=0;
-		break;
-
-
-	case WM_CHAR:
-		vkey=(int)wParam;
-
-		if(vkey=='C' || vkey=='X' || vkey=='A' || vkey=='S' || vkey=='F' || vkey=='I' || vkey=='O')
-			allgens=1;
-
-		if(vkey=='C' || vkey=='c') {
-			newval=2;
-		}
-		else if(vkey=='X' || vkey=='x') {
-			newval=3;
-		}
-		else if(vkey=='A' || vkey=='a') {
-			newval=0;
-		}
-		else if(vkey=='S' || vkey=='s') {
-			newval=1;
-		}
-		else if(vkey=='F' || vkey=='f') {
-			newval=4;
-			allgens=1;
-		} else if(vkey=='I' || vkey=='i') {
-			newval=11;
-		} else if(vkey=='O' || vkey=='o') {
-			newval=10;
-		} else {
-			return 1;
-		}
-
-		break;
-
-	default:
-		return 1;
-	}
-
-	hDC=GetDC(ctx->hwndMain);
-
-	tmp=ctx->selectstate;
-
-	SelectOff(ctx,hDC);
-
-	if(ctx->searchstate == 0) {
-		if(tmp==2) {
-			if(newval>=0) {
-				for(i=ctx->selectrect.left;i<=ctx->selectrect.right;i++) {
-					for(j=ctx->selectrect.top;j<=ctx->selectrect.bottom;j++) {
-						if (newval < 10)
-						{
-							g.currfield[g.curgen][i][j]=newval;
-							Symmetricalize(ctx,hDC,i,j,allgens);
-						} else {
-							ChangeChecking(ctx,hDC,i,j,allgens,newval == 10);
-						}
-					}
-				}
-			}
-		} else {
-			if(newval>=0) 
-			{
-				if (newval < 10)
-				{
-					g.currfield[g.curgen][x][y]=newval;
-					Symmetricalize(ctx,hDC,x,y,allgens);
-				} else {
-					ChangeChecking(ctx,hDC,x,y,allgens,newval == 10);
-				}
-			}
-		}
-	}
-
-	FixFrozenCells();
-
-	DrawGuides(ctx,hDC);
-
-	ReleaseDC(ctx->hwndMain,hDC);
-	return 0;
-}
-
-// copy my format to dbells format...
-// ... and make a backup of the current state (KAS)
-BOOL set_initial_cells(void)
-{
-	CELL *cell;
-	CELL **setpos;
-	BOOL change;
-	int i,j,g1;
-	struct wcontext *ctx = gctx;
-
-	g.newset = g.settable;
-	g.nextset = g.settable;
-
-	for(g1=0;g1<g.genmax;g1++) {
-		for(i=0;i<g.colmax;i++) {
-			for(j=0;j<g.rowmax;j++) {
-
-				g.origfield[g1][i][j] = g.currfield[g1][i][j];
-
-				switch(g.currfield[g1][i][j]) {
-				case 0:  // forced off
-					if(!proceed(findcell(j+1,i+1,g1),OFF,FALSE)) {
-						wlsMessagef(ctx,_T("Inconsistent OFF state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
-						return FALSE;
-					}
-					break;
-				case 1:  // forced on
-					if(!proceed(findcell(j+1,i+1,g1),ON,FALSE)) {
-						wlsMessagef(ctx,_T("Inconsistent ON state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
-						return FALSE;
-					}
-					break;
-				case 3: // unchecked
-					cell = findcell(j+1,i+1,g1);
-					cell->unchecked = TRUE;
-					break;
-				case 4: // frozen cells
-					freezecell(j+1, i+1);
-					break;
-				}
-
-			}
-		}
-	}
-
-	// now let's try all UNK cells for ON and OFF state
-	// set those which allow only one
-
-	setpos = g.newset;
-	do {
-		change = FALSE;
-		for(g1=0;g1<g.genmax;g1++) {
-			for(i=0;i<g.colmax;i++) {
-				for(j=0;j<g.rowmax;j++) {
-					cell = findcell(j+1,i+1,g1);
-					if (cell->active && (cell->state == UNK)) {
-						if (proceed(cell, OFF, TRUE))
-						{
-							backup();
-							if (proceed(cell, ON, TRUE))
-							{
-								backup();
-							} else {
-								// OFF possible, ON impossible
-								if (setpos != g.newset) backup();
-								if (proceed(cell, OFF, TRUE))
-								{
-									change = TRUE;
-								} else {
-									// we should never get here
-									// because it's already tested that the OFF state is possible
-									wlsMessagef(ctx,_T("Program inconsistency found"));
-									return FALSE;
-								}
-							}							
-						} else {
-							// can't set OFF state
-							// let's try ON state
-							if (setpos != g.newset) backup();
-							if (proceed(cell, ON, TRUE))
-							{
-								change = TRUE;
-							} else {
-								// can't set neither ON nor OFF state
-								wlsMessagef(ctx,_T("Inconsistent UNK state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
-								return FALSE;
-							}
-						}
-					}
-				}
-			}
-		}
-	} while (change);
-
-	g.newset = g.settable;
-	g.nextset = g.settable;
-
-	return TRUE;
-}
-
-static void draw_gen_counter(struct wcontext *ctx)
-{
-	TCHAR buf[80];
-	SCROLLINFO si;
-
-	si.cbSize=sizeof(SCROLLINFO);
-	si.fMask=SIF_ALL;
-	si.nMin=0;
-	si.nMax=g.genmax-1;
-	si.nPage=1;
-	si.nPos=g.curgen;
-	si.nTrackPos=0;
-
-	SetScrollInfo(ctx->hwndGenScroll,SB_CTL,&si,TRUE);
-
-	StringCbPrintf(buf,sizeof(buf),_T("%d"),g.curgen);
-	SetWindowText(ctx->hwndGen,buf);
-}
-
-void showcount(void)
-{
-	TCHAR buf[80];
-	struct wcontext *ctx = gctx;
-	static int tot=0;
-
-	if (g.viewcount<0) {
-		tot=0;
-	} else {
-		tot += g.viewcount;
-	}
-	g.viewcount = 0;
-
-	StringCbPrintf(buf,sizeof(buf),WLS_APPNAME _T(" [%d]"),tot);
-	SetWindowText(ctx->hwndFrame,buf);
-}
-
-
-// possible values for type:
-// 0 - nothing happens
-// 1 - store the generation as a solution
-// 2 - copy solution
-
-void printgen(void)
-{
-	int i,j,g1;
-	CELL *cell;
-	struct wcontext *ctx = gctx;
-
-	// copy dbell's format back into mine
-	for(g1=0;g1<g.genmax;g1++) {
-		for(i=0;i<g.colmax;i++){
-			for(j=0;j<g.rowmax;j++) {
-
-				cell=findcell(j+1,i+1,g1);
-
-				switch (cell->state) {
-				case ON:
-					g.currfield[g1][i][j] = 1;
-					break;
-				case OFF:
-					g.currfield[g1][i][j] = 0;
-					break;
-				case UNK:
-					g.currfield[g1][i][j] = g.origfield[g1][i][j];
-				}
-			}
-		}
-	}
-
-	InvalidateRect(ctx->hwndMain,NULL,FALSE);
-}
-
-static void do_combine(void)
-{
-	int i,j,g1;
-	CELL *cell;
-
-	if (g.combining)
-	{
-		for(g1=0;g1<g.genmax;g1++) {
-			for(i=0;i<g.colmax;i++){
-				for(j=0;j<g.rowmax;j++) {
-					cell=findcell(j+1,i+1,g1);
-					if ((cell->combined != UNK) && (cell->combined != cell->state))
-					{
-						--g.combinedcells;
-						cell->combined = UNK;
-					}
-				}
-			}
-		}
-	} else {
-		g.combining = TRUE;
-		g.combinedcells = 0;
-		for(g1=0;g1<g.genmax;g1++) {
-			for(i=0;i<g.colmax;i++){
-				for(j=0;j<g.rowmax;j++) {					
-					cell=findcell(j+1,i+1,g1);
-					if ((g.origfield[g1][i][j] > 1) && ((cell->state == ON) || (cell->state == OFF)))
-					{
-						++g.combinedcells;
-						cell->combined = cell->state;
-					} else {
-						cell->combined = UNK;
-					}
-				}
-			}
-		}
-	}
-	g.setcombinedcells = g.combinedcells;
-	g.differentcombinedcells = 0;
-}
-
-static void show_combine(struct wcontext *ctx)
-{
-	int i,j,g1;
-	CELL *cell;
-
-	if (g.combinedcells > 0)
-	{
-		for(g1=0;g1<g.genmax;g1++) {
-			for(i=0;i<g.colmax;i++){
-				for(j=0;j<g.rowmax;j++) {					
-					cell=findcell(j+1,i+1,g1);
-					switch(cell->combined) {
-					case ON:
-						g.currfield[g1][i][j] = 1;
-						break;
-					case OFF:
-						g.currfield[g1][i][j] = 0;
-						break;
-					case UNK:
-						g.currfield[g1][i][j] = g.origfield[g1][i][j];
-					}
-				}
-			}
-		}
-	}
-
-	InvalidateRect(ctx->hwndMain,NULL,FALSE);
-}
-
-static void pause_search(struct wcontext *ctx);  // forward decl
 
 static DWORD WINAPI search_thread(LPVOID foo)
 {
