@@ -73,167 +73,10 @@ BEGIN
 END
 
 
-#ifdef APSTUDIO_INVOKED
-/////////////////////////////////////////////////////////////////////////////
-//
-// TEXTINCLUDE
-//
-
-1 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "resource.h\0"
-END
-
-2 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "#include ""afxres.h""\r\n"
-    "\0"
-END
-
-3 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "\r\n"
-    "\0"
-END
-
-#endif    // APSTUDIO_INVOKED
-
-
 /////////////////////////////////////////////////////////////////////////////
 //
 // Dialog
 //
-
-DLGSYMMETRY DIALOGEX 0, 0, 310, 178
-STYLE DS_SETFONT | DS_FIXEDSYS | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Symmetry"
-FONT 8, "MS Shell Dlg"
-BEGIN
-    CONTROL         "None",IDC_SYM0,"Button",BS_AUTORADIOBUTTON | WS_GROUP,
-                    45,18,33,10
-    CONTROL         "Mirror-X",IDC_SYM1,"Button",BS_AUTORADIOBUTTON,45,50,40,
-                    10
-    CONTROL         "Mirror-Y",IDC_SYM2,"Button",BS_AUTORADIOBUTTON,45,83,40,
-                    10
-    CONTROL         "Diagonal-Forward",IDC_SYM3,"Button",BS_AUTORADIOBUTTON,
-                    45,116,71,10
-    CONTROL         "Diagonal-Backward",IDC_SYM4,"Button",BS_AUTORADIOBUTTON,
-                    45,149,78,10
-    CONTROL         "Origin",IDC_SYM5,"Button",BS_AUTORADIOBUTTON,178,17,34,
-                    10
-    CONTROL         "Mirror-Both",IDC_SYM6,"Button",BS_AUTORADIOBUTTON,178,
-                    50,50,10
-    CONTROL         "Diagonal-Both",IDC_SYM7,"Button",BS_AUTORADIOBUTTON,178,
-                    83,61,10
-    CONTROL         "90 degree rotational",IDC_SYM8,"Button",
-                    BS_AUTORADIOBUTTON,178,116,79,10
-    CONTROL         "8-fold",IDC_SYM9,"Button",BS_AUTORADIOBUTTON,178,149,33,
-                    10
-    DEFPUSHBUTTON   "OK",IDOK,253,7,50,14,WS_GROUP
-    PUSHBUTTON      "Cancel",IDCANCEL,253,24,50,14
-    CONTROL         105,IDC_STATIC,"Static",SS_BITMAP,7,7,33,30
-    CONTROL         106,IDC_STATIC,"Static",SS_BITMAP,7,40,33,30
-    CONTROL         107,IDC_STATIC,"Static",SS_BITMAP,7,73,33,30
-    CONTROL         108,IDC_STATIC,"Static",SS_BITMAP,7,106,33,30
-    CONTROL         109,IDC_STATIC,"Static",SS_BITMAP,7,139,33,30
-    CONTROL         110,IDC_STATIC,"Static",SS_BITMAP,140,7,33,30
-    CONTROL         111,IDC_STATIC,"Static",SS_BITMAP,140,40,33,30
-    CONTROL         112,IDC_STATIC,"Static",SS_BITMAP,140,73,33,30
-    CONTROL         113,IDC_STATIC,"Static",SS_BITMAP,140,106,33,30
-    CONTROL         114,IDC_STATIC,"Static",SS_BITMAP,140,139,33,30
-END
-
-DLGABOUT DIALOGEX 0, 0, 186, 70
-STYLE DS_SETFONT | DS_FIXEDSYS | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "About"
-FONT 8, "MS Shell Dlg"
-BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,129,7,50,14
-    LTEXT           "",IDC_ABOUTTEXT,7,7,114,56
-    ICON            "ICONWLS",IDC_STATIC,143,33,20,20,SS_REALSIZEIMAGE
-END
-
-DLGROWS DIALOGEX 0, 0, 186, 55
-STYLE DS_SETFONT | DS_FIXEDSYS | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Rows and Columns"
-FONT 8, "MS Shell Dlg"
-BEGIN
-    LTEXT           "Columns (X)",IDC_STATIC,7,7,38,8
-    EDITTEXT        IDC_COLUMNS,57,7,40,14,ES_AUTOHSCROLL
-    LTEXT           "Rows (Y)",IDC_STATIC,7,24,30,8
-    EDITTEXT        IDC_ROWS,57,24,40,14,ES_AUTOHSCROLL
-    DEFPUSHBUTTON   "OK",IDOK,129,7,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,129,24,50,14
-END
-
-DLGTRANSLATE DIALOGEX 0, 0, 253, 190
-STYLE DS_SETFONT | DS_FIXEDSYS | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Translation"
-FONT 8, "MS Shell Dlg"
-BEGIN
-    EDITTEXT        IDC_TRANSX,25,7,40,14,ES_AUTOHSCROLL | WS_GROUP
-    EDITTEXT        IDC_TRANSY,25,26,40,14,ES_AUTOHSCROLL
-    CONTROL         "None",IDC_TRANS0,"Button",BS_AUTORADIOBUTTON | WS_GROUP | 
-                    WS_TABSTOP,19,67,33,10
-    CONTROL         "Rotate 90",IDC_TRANS1,"Button",BS_AUTORADIOBUTTON,19,81,
-                    47,10
-    CONTROL         "Rotate 180",IDC_TRANS2,"Button",BS_AUTORADIOBUTTON,19,
-                    95,51,10
-    CONTROL         "Rotate 270",IDC_TRANS3,"Button",BS_AUTORADIOBUTTON,19,
-                    109,51,10
-    CONTROL         "Flip horizontal",IDC_TRANS4,"Button",BS_AUTORADIOBUTTON,
-                    19,123,59,10
-    CONTROL         "Flip bkwd diag",IDC_TRANS5,"Button",BS_AUTORADIOBUTTON,
-                    19,137,61,10
-    CONTROL         "Flip vertical",IDC_TRANS6,"Button",BS_AUTORADIOBUTTON,
-                    19,151,51,10
-    CONTROL         "Flip fwd diag",IDC_TRANS7,"Button",BS_AUTORADIOBUTTON,
-                    19,165,55,10
-    DEFPUSHBUTTON   "OK",IDOK,196,7,50,14,WS_GROUP
-    PUSHBUTTON      "Cancel",IDCANCEL,196,24,50,14
-    LTEXT           "X",IDC_STATIC,7,10,8,8
-    LTEXT           "Y",IDC_STATIC,7,29,8,8
-    LTEXT           "Any",IDC_STATIC,95,67,13,8
-    CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDFRAME,87,59,159,124
-    LTEXT           "Oscillators",IDC_STATIC,95,48,33,8
-    LTEXT           "Spaceships",IDC_STATIC,160,48,38,8
-    LTEXT           "4,8,12...",IDC_STATIC,95,81,27,8
-    LTEXT           "2,4,6...",IDC_STATIC,95,95,23,8
-    LTEXT           "4,8,12...",IDC_STATIC,95,109,27,8
-    LTEXT           "2,4,6... (orthogonal)",IDC_STATIC,160,123,62,8
-    LTEXT           "2,4,6...",IDC_STATIC,95,123,23,8
-    LTEXT           "2,4,6...",IDC_STATIC,95,137,23,8
-    LTEXT           "2,4,6...",IDC_STATIC,95,151,23,8
-    LTEXT           "2,4,6...",IDC_STATIC,95,165,23,8
-    LTEXT           "Any",IDC_STATIC,160,67,13,8
-    LTEXT           "None",IDC_STATIC,160,81,18,8
-    LTEXT           "None",IDC_STATIC,160,95,18,8
-    LTEXT           "None",IDC_STATIC,160,109,18,8
-    LTEXT           "4,6,8... (diagonal)",IDC_STATIC,160,137,56,8
-    LTEXT           "2,4,6... (orthogonal)",IDC_STATIC,160,151,62,8
-    LTEXT           "4,6,8... (diagonal)",IDC_STATIC,160,165,56,8
-    CONTROL         116,IDC_STATIC,"Static",SS_BITMAP,7,67,9,9
-    CONTROL         118,IDC_STATIC,"Static",SS_BITMAP,7,81,9,9
-    CONTROL         119,IDC_STATIC,"Static",SS_BITMAP,7,95,9,9
-    CONTROL         120,IDC_STATIC,"Static",SS_BITMAP,7,110,9,9
-    CONTROL         121,IDC_STATIC,"Static",SS_BITMAP,7,123,9,9
-    CONTROL         122,IDC_STATIC,"Static",SS_BITMAP,7,137,9,9
-    CONTROL         123,IDC_STATIC,"Static",SS_BITMAP,7,151,9,9
-    CONTROL         124,IDC_STATIC,"Static",SS_BITMAP,7,166,9,9
-    LTEXT           "cells right",IDC_STATIC,69,10,30,8
-    LTEXT           "cells down",IDC_STATIC,69,28,34,8
-END
-
-DLGPERIOD DIALOGEX 0, 0, 186, 47
-STYLE DS_SETFONT | DS_FIXEDSYS | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Period"
-FONT 8, "MS Shell Dlg"
-BEGIN
-    LTEXT           "Static",IDC_PERIODTEXT,7,7,117,15
-    EDITTEXT        IDC_PERIOD1,7,26,40,14,ES_AUTOHSCROLL
-    DEFPUSHBUTTON   "OK",IDOK,129,7,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,129,24,50,14
-END
 
 DLGSETTINGS DIALOGEX 0, 0, 310, 114
 STYLE DS_SETFONT | DS_FIXEDSYS | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
@@ -312,41 +155,6 @@ BEGIN
     CONTROL         "Fast symmetry",IDC_FASTSYM,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,208,137,60,10
 END
-
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Bitmap
-//
-
-IDB_SYM0                BITMAP  DISCARDABLE     "sym0.bmp"
-IDB_SYM1                BITMAP  DISCARDABLE     "sym1.bmp"
-IDB_SYM2                BITMAP  DISCARDABLE     "sym2.bmp"
-IDB_SYM3                BITMAP  DISCARDABLE     "sym3.bmp"
-IDB_SYM4                BITMAP  DISCARDABLE     "sym4.bmp"
-IDB_SYM5                BITMAP  DISCARDABLE     "sym5.bmp"
-IDB_SYM6                BITMAP  DISCARDABLE     "sym6.bmp"
-IDB_SYM7                BITMAP  DISCARDABLE     "sym7.bmp"
-IDB_SYM8                BITMAP  DISCARDABLE     "sym8.bmp"
-IDB_SYM9                BITMAP  DISCARDABLE     "sym9.bmp"
-IDB_TRANS0              BITMAP  DISCARDABLE     "trans0.bmp"
-IDB_TRANS1              BITMAP  DISCARDABLE     "trans1.bmp"
-IDB_TRANS2              BITMAP  DISCARDABLE     "trans2.bmp"
-IDB_TRANS3              BITMAP  DISCARDABLE     "trans3.bmp"
-IDB_TRANS4              BITMAP  DISCARDABLE     "trans4.bmp"
-IDB_TRANS5              BITMAP  DISCARDABLE     "trans5.bmp"
-IDB_TRANS6              BITMAP  DISCARDABLE     "trans6.bmp"
-IDB_TRANS7              BITMAP  DISCARDABLE     "trans7.bmp"
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Icon
-//
-
-// Icon with lowest ID value placed first to ensure application icon
-// remains consistent on all systems.
-ICONWLS                 ICON    DISCARDABLE     "wls.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -476,37 +284,175 @@ BEGIN
     END
 END
 
-
-#ifdef APSTUDIO_INVOKED
-/////////////////////////////////////////////////////////////////////////////
-//
-// TEXTINCLUDE
-//
-
-1 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "resource.h\0"
-END
-
-2 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "#include ""afxres.h""\r\n"
-    "\0"
-END
-
-3 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "\r\n"
-    "\0"
-END
-
-#endif    // APSTUDIO_INVOKED
-
-
 /////////////////////////////////////////////////////////////////////////////
 //
 // Dialog
 //
+
+DLGSETTINGS DIALOGEX 0, 0, 301, 110
+STYLE DS_SETFONT | DS_FIXEDSYS | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Output settings"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    CONTROL         "Stop after each calculation",IDC_STOPONSTEP,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,10,101,10
+    CONTROL         "Stop when an object is found",IDC_STOPONFOUND,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,26,108,10
+    CONTROL         "Save found objects to file:",IDC_OUTPUTFILEYN,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,42,98,10
+    EDITTEXT        IDC_OUTPUTFILE,106,40,56,14,ES_AUTOHSCROLL
+    LTEXT           "Update screen every",IDC_STATIC,7,59,67,8
+    EDITTEXT        IDC_VIEWFREQ,106,56,56,14,ES_AUTOHSCROLL
+    LTEXT           "calculations",IDC_STATIC,170,59,38,8
+    LTEXT           "Dump to file:",IDC_STATIC,7,75,40,8
+    EDITTEXT        IDC_DUMPFILE,106,72,56,14,ES_AUTOHSCROLL
+    LTEXT           "every",IDC_STATIC,170,75,18,8
+    EDITTEXT        IDC_DUMPFREQ,193,72,56,14,ES_AUTOHSCROLL
+    LTEXT           "calculations",IDC_STATIC,255,75,38,8
+    LTEXT           "Save partial results every",IDC_STATIC,7,91,80,8
+    EDITTEXT        IDC_OUTPUTCOLS,106,88,56,14,ES_AUTOHSCROLL
+    LTEXT           "columns",IDC_STATIC,170,91,27,8
+    DEFPUSHBUTTON   "OK",IDOK,243,8,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,243,24,50,14
+    CONTROL         "All generations",IDC_OUTPUTALLGEN,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,170,42,62,10
+END
+
+DLGSEARCHSETTINGS DIALOGEX 0, 0, 365, 222
+STYLE DS_SETFONT | DS_FIXEDSYS | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Search settings"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    RTEXT           "Lif&e rules:",IDC_STATIC,7,9,108,8
+    EDITTEXT        IDC_RULESTRING,120,7,60,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "S&tandard life",IDC_CONWAY,185,7,50,14
+    LTEXT           "Force an ON cell in &column",IDC_STATIC,7,27,108,8,0,
+                    WS_EX_RIGHT
+    EDITTEXT        IDC_USECOL,120,24,60,14,ES_AUTOHSCROLL
+    LTEXT           "Force an ON cell in &row",IDC_STATIC,7,43,108,8,0,
+                    WS_EX_RIGHT
+    EDITTEXT        IDC_USEROW,120,40,60,14,ES_AUTOHSCROLL
+    LTEXT           "&Limit ON cells in generation 0 to:",IDC_STATIC,7,59,
+                    108,8,0,WS_EX_RIGHT
+    EDITTEXT        IDC_MAXCOUNT,120,56,60,14,ES_AUTOHSCROLL
+    LTEXT           "Limit ON cells in each col&umn to:",IDC_STATIC,7,75,108,
+                    8,0,WS_EX_RIGHT
+    EDITTEXT        IDC_COLCELLS,120,72,60,14,ES_AUTOHSCROLL
+    LTEXT           "Limit &width of each column to:",IDC_STATIC,7,91,108,8,
+                    0,WS_EX_RIGHT
+    EDITTEXT        IDC_COLWIDTH,120,88,60,14,ES_AUTOHSCROLL
+    LTEXT           "ON cells must be with&in\r\nof ON cells in previous columns",
+                    IDC_STATIC,7,102,108,19,0,WS_EX_RIGHT
+    EDITTEXT        IDC_NEARCOLS,120,104,60,14,ES_AUTOHSCROLL
+    CONTROL         "Also find &subperiods",IDC_ALLOBJECTS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,138,79,10
+    CONTROL         "Find &parents only",IDC_PARENT,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,7,154,69,10
+    CONTROL         "Sort to try all &gens first",IDC_ORDERGENS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,185,26,85,10
+    CONTROL         "&Diagonal sort order",IDC_DIAGSORT,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,185,42,76,10
+    CONTROL         "&Knightship sort order",IDC_KNIGHTSORT,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,185,58,80,10
+    CONTROL         "S&ort to find wide objects",IDC_ORDERWIDE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,185,74,91,10
+    CONTROL         "Sort to try &middle columns first",IDC_ORDERMIDDLE,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,185,90,109,10
+    CONTROL         "First try cells &near ON cells in the previous column",
+                    IDC_FOLLOW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,185,122,
+                    173,10
+    CONTROL         "Try ON cells first if ON in an &adjacent generation",
+                    IDC_FOLLOWGENS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,185,
+                    138,167,10
+    CONTROL         "First try cells with the greatest impact",IDC_SMART,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,185,154,131,10
+    LTEXT           "Impact checking window",IDC_STATIC,185,187,108,8,0,
+                    WS_EX_RIGHT
+    EDITTEXT        IDC_SMARTWINDOW,297,184,28,14,ES_AUTOHSCROLL
+    LTEXT           "Impact checking threshold",IDC_STATIC,185,203,108,8,0,
+                    WS_EX_RIGHT
+    EDITTEXT        IDC_SMARTTHRESHOLD,297,201,28,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,308,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,308,24,50,14
+    EDITTEXT        IDC_SMARTWINDOWSTAT,330,184,28,14,ES_AUTOHSCROLL | 
+                    ES_READONLY
+    EDITTEXT        IDC_SMARTTHRESHOLDSTAT,330,201,28,14,ES_AUTOHSCROLL | 
+                    ES_READONLY
+    CONTROL         "Try ON cells first if they have greater impact",
+                    IDC_SMARTON,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,199,
+                    170,153,10
+    CONTROL         "Combine solutions only",IDC_COMBINE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,170,87,10
+END
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+WLSACCEL ACCELERATORS DISCARDABLE 
+BEGIN
+    ",",            IDC_PREVGEN,            ASCII,  NOINVERT
+    ".",            IDC_NEXTGEN,            ASCII,  NOINVERT
+    "B",            IDC_SEARCHBACKUP,       VIRTKEY, NOINVERT
+    "C",            IDC_EDITCOPY,           VIRTKEY, CONTROL, NOINVERT
+    "D",            IDC_SAVEGAME,           VIRTKEY, NOINVERT
+    "E",            ID_FLIP_GEN_V,          VIRTKEY, CONTROL, NOINVERT
+    "E",            ID_FLIP_ALL_V,          VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    "G",            IDC_SEARCHSTART,        VIRTKEY, CONTROL, NOINVERT
+    "H",            ID_FLIP_GEN_H,          VIRTKEY, CONTROL, NOINVERT
+    "H",            ID_FLIP_ALL_H,          VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    "L",            IDC_OPENSTATE,          VIRTKEY, NOINVERT
+    "N",            IDC_NEXTGEN,            VIRTKEY, NOINVERT
+    "O",            IDC_OPENSTATE,          VIRTKEY, CONTROL, NOINVERT
+    "P",            IDC_PREVGEN,            VIRTKEY, NOINVERT
+    "P",            IDC_SEARCHPREPARE,      VIRTKEY, CONTROL, NOINVERT
+    "R",            IDC_SEARCHRESET,        VIRTKEY, CONTROL, NOINVERT
+    "S",            IDC_SAVEGAME,           VIRTKEY, CONTROL, NOINVERT
+    "T",            ID_TRANS_GEN,           VIRTKEY, CONTROL, NOINVERT
+    "T",            ID_TRANS_ALL,           VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_BACK,        ID_HIDESEL,             VIRTKEY, NOINVERT
+    VK_DELETE,      IDC_CLEARGEN,           VIRTKEY, CONTROL, NOINVERT
+    VK_DELETE,      IDC_CLEAR,              VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_DOWN,        IDC_SHIFTGDOWN,         VIRTKEY, SHIFT, NOINVERT
+    VK_DOWN,        IDC_SHIFTADOWN,         VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_ESCAPE,      IDC_SEARCHPAUSE,        VIRTKEY, NOINVERT
+    VK_F2,          IDC_ROWS,               VIRTKEY, NOINVERT
+    VK_F3,          IDC_PERIOD,             VIRTKEY, NOINVERT
+    VK_F4,          IDC_SYMMETRY,           VIRTKEY, NOINVERT
+    VK_F5,          IDC_TRANSLATE,          VIRTKEY, NOINVERT
+    VK_F6,          IDC_SEARCHSETTINGS,     VIRTKEY, NOINVERT
+    VK_F7,          IDC_OUTPUTSETTINGS,     VIRTKEY, NOINVERT
+    VK_LEFT,        IDC_PREVGEN,            VIRTKEY, NOINVERT
+    VK_LEFT,        IDC_SHIFTGLEFT,         VIRTKEY, SHIFT, NOINVERT
+    VK_LEFT,        IDC_SHIFTALEFT,         VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_NEXT,        IDC_NEXTGEN,            VIRTKEY, NOINVERT
+    VK_NEXT,        IDC_SHIFTAFUTURE,       VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_PRIOR,       IDC_PREVGEN,            VIRTKEY, NOINVERT
+    VK_PRIOR,       IDC_SHIFTAPAST,         VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_RIGHT,       IDC_NEXTGEN,            VIRTKEY, NOINVERT
+    VK_RIGHT,       IDC_SHIFTGRIGHT,        VIRTKEY, SHIFT, NOINVERT
+    VK_RIGHT,       IDC_SHIFTARIGHT,        VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_SPACE,       IDC_SEARCHRESUME,       VIRTKEY, NOINVERT
+    VK_UP,          IDC_SHIFTGUP,           VIRTKEY, SHIFT, NOINVERT
+    VK_UP,          IDC_SHIFTAUP,           VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    "Y",            IDC_SEARCHBACKUP2,      VIRTKEY, NOINVERT
+END
+
+
+#endif // JS/KS
 
 DLGSYMMETRY DIALOGEX 0, 0, 310, 178
 STYLE DS_SETFONT | DS_FIXEDSYS | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
@@ -639,104 +585,6 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,129,24,50,14
 END
 
-DLGSETTINGS DIALOGEX 0, 0, 301, 110
-STYLE DS_SETFONT | DS_FIXEDSYS | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Output settings"
-FONT 8, "MS Shell Dlg"
-BEGIN
-    CONTROL         "Stop after each calculation",IDC_STOPONSTEP,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,10,101,10
-    CONTROL         "Stop when an object is found",IDC_STOPONFOUND,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,26,108,10
-    CONTROL         "Save found objects to file:",IDC_OUTPUTFILEYN,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,42,98,10
-    EDITTEXT        IDC_OUTPUTFILE,106,40,56,14,ES_AUTOHSCROLL
-    LTEXT           "Update screen every",IDC_STATIC,7,59,67,8
-    EDITTEXT        IDC_VIEWFREQ,106,56,56,14,ES_AUTOHSCROLL
-    LTEXT           "calculations",IDC_STATIC,170,59,38,8
-    LTEXT           "Dump to file:",IDC_STATIC,7,75,40,8
-    EDITTEXT        IDC_DUMPFILE,106,72,56,14,ES_AUTOHSCROLL
-    LTEXT           "every",IDC_STATIC,170,75,18,8
-    EDITTEXT        IDC_DUMPFREQ,193,72,56,14,ES_AUTOHSCROLL
-    LTEXT           "calculations",IDC_STATIC,255,75,38,8
-    LTEXT           "Save partial results every",IDC_STATIC,7,91,80,8
-    EDITTEXT        IDC_OUTPUTCOLS,106,88,56,14,ES_AUTOHSCROLL
-    LTEXT           "columns",IDC_STATIC,170,91,27,8
-    DEFPUSHBUTTON   "OK",IDOK,243,8,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,243,24,50,14
-    CONTROL         "All generations",IDC_OUTPUTALLGEN,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,170,42,62,10
-END
-
-DLGSEARCHSETTINGS DIALOGEX 0, 0, 365, 222
-STYLE DS_SETFONT | DS_FIXEDSYS | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Search settings"
-FONT 8, "MS Shell Dlg"
-BEGIN
-    RTEXT           "Lif&e rules:",IDC_STATIC,7,9,108,8
-    EDITTEXT        IDC_RULESTRING,120,7,60,14,ES_AUTOHSCROLL
-    PUSHBUTTON      "S&tandard life",IDC_CONWAY,185,7,50,14
-    LTEXT           "Force an ON cell in &column",IDC_STATIC,7,27,108,8,0,
-                    WS_EX_RIGHT
-    EDITTEXT        IDC_USECOL,120,24,60,14,ES_AUTOHSCROLL
-    LTEXT           "Force an ON cell in &row",IDC_STATIC,7,43,108,8,0,
-                    WS_EX_RIGHT
-    EDITTEXT        IDC_USEROW,120,40,60,14,ES_AUTOHSCROLL
-    LTEXT           "&Limit ON cells in generation 0 to:",IDC_STATIC,7,59,
-                    108,8,0,WS_EX_RIGHT
-    EDITTEXT        IDC_MAXCOUNT,120,56,60,14,ES_AUTOHSCROLL
-    LTEXT           "Limit ON cells in each col&umn to:",IDC_STATIC,7,75,108,
-                    8,0,WS_EX_RIGHT
-    EDITTEXT        IDC_COLCELLS,120,72,60,14,ES_AUTOHSCROLL
-    LTEXT           "Limit &width of each column to:",IDC_STATIC,7,91,108,8,
-                    0,WS_EX_RIGHT
-    EDITTEXT        IDC_COLWIDTH,120,88,60,14,ES_AUTOHSCROLL
-    LTEXT           "ON cells must be with&in\r\nof ON cells in previous columns",
-                    IDC_STATIC,7,102,108,19,0,WS_EX_RIGHT
-    EDITTEXT        IDC_NEARCOLS,120,104,60,14,ES_AUTOHSCROLL
-    CONTROL         "Also find &subperiods",IDC_ALLOBJECTS,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,138,79,10
-    CONTROL         "Find &parents only",IDC_PARENT,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,7,154,69,10
-    CONTROL         "Sort to try all &gens first",IDC_ORDERGENS,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,185,26,85,10
-    CONTROL         "&Diagonal sort order",IDC_DIAGSORT,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,185,42,76,10
-    CONTROL         "&Knightship sort order",IDC_KNIGHTSORT,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,185,58,80,10
-    CONTROL         "S&ort to find wide objects",IDC_ORDERWIDE,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,185,74,91,10
-    CONTROL         "Sort to try &middle columns first",IDC_ORDERMIDDLE,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,185,90,109,10
-    CONTROL         "First try cells &near ON cells in the previous column",
-                    IDC_FOLLOW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,185,122,
-                    173,10
-    CONTROL         "Try ON cells first if ON in an &adjacent generation",
-                    IDC_FOLLOWGENS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,185,
-                    138,167,10
-    CONTROL         "First try cells with the greatest impact",IDC_SMART,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,185,154,131,10
-    LTEXT           "Impact checking window",IDC_STATIC,185,187,108,8,0,
-                    WS_EX_RIGHT
-    EDITTEXT        IDC_SMARTWINDOW,297,184,28,14,ES_AUTOHSCROLL
-    LTEXT           "Impact checking threshold",IDC_STATIC,185,203,108,8,0,
-                    WS_EX_RIGHT
-    EDITTEXT        IDC_SMARTTHRESHOLD,297,201,28,14,ES_AUTOHSCROLL
-    DEFPUSHBUTTON   "OK",IDOK,308,7,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,308,24,50,14
-    EDITTEXT        IDC_SMARTWINDOWSTAT,330,184,28,14,ES_AUTOHSCROLL | 
-                    ES_READONLY
-    EDITTEXT        IDC_SMARTTHRESHOLDSTAT,330,201,28,14,ES_AUTOHSCROLL | 
-                    ES_READONLY
-    CONTROL         "Try ON cells first if they have greater impact",
-                    IDC_SMARTON,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,199,
-                    170,153,10
-    CONTROL         "Combine solutions only",IDC_COMBINE,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,170,87,10
-END
-
-
-
 /////////////////////////////////////////////////////////////////////////////
 //
 // Bitmap
@@ -770,74 +618,6 @@ IDB_TRANS7              BITMAP  DISCARDABLE     "trans7.bmp"
 // remains consistent on all systems.
 ICONWLS                 ICON    DISCARDABLE     "wls.ico"
 
-/////////////////////////////////////////////////////////////////////////////
-//
-// Accelerator
-//
-
-WLSACCEL ACCELERATORS DISCARDABLE 
-BEGIN
-    ",",            IDC_PREVGEN,            ASCII,  NOINVERT
-    ".",            IDC_NEXTGEN,            ASCII,  NOINVERT
-    "B",            IDC_SEARCHBACKUP,       VIRTKEY, NOINVERT
-    "C",            IDC_EDITCOPY,           VIRTKEY, CONTROL, NOINVERT
-    "D",            IDC_SAVEGAME,           VIRTKEY, NOINVERT
-    "E",            ID_FLIP_GEN_V,          VIRTKEY, CONTROL, NOINVERT
-    "E",            ID_FLIP_ALL_V,          VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    "G",            IDC_SEARCHSTART,        VIRTKEY, CONTROL, NOINVERT
-    "H",            ID_FLIP_GEN_H,          VIRTKEY, CONTROL, NOINVERT
-    "H",            ID_FLIP_ALL_H,          VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    "L",            IDC_OPENSTATE,          VIRTKEY, NOINVERT
-    "N",            IDC_NEXTGEN,            VIRTKEY, NOINVERT
-    "O",            IDC_OPENSTATE,          VIRTKEY, CONTROL, NOINVERT
-    "P",            IDC_PREVGEN,            VIRTKEY, NOINVERT
-    "P",            IDC_SEARCHPREPARE,      VIRTKEY, CONTROL, NOINVERT
-    "R",            IDC_SEARCHRESET,        VIRTKEY, CONTROL, NOINVERT
-    "S",            IDC_SAVEGAME,           VIRTKEY, CONTROL, NOINVERT
-    "T",            ID_TRANS_GEN,           VIRTKEY, CONTROL, NOINVERT
-    "T",            ID_TRANS_ALL,           VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_BACK,        ID_HIDESEL,             VIRTKEY, NOINVERT
-    VK_DELETE,      IDC_CLEARGEN,           VIRTKEY, CONTROL, NOINVERT
-    VK_DELETE,      IDC_CLEAR,              VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_DOWN,        IDC_SHIFTGDOWN,         VIRTKEY, SHIFT, NOINVERT
-    VK_DOWN,        IDC_SHIFTADOWN,         VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_ESCAPE,      IDC_SEARCHPAUSE,        VIRTKEY, NOINVERT
-    VK_F2,          IDC_ROWS,               VIRTKEY, NOINVERT
-    VK_F3,          IDC_PERIOD,             VIRTKEY, NOINVERT
-    VK_F4,          IDC_SYMMETRY,           VIRTKEY, NOINVERT
-    VK_F5,          IDC_TRANSLATE,          VIRTKEY, NOINVERT
-    VK_F6,          IDC_SEARCHSETTINGS,     VIRTKEY, NOINVERT
-    VK_F7,          IDC_OUTPUTSETTINGS,     VIRTKEY, NOINVERT
-    VK_LEFT,        IDC_PREVGEN,            VIRTKEY, NOINVERT
-    VK_LEFT,        IDC_SHIFTGLEFT,         VIRTKEY, SHIFT, NOINVERT
-    VK_LEFT,        IDC_SHIFTALEFT,         VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_NEXT,        IDC_NEXTGEN,            VIRTKEY, NOINVERT
-    VK_NEXT,        IDC_SHIFTAFUTURE,       VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_PRIOR,       IDC_PREVGEN,            VIRTKEY, NOINVERT
-    VK_PRIOR,       IDC_SHIFTAPAST,         VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_RIGHT,       IDC_NEXTGEN,            VIRTKEY, NOINVERT
-    VK_RIGHT,       IDC_SHIFTGRIGHT,        VIRTKEY, SHIFT, NOINVERT
-    VK_RIGHT,       IDC_SHIFTARIGHT,        VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_SPACE,       IDC_SEARCHRESUME,       VIRTKEY, NOINVERT
-    VK_UP,          IDC_SHIFTGUP,           VIRTKEY, SHIFT, NOINVERT
-    VK_UP,          IDC_SHIFTAUP,           VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    "Y",            IDC_SEARCHBACKUP2,      VIRTKEY, NOINVERT
-END
-
-
-#endif // JS/KS
-
 
 #endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////
-
