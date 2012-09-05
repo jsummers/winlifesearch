@@ -40,6 +40,44 @@ BEGIN
     POPUP "&Edit"
     BEGIN
         MENUITEM "&Copy\tCtrl+C",               IDC_EDITCOPY
+        MENUITEM SEPARATOR
+        POPUP "&Shift"
+        BEGIN
+            POPUP "&Generation"
+            BEGIN
+                MENUITEM "&Up\tShift+Up",               IDC_SHIFTGUP
+                MENUITEM "&Down\tShift+Down",           IDC_SHIFTGDOWN
+                MENUITEM "&Left\tShift+Left",           IDC_SHIFTGLEFT
+                MENUITEM "&Right\tShift+Right",         IDC_SHIFTGRIGHT
+            END
+            POPUP "&All generations"
+            BEGIN
+                MENUITEM "&Up\tCtrl+Shift+Up",          IDC_SHIFTAUP
+                MENUITEM "&Down\tCtrl+Shift+Down",      IDC_SHIFTADOWN
+                MENUITEM "&Left\tCtrl+Shift+Left",      IDC_SHIFTALEFT
+                MENUITEM "&Right\tCtrl+Shift+Right",    IDC_SHIFTARIGHT
+                MENUITEM "To &past\tCtrl+Shift+PgUp",   IDC_SHIFTAPAST
+                MENUITEM "To &future\tCtrl+Shift+PgDn", IDC_SHIFTAFUTURE
+            END
+        END
+        POPUP "&Flip"
+        BEGIN
+            POPUP "&Generation"
+            BEGIN
+                MENUITEM "&Horizontal\tCtrl+H",         ID_FLIP_GEN_H
+                MENUITEM "&Vertical\tCtrl+E",           ID_FLIP_GEN_V
+            END
+            POPUP "&All generations"
+            BEGIN
+                MENUITEM "&Horizontal\tCtrl+Shift+H",   ID_FLIP_ALL_H
+                MENUITEM "&Vertical\tCtrl+Shift+E",     ID_FLIP_ALL_V
+            END
+        END
+        POPUP "&Transpose"
+        BEGIN
+            MENUITEM "&Generation\tCtrl+T",         ID_TRANS_GEN
+            MENUITEM "&All generations\tCtrl+Shift+T", ID_TRANS_ALL
+        END
         MENUITEM "Clear &generation",           IDC_CLEARGEN
         MENUITEM "Clea&r All",                  IDC_CLEAR
     END
@@ -168,11 +206,20 @@ BEGIN
     "B",            IDC_SEARCHBACKUP,       VIRTKEY, NOINVERT
     "C",            IDC_EDITCOPY,           VIRTKEY, CONTROL, NOINVERT
     "D",            IDC_SAVEGAME,           VIRTKEY, NOINVERT
+    "E",            ID_FLIP_GEN_V,          VIRTKEY, CONTROL, NOINVERT
+    "E",            ID_FLIP_ALL_V,          VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
     "G",            IDC_SEARCHSTART,        VIRTKEY, CONTROL, NOINVERT
+    "H",            ID_FLIP_GEN_H,          VIRTKEY, CONTROL, NOINVERT
+    "H",            ID_FLIP_ALL_H,          VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
     "L",            IDC_OPENSTATE,          VIRTKEY, NOINVERT
     "N",            IDC_NEXTGEN,            VIRTKEY, NOINVERT
     "P",            IDC_PREVGEN,            VIRTKEY, NOINVERT
     "R",            IDC_SEARCHRESET,        VIRTKEY, CONTROL, NOINVERT
+    "T",            ID_TRANS_GEN,           VIRTKEY, CONTROL, NOINVERT
+    "T",            ID_TRANS_ALL,           VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
     VK_ESCAPE,      IDC_SEARCHPAUSE,        VIRTKEY, NOINVERT
     VK_F2,          IDC_ROWS,               VIRTKEY, NOINVERT
     VK_F3,          IDC_PERIOD,             VIRTKEY, NOINVERT
@@ -182,6 +229,22 @@ BEGIN
     VK_F7,          IDC_OUTPUTSETTINGS,     VIRTKEY, NOINVERT
     VK_SPACE,       IDC_SEARCHRESUME,       VIRTKEY, NOINVERT
     "Y",            IDC_SEARCHBACKUP2,      VIRTKEY, NOINVERT
+    VK_DOWN,        IDC_SHIFTGDOWN,         VIRTKEY, SHIFT, NOINVERT
+    VK_DOWN,        IDC_SHIFTADOWN,         VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_LEFT,        IDC_SHIFTGLEFT,         VIRTKEY, SHIFT, NOINVERT
+    VK_LEFT,        IDC_SHIFTALEFT,         VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_NEXT,        IDC_SHIFTAFUTURE,       VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_PRIOR,       IDC_SHIFTAPAST,         VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_RIGHT,       IDC_SHIFTGRIGHT,        VIRTKEY, SHIFT, NOINVERT
+    VK_RIGHT,       IDC_SHIFTARIGHT,        VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_UP,          IDC_SHIFTGUP,           VIRTKEY, SHIFT, NOINVERT
+    VK_UP,          IDC_SHIFTAUP,           VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
 END
 
 #else // KS:
@@ -196,7 +259,7 @@ BEGIN
     POPUP "&File"
     BEGIN
         MENUITEM "&Open state...\tCtrl+O",      IDC_OPENSTATE
-        MENUITEM "&Save state...\tStrl+S",      IDC_SAVEGAME
+        MENUITEM "&Save state...\tCtrl+S",      IDC_SAVEGAME
         MENUITEM SEPARATOR
         MENUITEM "E&xit\tAlt+F4",               IDC_EXIT
     END

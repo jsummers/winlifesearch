@@ -1978,8 +1978,6 @@ static void clear_all(struct wcontext *ctx)
 #endif
 }
 
-#ifndef JS
-
 static void flip_h(struct wcontext *ctx, int fromgen, int togen)
 {
 	int g1, r, c;
@@ -2067,7 +2065,7 @@ static void transpose(struct wcontext *ctx, int fromgen, int togen)
 
 	if ((fromcol - tocol) != (fromrow - torow))
 	{
-		// only transpose squares
+		wlsErrorf(ctx,_T("Can only transpose square regions"));
 		return;
 	}
 
@@ -2123,6 +2121,8 @@ static void shift_gen(struct wcontext *ctx, int fromgen, int togen, int gend, in
 		}
 	}
 }
+
+#ifndef JS
 
 static void copy_result(struct wcontext *ctx)
 {
@@ -2460,6 +2460,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		case IDC_CLEARCOMBINATION:
 			if (ctx->searchstate != 0) clear_combination(ctx);
 			return 0;
+#endif
 		case IDC_SHIFTGUP:
 			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 0, -1);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
@@ -2524,6 +2525,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			if(ctx->searchstate == 0) transpose(ctx, 0, GENMAX - 1);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
 			return 0;
+#ifndef JS
 		case ID_HIDESEL:
 			hide_selection(ctx);
 			return 0;
