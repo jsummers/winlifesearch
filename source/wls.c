@@ -2827,233 +2827,6 @@ static INT_PTR CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 	return 0;		// Didn't process a message
 }
 
-#ifdef JS
-
-static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	WORD id;
-//	char buf[80];
-
-	id=LOWORD(wParam);
-
-	switch (msg) {
-	case WM_INITDIALOG:
-		SetDlgItemInt(hWnd,IDC_VIEWFREQ,g.viewfreq,FALSE);
-		SetDlgItemText(hWnd,IDC_DUMPFILE,g.dumpfile);
-		SetDlgItemInt(hWnd,IDC_DUMPFREQ,g.dumpfreq,FALSE);
-		CheckDlgButton(hWnd,IDC_OUTPUTFILEYN,g.saveoutput?BST_CHECKED:BST_UNCHECKED);
-		SetDlgItemText(hWnd,IDC_OUTPUTFILE,g.outputfile);
-		SetDlgItemInt(hWnd,IDC_OUTPUTCOLS,g.outputcols,FALSE);
-//		EnableWindow(GetDlgItem(hWnd,IDC_VIEWFREQ),FALSE);
-
-//		sprintf(buf,"Enter a period from 1 to %d",GENMAX);
-//		SetDlgItemText(hWnd,IDC_PERIODTEXT,buf);
-//		SetDlgItemInt(hWnd,IDC_PERIOD1,genmax,FALSE);
-		return 1;
-
-	case WM_COMMAND:
-		switch(id) {
-		case IDOK:
-			g.viewfreq=GetDlgItemInt(hWnd,IDC_VIEWFREQ,NULL,FALSE);
-			g.dumpfreq=GetDlgItemInt(hWnd,IDC_DUMPFREQ,NULL,FALSE);
-			GetDlgItemText(hWnd,IDC_DUMPFILE,g.dumpfile,79);
-			g.saveoutput=(IsDlgButtonChecked(hWnd,IDC_OUTPUTFILEYN)==BST_CHECKED);
-			GetDlgItemText(hWnd,IDC_OUTPUTFILE,g.outputfile,79);
-			g.outputcols=GetDlgItemInt(hWnd,IDC_OUTPUTCOLS,NULL,FALSE);
-			// fall through
-		case IDCANCEL:
-			EndDialog(hWnd, TRUE);
-			return 1;
-		}
-	}
-	return 0;		// Didn't process a message
-}
-
-static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	WORD id;
-
-	id=LOWORD(wParam);
-
-	switch (msg) {
-	case WM_INITDIALOG:
-		CheckDlgButton(hWnd,IDC_ORDERWIDE,g.orderwide);
-		CheckDlgButton(hWnd,IDC_ORDERGENS,g.ordergens);
-		CheckDlgButton(hWnd,IDC_ORDERMIDDLE,g.ordermiddle);
-		CheckDlgButton(hWnd,IDC_DIAGSORT,g.diagsort);
-		CheckDlgButton(hWnd,IDC_KNIGHTSORT,g.knightsort);
-		CheckDlgButton(hWnd,IDC_FASTSYM,g.fastsym);
-		CheckDlgButton(hWnd,IDC_ALLOBJECTS,g.allobjects);
-		CheckDlgButton(hWnd,IDC_PARENT,g.parent);
-		CheckDlgButton(hWnd,IDC_FOLLOW,g.follow);
-		CheckDlgButton(hWnd,IDC_FOLLOWGENS,g.followgens);
-		SetDlgItemInt(hWnd,IDC_NEARCOLS,g.nearcols,TRUE);
-		SetDlgItemInt(hWnd,IDC_USECOL,g.usecol,TRUE);
-		SetDlgItemInt(hWnd,IDC_USEROW,g.userow,TRUE);
-
-		SetDlgItemInt(hWnd,IDC_MAXCOUNT,g.maxcount,TRUE);
-		SetDlgItemInt(hWnd,IDC_COLCELLS,g.colcells,TRUE);
-		SetDlgItemInt(hWnd,IDC_COLWIDTH,g.colwidth,TRUE);
-
-		SetDlgItemText(hWnd,IDC_RULESTRING,g.rulestring);
-		return 1;
-
-	case WM_COMMAND:
-		switch(id) {
-		case IDOK:
-			//GetDlgItemText(hWnd,IDC_DUMPFILE,buf,79);
-			g.orderwide=  IsDlgButtonChecked(hWnd,IDC_ORDERWIDE  )?1:0;
-			g.ordergens=  IsDlgButtonChecked(hWnd,IDC_ORDERGENS  )?1:0;
-			g.ordermiddle=IsDlgButtonChecked(hWnd,IDC_ORDERMIDDLE)?1:0;
-			g.diagsort=   IsDlgButtonChecked(hWnd,IDC_DIAGSORT   )?1:0;
-			g.knightsort= IsDlgButtonChecked(hWnd,IDC_KNIGHTSORT )?1:0;
-			g.fastsym=    IsDlgButtonChecked(hWnd,IDC_FASTSYM )?1:0;
-			g.allobjects= IsDlgButtonChecked(hWnd,IDC_ALLOBJECTS )?1:0;
-			g.parent=     IsDlgButtonChecked(hWnd,IDC_PARENT     )?1:0;
-			g.follow=     IsDlgButtonChecked(hWnd,IDC_FOLLOW     )?1:0;
-			g.followgens= IsDlgButtonChecked(hWnd,IDC_FOLLOWGENS )?1:0;
-			g.nearcols=GetDlgItemInt(hWnd,IDC_NEARCOLS,NULL,TRUE);
-			g.usecol=GetDlgItemInt(hWnd,IDC_USECOL,NULL,TRUE);
-			g.userow=GetDlgItemInt(hWnd,IDC_USEROW,NULL,TRUE);
-			g.maxcount=GetDlgItemInt(hWnd,IDC_MAXCOUNT,NULL,TRUE);
-			g.colcells=GetDlgItemInt(hWnd,IDC_COLCELLS,NULL,TRUE);
-			g.colwidth=GetDlgItemInt(hWnd,IDC_COLWIDTH,NULL,TRUE);
-			GetDlgItemText(hWnd,IDC_RULESTRING,g.rulestring,50);
-
-			// fall through
-		case IDCANCEL:
-			EndDialog(hWnd, TRUE);
-			return 1;
-		case IDC_CONWAY:
-			SetDlgItemText(hWnd,IDC_RULESTRING,_T("B3/S23"));
-			return 1;
-		}
-	}
-	return 0;		// Didn't process a message
-}
-
-static INT_PTR CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	WORD id;
-	int item;
-	struct wcontext *ctx = gctx;
-
-	id=LOWORD(wParam);
-
-	switch (msg) {
-	case WM_INITDIALOG:
-		if(g.colmax!=g.rowmax) {
-			EnableWindow(GetDlgItem(hWnd,IDC_SYM3),FALSE);
-			EnableWindow(GetDlgItem(hWnd,IDC_SYM4),FALSE);
-			EnableWindow(GetDlgItem(hWnd,IDC_SYM7),FALSE);
-			EnableWindow(GetDlgItem(hWnd,IDC_SYM8),FALSE);
-			EnableWindow(GetDlgItem(hWnd,IDC_SYM9),FALSE);
-		}
-		switch(g.symmetry) {
-		case 1: item=IDC_SYM1; break;
-		case 2: item=IDC_SYM2; break;
-		case 3: item=IDC_SYM3; break;
-		case 4: item=IDC_SYM4; break;
-		case 5: item=IDC_SYM5; break;
-		case 6: item=IDC_SYM6; break;
-		case 7: item=IDC_SYM7; break;
-		case 8: item=IDC_SYM8; break;
-		case 9: item=IDC_SYM9; break;
-		default: item=IDC_SYM0;
-		}
-		CheckDlgButton(hWnd,item,BST_CHECKED);
-		return 1;   // didn't call SetFocus
-
-	case WM_COMMAND:
-		switch(id) {
-		case IDOK:
-			if(IsDlgButtonChecked(hWnd,IDC_SYM0)==BST_CHECKED) g.symmetry=0;
-			if(IsDlgButtonChecked(hWnd,IDC_SYM1)==BST_CHECKED) g.symmetry=1;
-			if(IsDlgButtonChecked(hWnd,IDC_SYM2)==BST_CHECKED) g.symmetry=2;
-			if(IsDlgButtonChecked(hWnd,IDC_SYM3)==BST_CHECKED) g.symmetry=3;
-			if(IsDlgButtonChecked(hWnd,IDC_SYM4)==BST_CHECKED) g.symmetry=4;
-			if(IsDlgButtonChecked(hWnd,IDC_SYM5)==BST_CHECKED) g.symmetry=5;
-			if(IsDlgButtonChecked(hWnd,IDC_SYM6)==BST_CHECKED) g.symmetry=6;
-			if(IsDlgButtonChecked(hWnd,IDC_SYM7)==BST_CHECKED) g.symmetry=7;
-			if(IsDlgButtonChecked(hWnd,IDC_SYM8)==BST_CHECKED) g.symmetry=8;
-			if(IsDlgButtonChecked(hWnd,IDC_SYM9)==BST_CHECKED) g.symmetry=9;
-
-			InvalidateRect(ctx->hwndMain,NULL,TRUE);
-			// fall through
-		case IDCANCEL:
-			EndDialog(hWnd, TRUE);
-			return 1;
-		}
-		break;
-	}
-	return 0;		// Didn't process a message
-}
-
-
-static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	WORD id;
-	int item;
-	struct wcontext *ctx = gctx;
-
-	id=LOWORD(wParam);
-
-	switch (msg) {
-	case WM_INITDIALOG:
-		SetDlgItemInt(hWnd,IDC_TRANSX,g.trans_x,TRUE);
-		SetDlgItemInt(hWnd,IDC_TRANSY,g.trans_y,TRUE);
-
-		if(g.colmax != g.rowmax) {
-			EnableWindow(GetDlgItem(hWnd,IDC_TRANS1),FALSE);
-			EnableWindow(GetDlgItem(hWnd,IDC_TRANS3),FALSE);
-			EnableWindow(GetDlgItem(hWnd,IDC_TRANS5),FALSE);
-			EnableWindow(GetDlgItem(hWnd,IDC_TRANS7),FALSE);
-		}
-
-		switch(g.trans_rotate + 4*g.trans_flip) {
-		case 1: item=IDC_TRANS1; break;
-		case 2: item=IDC_TRANS2; break;
-		case 3: item=IDC_TRANS3; break;
-		case 4: item=IDC_TRANS4; break;
-		case 5: item=IDC_TRANS5; break;
-		case 6: item=IDC_TRANS6; break;
-		case 7: item=IDC_TRANS7; break;
-		default: item=IDC_TRANS0;
-		}
-		CheckDlgButton(hWnd,item,BST_CHECKED);
-		return 1;   // didn't call SetFocus
-
-	case WM_COMMAND:
-		switch(id) {
-		case IDOK:
-			g.trans_x=GetDlgItemInt(hWnd,IDC_TRANSX,NULL,TRUE);
-			g.trans_y=GetDlgItemInt(hWnd,IDC_TRANSY,NULL,TRUE);
-			if(g.trans_x>TRANSMAX) g.trans_x=TRANSMAX;
-			if(g.trans_y>TRANSMAX) g.trans_y=TRANSMAX;
-			if(g.trans_x< -TRANSMAX) g.trans_x= -TRANSMAX;
-			if(g.trans_y< -TRANSMAX) g.trans_y= -TRANSMAX;
-
-			if(IsDlgButtonChecked(hWnd,IDC_TRANS0)==BST_CHECKED) { g.trans_flip=0; g.trans_rotate=0; }
-			if(IsDlgButtonChecked(hWnd,IDC_TRANS1)==BST_CHECKED) { g.trans_flip=0; g.trans_rotate=1; }
-			if(IsDlgButtonChecked(hWnd,IDC_TRANS2)==BST_CHECKED) { g.trans_flip=0; g.trans_rotate=2; }
-			if(IsDlgButtonChecked(hWnd,IDC_TRANS3)==BST_CHECKED) { g.trans_flip=0; g.trans_rotate=3; }
-			if(IsDlgButtonChecked(hWnd,IDC_TRANS4)==BST_CHECKED) { g.trans_flip=1; g.trans_rotate=0; }
-			if(IsDlgButtonChecked(hWnd,IDC_TRANS5)==BST_CHECKED) { g.trans_flip=1; g.trans_rotate=1; }
-			if(IsDlgButtonChecked(hWnd,IDC_TRANS6)==BST_CHECKED) { g.trans_flip=1; g.trans_rotate=2; }
-			if(IsDlgButtonChecked(hWnd,IDC_TRANS7)==BST_CHECKED) { g.trans_flip=1; g.trans_rotate=3; }
-			InvalidateRect(ctx->hwndMain,NULL,TRUE);
-			// fall through
-		case IDCANCEL:
-			EndDialog(hWnd, TRUE);
-			return 1;
-		}
-		break;
-	}
-	return 0;		// Didn't process a message
-}
-
-#else // KS:
-
 static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
@@ -3066,9 +2839,11 @@ static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 		SetDlgItemText(hWnd,IDC_DUMPFILE,g.dumpfile);
 		SetDlgItemInt(hWnd,IDC_DUMPFREQ,g.dumpfreq,FALSE);
 		CheckDlgButton(hWnd,IDC_OUTPUTFILEYN,g.saveoutput?BST_CHECKED:BST_UNCHECKED);
+#ifndef JS
 		CheckDlgButton(hWnd,IDC_OUTPUTALLGEN,g.saveoutputallgen?BST_CHECKED:BST_UNCHECKED);
 		CheckDlgButton(hWnd,IDC_STOPONFOUND,g.stoponfound?BST_CHECKED:BST_UNCHECKED);
 		CheckDlgButton(hWnd,IDC_STOPONSTEP,g.stoponstep?BST_CHECKED:BST_UNCHECKED);
+#endif
 		SetDlgItemText(hWnd,IDC_OUTPUTFILE,g.outputfile);
 		SetDlgItemInt(hWnd,IDC_OUTPUTCOLS,g.outputcols,FALSE);
 		return 1;
@@ -3080,9 +2855,11 @@ static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 			g.dumpfreq=GetDlgItemInt(hWnd,IDC_DUMPFREQ,NULL,FALSE);
 			GetDlgItemText(hWnd,IDC_DUMPFILE,g.dumpfile,79);
 			g.saveoutput=(IsDlgButtonChecked(hWnd,IDC_OUTPUTFILEYN)==BST_CHECKED);
+#ifndef JS
 			g.saveoutputallgen=(IsDlgButtonChecked(hWnd,IDC_OUTPUTALLGEN)==BST_CHECKED);
 			g.stoponfound=(IsDlgButtonChecked(hWnd,IDC_STOPONFOUND)==BST_CHECKED);
 			g.stoponstep=(IsDlgButtonChecked(hWnd,IDC_STOPONSTEP)==BST_CHECKED);
+#endif
 			GetDlgItemText(hWnd,IDC_OUTPUTFILE,g.outputfile,79);
 			g.outputcols=GetDlgItemInt(hWnd,IDC_OUTPUTCOLS,NULL,FALSE);
 			// fall through
@@ -3107,20 +2884,27 @@ static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 		CheckDlgButton(hWnd,IDC_ORDERMIDDLE,g.ordermiddle);
 		CheckDlgButton(hWnd,IDC_DIAGSORT,g.diagsort);
 		CheckDlgButton(hWnd,IDC_KNIGHTSORT,g.knightsort);
+#ifdef JS
+		CheckDlgButton(hWnd,IDC_FASTSYM,g.fastsym);
+#endif
 		CheckDlgButton(hWnd,IDC_ALLOBJECTS,g.allobjects);
 		CheckDlgButton(hWnd,IDC_PARENT,g.parent);
 		CheckDlgButton(hWnd,IDC_FOLLOW,g.follow);
 		CheckDlgButton(hWnd,IDC_FOLLOWGENS,g.followgens);
+#ifndef JS
 		CheckDlgButton(hWnd,IDC_SMART,g.smart);
 		CheckDlgButton(hWnd,IDC_SMARTON,g.smarton);
 		CheckDlgButton(hWnd,IDC_COMBINE,g.combine);
+#endif
 		SetDlgItemInt(hWnd,IDC_NEARCOLS,g.nearcols,TRUE);
 		SetDlgItemInt(hWnd,IDC_USECOL,g.usecol,TRUE);
 		SetDlgItemInt(hWnd,IDC_USEROW,g.userow,TRUE);
+#ifndef JS
 		SetDlgItemInt(hWnd,IDC_SMARTWINDOW,g.smartwindow,TRUE);
 		SetDlgItemInt(hWnd,IDC_SMARTTHRESHOLD,g.smartthreshold,TRUE);
 		SetDlgItemInt(hWnd,IDC_SMARTWINDOWSTAT,g.smartstatwnd,TRUE);
 		SetDlgItemInt(hWnd,IDC_SMARTTHRESHOLDSTAT,g.smartstatlen,TRUE);
+#endif
 
 		SetDlgItemInt(hWnd,IDC_MAXCOUNT,g.maxcount,TRUE);
 		SetDlgItemInt(hWnd,IDC_COLCELLS,g.colcells,TRUE);
@@ -3137,22 +2921,29 @@ static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 			g.ordermiddle=IsDlgButtonChecked(hWnd,IDC_ORDERMIDDLE)?1:0;
 			g.diagsort=   IsDlgButtonChecked(hWnd,IDC_DIAGSORT   )?1:0;
 			g.knightsort= IsDlgButtonChecked(hWnd,IDC_KNIGHTSORT )?1:0;
+#ifdef JS
+			g.fastsym=    IsDlgButtonChecked(hWnd,IDC_FASTSYM )?1:0;
+#endif
 			g.allobjects= IsDlgButtonChecked(hWnd,IDC_ALLOBJECTS )?1:0;
 			g.parent=     IsDlgButtonChecked(hWnd,IDC_PARENT     )?1:0;
 			g.follow=     IsDlgButtonChecked(hWnd,IDC_FOLLOW     )?1:0;
 			g.followgens= IsDlgButtonChecked(hWnd,IDC_FOLLOWGENS )?1:0;
+#ifndef JS
 			g.smart=      IsDlgButtonChecked(hWnd,IDC_SMART      )?1:0;
-			g.smarton=    IsDlgButtonChecked(hWnd,IDC_SMARTON    )?1:0; 
-			g.combine=    IsDlgButtonChecked(hWnd,IDC_COMBINE    )?1:0; 
-			
+			g.smarton=    IsDlgButtonChecked(hWnd,IDC_SMARTON    )?1:0;
+			g.combine=    IsDlgButtonChecked(hWnd,IDC_COMBINE    )?1:0;
+#endif
+
 			g.nearcols=GetDlgItemInt(hWnd,IDC_NEARCOLS,NULL,TRUE);
 			g.usecol=GetDlgItemInt(hWnd,IDC_USECOL,NULL,TRUE);
 			g.userow=GetDlgItemInt(hWnd,IDC_USEROW,NULL,TRUE);
 			g.maxcount=GetDlgItemInt(hWnd,IDC_MAXCOUNT,NULL,TRUE);
 			g.colcells=GetDlgItemInt(hWnd,IDC_COLCELLS,NULL,TRUE);
 			g.colwidth=GetDlgItemInt(hWnd,IDC_COLWIDTH,NULL,TRUE);
+#ifndef JS
 			g.smartwindow=GetDlgItemInt(hWnd,IDC_SMARTWINDOW,NULL,TRUE);
 			g.smartthreshold=GetDlgItemInt(hWnd,IDC_SMARTTHRESHOLD,NULL,TRUE);
+#endif
 
 			GetDlgItemText(hWnd,IDC_RULESTRING,g.rulestring,WLS_RULESTRING_LEN);
 
@@ -3214,7 +3005,11 @@ static INT_PTR CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			if(IsDlgButtonChecked(hWnd,IDC_SYM8)==BST_CHECKED) g.symmetry=8;
 			if(IsDlgButtonChecked(hWnd,IDC_SYM9)==BST_CHECKED) g.symmetry=9;
 
+#ifdef JS
+			InvalidateRect(ctx->hwndMain,NULL,TRUE);
+#else
 			InvalidateRect(ctx->hwndMain,NULL,FALSE);
+#endif
 			// fall through
 		case IDCANCEL:
 			EndDialog(hWnd, TRUE);
@@ -3224,7 +3019,6 @@ static INT_PTR CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 	}
 	return 0;		// Didn't process a message
 }
-
 
 static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -3277,7 +3071,11 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 			if(IsDlgButtonChecked(hWnd,IDC_TRANS5)==BST_CHECKED) { g.trans_flip=1; g.trans_rotate=1; }
 			if(IsDlgButtonChecked(hWnd,IDC_TRANS6)==BST_CHECKED) { g.trans_flip=1; g.trans_rotate=2; }
 			if(IsDlgButtonChecked(hWnd,IDC_TRANS7)==BST_CHECKED) { g.trans_flip=1; g.trans_rotate=3; }
+#ifdef JS
+			InvalidateRect(ctx->hwndMain,NULL,TRUE);
+#else
 			InvalidateRect(ctx->hwndMain,NULL,FALSE);
+#endif
 			// fall through
 		case IDCANCEL:
 			EndDialog(hWnd, TRUE);
@@ -3287,8 +3085,6 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 	}
 	return 0;		// Didn't process a message
 }
-
-#endif // JS/KS
 
 //////////////////////////////////////////////////////////////////
 
