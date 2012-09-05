@@ -78,8 +78,13 @@ BEGIN
             MENUITEM "&Generation\tCtrl+T",         ID_TRANS_GEN
             MENUITEM "&All generations\tCtrl+Shift+T", ID_TRANS_ALL
         END
-        MENUITEM "Clear &generation",           IDC_CLEARGEN
-        MENUITEM "Clea&r All",                  IDC_CLEAR
+        POPUP "Clea&r"
+        BEGIN
+            MENUITEM "&Generation\tCtrl+Del",       IDC_CLEARGEN
+            MENUITEM "&All generations\tCtrl+Shift+Del", IDC_CLEAR
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "&Hide selection\tBackspace",  ID_HIDESEL
     END
     POPUP "View"
     BEGIN
@@ -229,6 +234,10 @@ BEGIN
     VK_F7,          IDC_OUTPUTSETTINGS,     VIRTKEY, NOINVERT
     VK_SPACE,       IDC_SEARCHRESUME,       VIRTKEY, NOINVERT
     "Y",            IDC_SEARCHBACKUP2,      VIRTKEY, NOINVERT
+    VK_BACK,        ID_HIDESEL,             VIRTKEY, NOINVERT
+    VK_DELETE,      IDC_CLEARGEN,           VIRTKEY, CONTROL, NOINVERT
+    VK_DELETE,      IDC_CLEAR,              VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
     VK_DOWN,        IDC_SHIFTGDOWN,         VIRTKEY, SHIFT, NOINVERT
     VK_DOWN,        IDC_SHIFTADOWN,         VIRTKEY, SHIFT, CONTROL, 
                                                     NOINVERT

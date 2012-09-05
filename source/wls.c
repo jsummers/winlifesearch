@@ -590,6 +590,7 @@ static void Symmetricalize(struct wcontext *ctx, HDC hDC,int x,int y,int allgens
 	}
 }
 
+// HDC can be NULL
 static void InvertCells(struct wcontext *ctx, HDC hDC1)
 {
 	RECT r;
@@ -623,6 +624,7 @@ static void InvertCells(struct wcontext *ctx, HDC hDC1)
 
 }
 
+// HDC can be NULL
 static void SelectOff(struct wcontext *ctx, HDC hDC)
 {
 	if(ctx->selectstate<1) return;
@@ -1952,14 +1954,10 @@ static void gen_changeby(struct wcontext *ctx, int delta)
 #endif
 }
 
-#ifndef JS
-
 static void hide_selection(struct wcontext *ctx)
 {
 	SelectOff(ctx,NULL);
 }
-
-#endif
 
 static void clear_gen(int g1)
 {	int i,j;
@@ -1973,9 +1971,7 @@ static void clear_all(struct wcontext *ctx)
 	int g1;
 	for(g1=0;g1<GENMAX;g1++)
 		clear_gen(g1);
-#ifndef JS
 	hide_selection(ctx);
-#endif
 }
 
 static void flip_h(struct wcontext *ctx, int fromgen, int togen)
@@ -2433,6 +2429,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		case IDC_CLEARGEN:
 #ifdef JS
 			clear_gen(g.curgen);
+			hide_selection(ctx);
 			InvalidateRect(ctx->hwndMain,NULL,TRUE);
 #else
 			if(ctx->searchstate == 0) clear_gen(g.curgen);
@@ -2525,11 +2522,9 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			if(ctx->searchstate == 0) transpose(ctx, 0, GENMAX - 1);
 			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
 			return 0;
-#ifndef JS
 		case ID_HIDESEL:
 			hide_selection(ctx);
 			return 0;
-#endif
 		}
 		break;
 	}
