@@ -315,8 +315,12 @@ struct globals_struct {
 	int stoponfound;
 	int stoponstep;
 	int foundcount;
+	TCHAR state_filename[MAX_PATH];
 #endif
 	int writecount;
+#ifdef JS
+	BOOL islife;  /* whether the rules are for standard Life */
+#endif
 };
 
 
@@ -342,11 +346,11 @@ void printgen(int);
 void printgen(void);
 #endif
 
-void writegen(TCHAR *, BOOL);
+void writegen(HWND hwndParent, TCHAR *file1, BOOL append);
 #ifdef JS
-void dumpstate(TCHAR *);
+void dumpstate(HWND hwndParent, TCHAR *file1);
 #else
-void dumpstate(TCHAR *, BOOL);
+void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo);
 #endif
 
 void adjustnear(CELL *, int);
@@ -379,9 +383,9 @@ void freezecell(int, int);
 BOOL setrules(TCHAR *);
 BOOL setrulesA(char *);
 #ifdef JS
-STATUS loadstate(TCHAR *file);
+STATUS loadstate(HWND hwndParent, TCHAR *file1);
 #else
-BOOL loadstate(void);
+BOOL loadstate(HWND hwndParent);
 #endif
 void getbackup(char *cp);
 

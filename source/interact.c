@@ -14,20 +14,11 @@
 #include "lifesrc.h"
 #include <strsafe.h>
 
-#ifdef JS
-
-#define	VERSION	"3.5w"
-
 extern struct globals_struct g;
 
-/*
- * Local data.
- */
-static	BOOL	nowait;		/* don't wait for commands after loading */
-static	BOOL	setall;		/* set all cells from initial file */
-static	BOOL	islife;		/* whether the rules are for standard Life */
-static	char *	initfile;	/* file containing initial cells */
-static	char *	loadfile;	/* file to load state from */
+#ifdef JS
+
+
 /*
  * Local procedures
  */
@@ -177,17 +168,14 @@ getbackup(char *cp)
 	printgen(g.curgen);
 }
 
-static int getfilename_l(TCHAR *fn)
+static int getfilename_l(HWND hwndParent, TCHAR *fn)
 {
 	OPENFILENAME ofn;
-	HWND hWnd;
-
-	hWnd=NULL;
 
 	ZeroMemory(&ofn,sizeof(OPENFILENAME));
 
 	ofn.lStructSize=sizeof(OPENFILENAME);
-	ofn.hwndOwner=hWnd;
+	ofn.hwndOwner=hwndParent;
 	ofn.lpstrFilter=_T("*.txt\0*.txt\0All files\0*.*\0\0");
 	ofn.nFilterIndex=1;
 	ofn.lpstrTitle=_T("Load state");
@@ -203,17 +191,14 @@ static int getfilename_l(TCHAR *fn)
 }
 
 
-static int getfilename_s(TCHAR *fn)
+static int getfilename_s(HWND hwndParent, TCHAR *fn)
 {
 	OPENFILENAME ofn;
-	HWND hWnd;
-
-	hWnd=NULL;
 
 	ZeroMemory(&ofn,sizeof(OPENFILENAME));
 
 	ofn.lStructSize=sizeof(OPENFILENAME);
-	ofn.hwndOwner=hWnd;
+	ofn.hwndOwner=hwndParent;
 	ofn.lpstrFilter=_T("*.txt\0*.txt\0All files\0*.*\0\0");
 	ofn.nFilterIndex=1;
 	ofn.lpstrTitle=_T("Save state");
@@ -235,7 +220,7 @@ static int getfilename_s(TCHAR *fn)
  * If no file is specified, it is asked for.
  * Filename of "." means write to stdout.
  */
-void writegen(TCHAR *file1, BOOL append)
+void writegen(HWND hwndParent, TCHAR *file1, BOOL append)
 /*	char *	file;		 file name (or NULL) */
 /*	BOOL	append;		 TRUE to append instead of create */
 {
@@ -255,7 +240,7 @@ void writegen(TCHAR *file1, BOOL append)
 	}
 	else {
 		StringCchCopy(file,MAX_PATH,_T(""));
-		getfilename_s(file);
+		getfilename_s(hwndParent,file);
 	}
 
 	if (*file == '\0')
@@ -367,7 +352,7 @@ void writegen(TCHAR *file1, BOOL append)
  * Dump the current state of the search in the specified file.
  * If no file is specified, it is asked for.
  */
-void dumpstate(TCHAR *file1)
+void dumpstate(HWND hwndParent, TCHAR *file1)
 {
 	FILE *	fp;
 	CELL **	set;
@@ -387,7 +372,7 @@ void dumpstate(TCHAR *file1)
 	}
 	else {
 		StringCchCopy(file,MAX_PATH,_T("dump.txt"));
-		getfilename_s(file);
+		getfilename_s(hwndParent,file);
 	}
 
 	if (*file == '\0')
@@ -425,7 +410,7 @@ void dumpstate(TCHAR *file1)
 	/*
 	 * Dump out the life rule if it is not the normal one.
 	 */
-	if (!islife) {
+	if (!g.islife) {
 #ifdef UNICODE
 		StringCbPrintfA(buf,sizeof(buf),"%S",g.rulestring);
 		fprintf(fp, "R %s\n", buf);
@@ -516,7 +501,7 @@ void dumpstate(TCHAR *file1)
  * Warning: Almost no checks are made for validity of the state.
  * Returns OK on success, ERROR1 on failure.
  */
-STATUS loadstate(TCHAR *file1)
+STATUS loadstate(HWND hwndParent, TCHAR *file1)
 {
 	FILE *	fp;
 	char *	cp;
@@ -538,7 +523,7 @@ STATUS loadstate(TCHAR *file1)
 	//file = getstr(file, "Load state from file: ");
 	StringCchCopy(file,MAX_PATH,_T(""));
 	if(file1) StringCchCopy(file,MAX_PATH,file1);
-	getfilename_l(file);
+	getfilename_l(hwndParent,file);
 
 	//if (*file == '\0')
 	//	return OK;
@@ -774,6 +759,8 @@ STATUS loadstate(TCHAR *file1)
 
 
 #if 0
+
+//static	BOOL	setall;		/* set all cells from initial file */
 /*
  * Read a file containing initial settings for either gen 0 or the last gen.
  * If setall is TRUE, both the ON and the OFF cells will be set.
@@ -1067,7 +1054,7 @@ setrules(TCHAR *cp)
 
 	*cp = '\0';
 
-	islife = (_tcscmp(g.rulestring, _T("B3/S23")) == 0);
+	g.islife = (_tcscmp(g.rulestring, _T("B3/S23")) == 0);
 
 	return TRUE;
 }
@@ -1084,13 +1071,6 @@ BOOL setrulesA(char *rulestringA)
 }
 
 #else // KS:
-
-extern struct globals_struct g;
-
-/*
- * Local data.
- */
-static TCHAR filename[MAX_PATH] = {'\0'};
 
 /*
  * Local procedures
@@ -1202,17 +1182,14 @@ getbackup(char *cp)
 	printgen();
 }
 
-static BOOL getfilename_l()
+static BOOL getfilename_l(HWND hwndParent, TCHAR *filename)
 {
 	OPENFILENAME ofn;
-	HWND hWnd;
-
-	hWnd=NULL;
 
 	ZeroMemory(&ofn,sizeof(OPENFILENAME));
 
 	ofn.lStructSize=sizeof(OPENFILENAME);
-	ofn.hwndOwner=hWnd;
+	ofn.hwndOwner=hwndParent;
 	ofn.lpstrFilter=_T("WLS Dump Files (*.wdf)\0*.wdf\0Text Files (*.txt)\0*.txt\0All files\0*.*\0\0");
 	ofn.nFilterIndex=1;
 	ofn.lpstrTitle=_T("Load state");
@@ -1228,7 +1205,7 @@ static BOOL getfilename_l()
 }
 
 
-BOOL getfilename_s()
+static BOOL getfilename_s(HWND hwndParent, TCHAR *filename)
 {
 	OPENFILENAME ofn;
 	HWND hWnd;
@@ -1238,7 +1215,7 @@ BOOL getfilename_s()
 	ZeroMemory(&ofn,sizeof(OPENFILENAME));
 
 	ofn.lStructSize=sizeof(OPENFILENAME);
-	ofn.hwndOwner=hWnd;
+	ofn.hwndOwner=hwndParent;
 	ofn.lpstrFilter=_T("WLS Dump Files (*.wdf)\0*.wdf\0Text Files (*.txt)\0*.txt\0All files\0*.*\0\0");
 	ofn.nFilterIndex=1;
 	ofn.lpstrTitle=_T("Save state");
@@ -1260,7 +1237,7 @@ BOOL getfilename_s()
  * If no file is specified, it is asked for.
  * Filename of "." means write to stdout.
  */
-void writegen(TCHAR *file1, BOOL append)
+void writegen(HWND hwndParent, TCHAR *file1, BOOL append)
 /*	char *	file;		 file name (or NULL) */
 /*	BOOL	append;		 TRUE to append instead of create */
 {
@@ -1280,7 +1257,7 @@ void writegen(TCHAR *file1, BOOL append)
 	}
 	else {
 		StringCchCopy(file,MAX_PATH,_T(""));
-		getfilename_s(file);
+		getfilename_s(hwndParent,file);
 	}
 
 	if (*file == '\0')
@@ -1406,7 +1383,7 @@ void writegen(TCHAR *file1, BOOL append)
  * Dump the current state of the search in the specified file.
  * If no file is specified, it is asked for.
  */
-void dumpstate(TCHAR *file1, BOOL echo)
+void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo)
 {
 	FILE *	fp;
 	CELL **	set;
@@ -1416,7 +1393,7 @@ void dumpstate(TCHAR *file1, BOOL echo)
 	int	gen;
 	int **	param;
 	char ind;
-	TCHAR *file = filename;
+	TCHAR *file = g.state_filename;
 	char buf[80];
 
 	if(file1) {
@@ -1424,17 +1401,17 @@ void dumpstate(TCHAR *file1, BOOL echo)
 	}
 	else 
 	{
-		if (!getfilename_s()) 
+		if (!getfilename_s(hwndParent,g.state_filename)) 
 		{
 			return;
 		}
 	}
 
-	fp = _tfopen(file, _T("wt"));
+	fp = _tfopen(g.state_filename, _T("wt"));
 
 	if (fp == NULL)
 	{
-		ttystatus(_T("Cannot create \"%s\"\n"), file);
+		ttystatus(_T("Cannot create \"%s\"\n"), g.state_filename);
 
 		return;
 	}
@@ -1525,14 +1502,14 @@ void dumpstate(TCHAR *file1, BOOL echo)
 
 	if (fclose(fp))
 	{
-		ttystatus(_T("Error writing \"%s\"\n"), file);
+		ttystatus(_T("Error writing \"%s\"\n"), g.state_filename);
 
 		return;
 	}
 
 	if (echo) 
 	{
-		wlsStatusf(NULL,_T("State dumped to \"%s\"\n"), file);
+		wlsStatusf(NULL,_T("State dumped to \"%s\"\n"), g.state_filename);
 	}
 }
 
@@ -1542,7 +1519,7 @@ void dumpstate(TCHAR *file1, BOOL echo)
  * Warning: Almost no checks are made for validity of the state.
  * Returns OK on success, ERROR1 on failure.
  */
-BOOL loadstate(void)
+BOOL loadstate(HWND hwndParent)
 {
 	FILE *	fp;
 	char *	cp;
@@ -1558,13 +1535,13 @@ BOOL loadstate(void)
 
 	STATUS status;
 
-	if (!getfilename_l()) return FALSE;
+	if (!getfilename_l(hwndParent,g.state_filename)) return FALSE;
 
-	fp = _tfopen(filename, _T("r"));
+	fp = _tfopen(g.state_filename, _T("r"));
 
 	if (fp == NULL)
 	{
-		ttystatus(_T("Cannot open state file \"%s\"\n"), filename);
+		ttystatus(_T("Cannot open state file \"%s\"\n"), g.state_filename);
 
 		return FALSE;
 	}
@@ -1578,7 +1555,7 @@ BOOL loadstate(void)
 
 	if (buf[0] != 'V')
 	{
-		ttystatus(_T("Missing version line in file \"%s\"\n"), filename);
+		ttystatus(_T("Missing version line in file \"%s\"\n"), g.state_filename);
 		fclose(fp);
 
 		return FALSE;
@@ -1779,12 +1756,12 @@ BOOL loadstate(void)
 
 	if (fclose(fp))
 	{
-		ttystatus(_T("Error reading \"%s\"\n"), filename);
+		ttystatus(_T("Error reading \"%s\"\n"), g.state_filename);
 
 		return FALSE;
 	}
 
-	wlsStatusf(NULL,_T("State loaded from \"%s\"\n"), filename);
+	wlsStatusf(NULL,_T("State loaded from \"%s\"\n"), g.state_filename);
 	return TRUE;
 }
 

@@ -1122,7 +1122,7 @@ search()
 		if (g.dumpfreq && (++g.dumpcount >= g.dumpfreq))
 		{
 			g.dumpcount = 0;
-			dumpstate(g.dumpfile);
+			dumpstate(NULL, g.dumpfile);
 		}
 
 		/*
@@ -1159,7 +1159,7 @@ search()
 		 * message will stay visible for a while.
 		 */
 		if (needwrite)
-			writegen(g.outputfile, TRUE);
+			writegen(NULL, g.outputfile, TRUE);
 
 		/*
 		 * Check for commands.
@@ -3339,7 +3339,7 @@ search()
 		if (g.dumpfreq && (++g.dumpcount >= g.dumpfreq))
 		{
 			g.dumpcount = 0;
-			dumpstate(g.dumpfile, FALSE);
+			dumpstate(NULL, g.dumpfile, FALSE);
 		}
 
 
@@ -3373,7 +3373,7 @@ search()
 
 		if (needwrite)
 		{
-			writegen(g.outputfile, TRUE);
+			writegen(NULL, g.outputfile, TRUE);
 		}
 
 

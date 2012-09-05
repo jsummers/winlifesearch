@@ -1443,7 +1443,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 
 		if (g.dumpfreq) {
 			g.dumpcount = 0;
-			dumpstate(g.dumpfile);
+			dumpstate(ctx->hwndFrame, g.dumpfile);
 		}
 
 		g.quitok = (g.curstatus == NOTEXIST);
@@ -1466,7 +1466,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 				wlsStatusf(ctx,_T("Object %d found."), ++ctx->foundcount);
 			}
 
-			writegen(g.outputfile, TRUE);
+			writegen(ctx->hwndFrame, g.outputfile, TRUE);
 			goto done;
 //			pause_search();
 //			continue;
@@ -1522,7 +1522,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 
 		if (g.dumpfreq) {
 			g.dumpcount = 0;
-			dumpstate(g.dumpfile, FALSE);
+			dumpstate(NULL, g.dumpfile, FALSE);
 		}
 
 		if ((g.curstatus == FOUND) && g.combine)
@@ -1530,7 +1530,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			g.curstatus = OK;
 			++g.foundcount;
             do_combine();
-			writegen(g.outputfile, TRUE);
+			writegen(NULL, g.outputfile, TRUE);
 			wlsStatusf(ctx,_T("Combine: %d cells remaining from %d solutions"), g.combinedcells, g.foundcount);
 			continue;
 		}
@@ -1546,7 +1546,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			++g.foundcount;
 			wlsStatusf(ctx,_T("Object %d found.\n"), g.foundcount);
 
-			writegen(g.outputfile, TRUE);
+			writegen(NULL, g.outputfile, TRUE);
 			if (!g.stoponfound) continue;
 			goto done;
 		}
@@ -1729,7 +1729,7 @@ static void start_search(struct wcontext *ctx, TCHAR *statefile)
 	g.curstatus=OK;
 
 	if(statefile) {
-		if(loadstate(statefile) == ERROR1) return;
+		if(loadstate(ctx->hwndFrame, statefile) == ERROR1) return;
 
 		printgen(g.curgen);
 		draw_gen_counter(ctx);
@@ -1825,7 +1825,7 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 	g.differentcombinedcells = 0;
 
 	if (load) {
-		if(!loadstate())
+		if(!loadstate(ctx->hwndFrame))
 		{
 			InvalidateRect(ctx->hwndMain,NULL,TRUE);
 			return FALSE;
@@ -2405,18 +2405,18 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		case IDC_SAVEGAME:
 #ifdef JS
 			if(ctx->searchstate==1)
-				dumpstate(NULL);
+				dumpstate(ctx->hwndFrame, NULL);
 #else
 			if (ctx->searchstate==0) {
 				if (prepare_search(ctx,FALSE)) {
-					dumpstate(NULL, FALSE);
+					dumpstate(ctx->hwndFrame, NULL, FALSE);
 					reset_search(ctx);
 				}
 			} else if (ctx->searchstate==1) {
-				dumpstate(NULL, FALSE);
+				dumpstate(ctx->hwndFrame, NULL, FALSE);
 			} else if (ctx->searchstate==2) {
 				pause_search(ctx);
-				dumpstate(NULL, FALSE);
+				dumpstate(ctx->hwndFrame, NULL, FALSE);
 				resume_search(ctx);
 			}
 #endif
