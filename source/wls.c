@@ -2248,15 +2248,12 @@ static void handle_MouseWheel(struct wcontext *ctx, HWND hWnd, WPARAM wParam)
 	}
 }
 
-#ifdef JS
 
-/****************************************************************************/
 static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
 	POINT pt;
 	struct wcontext *ctx = gctx;
-	//int rv;
 
 	id=LOWORD(wParam);
 
@@ -2280,9 +2277,11 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		ctx->brushes.cell=     CreateSolidBrush(RGB(0xc0,0xc0,0xc0));
 		ctx->brushes.cell_on=  CreateSolidBrush(RGB(0x00,0x00,0xff));
 		return 0;
+
 	case WM_CLOSE:
 		DestroyWindow(hWnd);
 		return 0;
+
 	case WM_DESTROY:
 		DeleteObject(ctx->pens.celloutline);
 		DeleteObject(ctx->pens.axes);
@@ -2292,9 +2291,9 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		DeleteObject(ctx->pens.unchecked);
 		DeleteObject(ctx->brushes.cell);
 		DeleteObject(ctx->brushes.cell_on);
-
 		PostQuitMessage(0);
 		return 0;
+
 	case WM_SIZE:
 		// set size of children
 		SetWindowPos(ctx->hwndMain,NULL,0,0,LOWORD(lParam),
@@ -2304,19 +2303,31 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		return 0;
 		
 	case WM_INITMENU:
+#ifdef JS
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHSTART,ctx->searchstate==0?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESET,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHPAUSE,ctx->searchstate==2?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESUME,ctx->searchstate==1?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP,ctx->searchstate==1?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP2,ctx->searchstate==1?MF_ENABLED:MF_GRAYED);
+#else
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHSTART,ctx->searchstate==0?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHPREPARE,ctx->searchstate==0?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESET,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHPAUSE,ctx->searchstate==2?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESUME,ctx->searchstate==1?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP2,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_COPYRESULT,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_COPYCOMBINATION,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_CLEARCOMBINATION,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
+#endif
 		return 0;
 
 	case WM_CHAR:
 		GetCursorPos(&pt);
 		ScreenToClient(hWnd,&pt);
-		return ButtonClick(ctx, msg,(WORD)pt.x,(WORD)pt.y,wParam);
-
+		return ButtonClick(ctx,msg,(WORD)pt.x,(WORD)pt.y,wParam);
 
 	case WM_COMMAND:
 		switch(id) {
@@ -2345,8 +2356,17 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			DialogBox(ctx->hInst,_T("DLGSEARCHSETTINGS"),hWnd,DlgProcSearch);
 			return 0;
 		case IDC_SEARCHSTART:
+#ifdef JS
 			start_search(ctx,NULL);
+#else
+			start_search(ctx);
+#endif
 			return 0;
+#ifndef JS
+		case IDC_SEARCHPREPARE:
+			prepare_search(ctx,FALSE);
+			return 0;
+#endif
 		case IDC_SEARCHPAUSE:
 			pause_search(ctx);
 			return 0;
@@ -2357,19 +2377,49 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			resume_search(ctx);
 			return 0;
 		case IDC_SEARCHBACKUP:
+#ifdef JS
 			if(ctx->searchstate==1)
 				getbackup("1 ");
+#else
+			if (ctx->searchstate==2)
+				pause_search(ctx);
+			if(ctx->searchstate==1)
+				getbackup("1 ");
+
+#endif
 			return 0;
 		case IDC_SEARCHBACKUP2:
+#ifdef JS
 			if(ctx->searchstate==1)
 				getbackup("20 ");
+#else
+			if (ctx->searchstate==2)
+				pause_search(ctx);
+			if(ctx->searchstate==1)
+				getbackup("20 ");
+#endif
 			return 0;
 		case IDC_OPENSTATE:
 			open_state(ctx);
 			return 0;
 		case IDC_SAVEGAME:
+#ifdef JS
 			if(ctx->searchstate==1)
 				dumpstate(NULL);
+#else
+			if (ctx->searchstate==0) {
+				if (prepare_search(ctx,FALSE)) {
+					dumpstate(NULL, FALSE);
+					reset_search(ctx);
+				}
+			} else if (ctx->searchstate==1) {
+				dumpstate(NULL, FALSE);
+			} else if (ctx->searchstate==2) {
+				pause_search(ctx);
+				dumpstate(NULL, FALSE);
+				resume_search(ctx);
+			}
+#endif
 			return 0;
 		case IDC_NEXTGEN:
 			gen_changeby(ctx,1);
@@ -2381,14 +2431,103 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			copytoclipboard(ctx);
 			return 0;
 		case IDC_CLEARGEN:
+#ifdef JS
 			clear_gen(g.curgen);
 			InvalidateRect(ctx->hwndMain,NULL,TRUE);
+#else
+			if(ctx->searchstate == 0) clear_gen(g.curgen);
+			hide_selection(ctx);
+			InvalidateRect(ctx->hwndMain,NULL,FALSE);
+#endif
 			return 0;
 		case IDC_CLEAR:
+#ifdef JS
 			clear_all(ctx);
 			InvalidateRect(ctx->hwndMain,NULL,TRUE);
+#else
+			if(ctx->searchstate == 0) clear_all(ctx);
+			InvalidateRect(ctx->hwndMain,NULL,FALSE);
+#endif
 			return 0;
 
+#ifndef JS
+		case IDC_COPYRESULT:
+			if(ctx->searchstate != 0) copy_result(ctx);
+			return 0;
+		case IDC_COPYCOMBINATION:
+			if (ctx->searchstate != 0) copy_combination(ctx);
+			return 0;
+		case IDC_CLEARCOMBINATION:
+			if (ctx->searchstate != 0) clear_combination(ctx);
+			return 0;
+		case IDC_SHIFTGUP:
+			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 0, -1);
+			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			return 0;
+		case IDC_SHIFTGDOWN:
+			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 0, 1);
+			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			return 0;
+		case IDC_SHIFTGLEFT:
+			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, -1, 0);
+			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			return 0;
+		case IDC_SHIFTGRIGHT:
+			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 1, 0);
+			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			return 0;
+		case IDC_SHIFTAUP:
+			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, 0, -1);
+			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			return 0;
+		case IDC_SHIFTADOWN:
+			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, 0, 1);
+			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			return 0;
+		case IDC_SHIFTALEFT:
+			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, -1, 0);
+			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			return 0;
+		case IDC_SHIFTARIGHT:
+			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, 1, 0);
+			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			return 0;
+		case IDC_SHIFTAPAST:
+			if(ctx->searchstate == 0) shift_gen(ctx, 0, g.genmax-1, -1, 0, 0);
+			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			return 0;
+		case IDC_SHIFTAFUTURE:
+			if(ctx->searchstate == 0) shift_gen(ctx, 0, g.genmax-1, 1, 0, 0);
+			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			return 0;
+		case ID_FLIP_GEN_H:
+			if(ctx->searchstate == 0) flip_h(ctx, g.curgen, g.curgen);
+			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			return 0;
+		case ID_FLIP_GEN_V:
+			if(ctx->searchstate == 0) flip_v(ctx, g.curgen, g.curgen);
+			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			return 0;
+		case ID_FLIP_ALL_H:
+			if(ctx->searchstate == 0) flip_h(ctx, 0, GENMAX - 1);
+			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			return 0;
+		case ID_FLIP_ALL_V:
+			if(ctx->searchstate == 0) flip_v(ctx, 0, GENMAX - 1);
+			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			return 0;
+		case ID_TRANS_GEN:
+			if(ctx->searchstate == 0) transpose(ctx, g.curgen, g.curgen);
+			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			return 0;
+		case ID_TRANS_ALL:
+			if(ctx->searchstate == 0) transpose(ctx, 0, GENMAX - 1);
+			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			return 0;
+		case ID_HIDESEL:
+			hide_selection(ctx);
+			return 0;
+#endif
 		}
 		break;
 	}
@@ -2452,7 +2591,7 @@ static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
 	switch(msg) {
 	case WM_PAINT:
-		PaintWindow(ctx, hWnd);
+		PaintWindow(ctx,hWnd);
 		return 0;
 
 	case WM_HSCROLL:
@@ -2468,13 +2607,9 @@ static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 	case WM_LBUTTONUP:
 	case WM_MOUSEMOVE:
 		if(ctx->searchstate==0) {
-			ButtonClick(ctx, msg,LOWORD(lParam),HIWORD(lParam),wParam);
+			ButtonClick(ctx,msg,LOWORD(lParam),HIWORD(lParam),wParam);
 		}
 		return 0;
-//	case WM_KEYDOWN:
-//		ButtonClick(msg,LOWORD(lParam),HIWORD(lParam),wParam);
-//		return 0;
-//
 	}
 
 	return (DefWindowProc(hWnd, msg, wParam, lParam));
@@ -2559,7 +2694,11 @@ static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			if(g.curgen>=g.genmax) g.curgen=0;
 			if(g.curgen!=ori_gen) {
 				draw_gen_counter(ctx);
+#ifdef JS
 				InvalidateRect(ctx->hwndMain,NULL,TRUE);
+#else
+				InvalidateRect(ctx->hwndMain,NULL,FALSE);
+#endif
 			}
 			return 0;
 		}
@@ -2576,9 +2715,15 @@ static INT_PTR CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 
 	switch (msg) {
 	case WM_INITDIALOG:
+#ifdef JS
 		SetDlgItemText(hWnd,IDC_ABOUTTEXT,WLS_APPNAME _T(" v0.4+\r\n\r\n")
 			_T("A Windows port of David Bell\x2019s LIFESRC v3.5\r\n\r\n")
 			_T("By Jason Summers"));
+#else
+		SetDlgItemText(hWnd,IDC_ABOUTTEXT,WLS_APPNAME _T(" v0.61+\r\n\r\n")
+			_T("A Windows port of David Bell\x2019s LIFESRC v3.5\r\n\r\n")
+			_T("By Jason Summers and Karel Suhajda"));
+#endif
 		return 1;   // didn't call SetFocus
 
 	case WM_COMMAND:
@@ -2638,7 +2783,6 @@ static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 				}
 			}
 
-			//InvalidateRect(hwndMain,NULL,TRUE);
 			set_main_scrollbars(ctx, 1, 1);
 			// fall through
 		case IDCANCEL:
@@ -2648,7 +2792,6 @@ static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 	}
 	return 0;		// Didn't process a message
 }
-
 
 static INT_PTR CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -2683,6 +2826,8 @@ static INT_PTR CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 	}
 	return 0;		// Didn't process a message
 }
+
+#ifdef JS
 
 static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -2908,534 +3053,6 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 }
 
 #else // KS:
-
-/****************************************************************************/
-static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	WORD id;
-	POINT pt;
-	struct wcontext *ctx = gctx;
-
-	id=LOWORD(wParam);
-
-	switch(msg) {
-
-	case WM_MOUSEWHEEL:
-		handle_MouseWheel(ctx, hWnd, wParam);
-		return 0;
-
-	case WM_CREATE:
-#ifdef _DEBUG
-		ctx->pens.celloutline= CreatePen(PS_SOLID,0,RGB(0xc0,0x00,0x00));
-#else
-		ctx->pens.celloutline= CreatePen(PS_SOLID,0,RGB(0x00,0x00,0x00));
-#endif
-		ctx->pens.axes=        CreatePen(PS_DOT  ,0,RGB(0x00,0x00,0xff));
-		ctx->pens.cell_off=    CreatePen(PS_SOLID,0,RGB(0x00,0x00,0xff));
-		ctx->pens.arrow1=      CreatePen(PS_SOLID,2,RGB(0x00,0xff,0x00));
-		ctx->pens.arrow2=      CreatePen(PS_SOLID,2,RGB(0xff,0x00,0x00));
-		ctx->pens.unchecked=   CreatePen(PS_SOLID,0,RGB(0x00,0x00,0x00));
-		ctx->brushes.cell=     CreateSolidBrush(RGB(0xc0,0xc0,0xc0));
-		ctx->brushes.cell_on=  CreateSolidBrush(RGB(0x00,0x00,0xff));
-		// >>>
-		return 0;
-	case WM_CLOSE:
-		DestroyWindow(hWnd);
-		return 0;
-	case WM_DESTROY:
-		DeleteObject(ctx->pens.celloutline);
-		DeleteObject(ctx->pens.axes);
-		DeleteObject(ctx->pens.cell_off);
-		DeleteObject(ctx->pens.arrow1);
-		DeleteObject(ctx->pens.arrow2);
-		DeleteObject(ctx->pens.unchecked);
-		DeleteObject(ctx->brushes.cell);
-		DeleteObject(ctx->brushes.cell_on);
-
-		PostQuitMessage(0);
-		return 0;
-	case WM_SIZE:
-		// set size of children
-		SetWindowPos(ctx->hwndMain,NULL,0,0,LOWORD(lParam),
-			HIWORD(lParam)-TOOLBARHEIGHT,SWP_NOZORDER);
-		SetWindowPos(ctx->hwndToolbar,NULL,0,HIWORD(lParam)-TOOLBARHEIGHT,
-			LOWORD(lParam),TOOLBARHEIGHT,SWP_NOZORDER);
-		return 0;
-		
-	case WM_INITMENU:
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHSTART,ctx->searchstate==0?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHPREPARE,ctx->searchstate==0?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESET,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHPAUSE,ctx->searchstate==2?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESUME,ctx->searchstate==1?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP2,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_COPYRESULT,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_COPYCOMBINATION,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_CLEARCOMBINATION,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
-		return 0;
-
-	case WM_CHAR:
-		GetCursorPos(&pt);
-		ScreenToClient(hWnd,&pt);
-		return ButtonClick(ctx,msg,(WORD)pt.x,(WORD)pt.y,wParam);
-
-
-	case WM_COMMAND:
-		switch(id) {
-		case IDC_EXIT:
-			DestroyWindow(hWnd);
-			return 0;
-		case IDC_ABOUT:
-			DialogBox(ctx->hInst,_T("DLGABOUT"),hWnd,DlgProcAbout);
-			return 0;
-		case IDC_ROWS:
-			DialogBox(ctx->hInst,_T("DLGROWS"),hWnd,DlgProcRows);
-			return 0;
-		case IDC_PERIOD:
-			DialogBox(ctx->hInst,_T("DLGPERIOD"),hWnd,DlgProcPeriod);
-			return 0;
-		case IDC_SYMMETRY:
-			DialogBox(ctx->hInst,_T("DLGSYMMETRY"),hWnd,DlgProcSymmetry);
-			return 0;
-		case IDC_TRANSLATE:
-			DialogBox(ctx->hInst,_T("DLGTRANSLATE"),hWnd,DlgProcTranslate);
-			return 0;
-		case IDC_OUTPUTSETTINGS:
-			DialogBox(ctx->hInst,_T("DLGSETTINGS"),hWnd,DlgProcOutput);
-			return 0;
-		case IDC_SEARCHSETTINGS:
-			DialogBox(ctx->hInst,_T("DLGSEARCHSETTINGS"),hWnd,DlgProcSearch);
-			return 0;
-		case IDC_SEARCHSTART:
-			start_search(ctx);
-			return 0;
-		case IDC_SEARCHPREPARE:
-			prepare_search(ctx,FALSE);
-			return 0;
-		case IDC_SEARCHPAUSE:
-			pause_search(ctx);
-			return 0;
-		case IDC_SEARCHRESET:
-			reset_search(ctx);
-			return 0;
-		case IDC_SEARCHRESUME:
-			resume_search(ctx);
-			return 0;
-		case IDC_SEARCHBACKUP:
-			if (ctx->searchstate==2)
-				pause_search(ctx);
-			if(ctx->searchstate==1)
-				getbackup("1 ");
-			return 0;
-		case IDC_SEARCHBACKUP2:
-			if (ctx->searchstate==2)
-				pause_search(ctx);
-			if(ctx->searchstate==1)
-				getbackup("20 ");
-			return 0;
-		case IDC_OPENSTATE:
-			open_state(ctx);
-			return 0;
-		case IDC_SAVEGAME:
-			if (ctx->searchstate==0) {
-				if (prepare_search(ctx,FALSE)) {
-					dumpstate(NULL, FALSE);
-					reset_search(ctx);
-				}
-			} else if (ctx->searchstate==1) {
-				dumpstate(NULL, FALSE);
-			} else if (ctx->searchstate==2) {
-				pause_search(ctx);
-				dumpstate(NULL, FALSE);
-				resume_search(ctx);
-			}
-			return 0;
-		case IDC_NEXTGEN:
-			gen_changeby(ctx,1);
-			return 0;
-		case IDC_PREVGEN:
-			gen_changeby(ctx,-1);
-			return 0;
-		case IDC_EDITCOPY:
-			copytoclipboard(ctx);
-			return 0;
-		case IDC_CLEARGEN:
-			if(ctx->searchstate == 0) clear_gen(g.curgen);
-			hide_selection(ctx);
-			InvalidateRect(ctx->hwndMain,NULL,FALSE);
-			return 0;
-		case IDC_CLEAR:
-			if(ctx->searchstate == 0) clear_all(ctx);
-			InvalidateRect(ctx->hwndMain,NULL,FALSE);
-			return 0;
-		case IDC_COPYRESULT:
-			if(ctx->searchstate != 0) copy_result(ctx);
-			return 0;
-		case IDC_COPYCOMBINATION:
-			if (ctx->searchstate != 0) copy_combination(ctx);
-			return 0;
-		case IDC_CLEARCOMBINATION:
-			if (ctx->searchstate != 0) clear_combination(ctx);
-			return 0;
-		case IDC_SHIFTGUP:
-			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 0, -1);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
-			return 0;
-		case IDC_SHIFTGDOWN:
-			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 0, 1);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
-			return 0;
-		case IDC_SHIFTGLEFT:
-			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, -1, 0);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
-			return 0;
-		case IDC_SHIFTGRIGHT:
-			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 1, 0);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
-			return 0;
-		case IDC_SHIFTAUP:
-			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, 0, -1);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
-			return 0;
-		case IDC_SHIFTADOWN:
-			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, 0, 1);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
-			return 0;
-		case IDC_SHIFTALEFT:
-			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, -1, 0);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
-			return 0;
-		case IDC_SHIFTARIGHT:
-			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, 1, 0);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
-			return 0;
-		case IDC_SHIFTAPAST:
-			if(ctx->searchstate == 0) shift_gen(ctx, 0, g.genmax-1, -1, 0, 0);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
-			return 0;
-		case IDC_SHIFTAFUTURE:
-			if(ctx->searchstate == 0) shift_gen(ctx, 0, g.genmax-1, 1, 0, 0);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
-			return 0;
-		case ID_FLIP_GEN_H:
-			if(ctx->searchstate == 0) flip_h(ctx, g.curgen, g.curgen);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
-			return 0;
-		case ID_FLIP_GEN_V:
-			if(ctx->searchstate == 0) flip_v(ctx, g.curgen, g.curgen);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
-			return 0;
-		case ID_FLIP_ALL_H:
-			if(ctx->searchstate == 0) flip_h(ctx, 0, GENMAX - 1);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
-			return 0;
-		case ID_FLIP_ALL_V:
-			if(ctx->searchstate == 0) flip_v(ctx, 0, GENMAX - 1);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
-			return 0;
-		case ID_TRANS_GEN:
-			if(ctx->searchstate == 0) transpose(ctx, g.curgen, g.curgen);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
-			return 0;
-		case ID_TRANS_ALL:
-			if(ctx->searchstate == 0) transpose(ctx, 0, GENMAX - 1);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
-			return 0;
-		case ID_HIDESEL:
-			hide_selection(ctx);
-			return 0;
-		break;
-		}
-	}
-
-	return (DefWindowProc(hWnd, msg, wParam, lParam));
-}
-
-static void Handle_Scroll(struct wcontext *ctx, UINT msg, WORD scrollboxpos, WORD id)
-{
-	POINT oldscrollpos;
-
-	oldscrollpos = ctx->scrollpos;
-
-	if(msg==WM_HSCROLL) {
-		switch(id) {
-		case SB_LINELEFT: ctx->scrollpos.x-=ctx->cellwidth; break;
-		case SB_LINERIGHT: ctx->scrollpos.x+=ctx->cellwidth; break;
-		case SB_PAGELEFT: ctx->scrollpos.x-=ctx->cellwidth*4; break;
-		case SB_PAGERIGHT: ctx->scrollpos.x+=ctx->cellwidth*4; break;
-		case SB_THUMBTRACK:
-			if(scrollboxpos==ctx->scrollpos.x) return;
-			ctx->scrollpos.x=scrollboxpos;
-			break;
-		default:
-			return;
-		}
-	}
-	else { // WM_VSCROLL
-		switch(id) {
-		case SB_LINELEFT: ctx->scrollpos.y-=ctx->cellheight; break;
-		case SB_LINERIGHT: ctx->scrollpos.y+=ctx->cellheight; break;
-		case SB_PAGELEFT: ctx->scrollpos.y-=ctx->cellheight*4; break;
-		case SB_PAGERIGHT: ctx->scrollpos.y+=ctx->cellheight*4; break;
-		case SB_THUMBTRACK:
-			if(scrollboxpos==ctx->scrollpos.y) return;
-			ctx->scrollpos.y=scrollboxpos;
-			break;
-		default:
-			return;
-		}
-	}
-
-	fix_scrollpos(ctx);
-
-	if(ctx->scrollpos.x==oldscrollpos.x && ctx->scrollpos.y==oldscrollpos.y) return;
-
-	ScrollWindowEx(ctx->hwndMain,
-		oldscrollpos.x-ctx->scrollpos.x,
-		oldscrollpos.y-ctx->scrollpos.y,
-		NULL,NULL,NULL,NULL,SW_INVALIDATE|SW_ERASE);
-
-	set_main_scrollbars(ctx, 0, 0);
-}
-
-static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	WORD id;
-	struct wcontext *ctx = gctx;
-
-	id = sizeof(CELL);
-	id=LOWORD(wParam);
-
-	switch(msg) {
-	case WM_PAINT:
-		PaintWindow(ctx,hWnd);
-		return 0;
-
-	case WM_HSCROLL:
-	case WM_VSCROLL:
-		Handle_Scroll(ctx,msg,HIWORD(wParam),id);
-		return 0;
-
-	case WM_SIZE:
-		set_main_scrollbars(ctx, 0, 1);
-		return 0;
-	case WM_LBUTTONDOWN:
-	case WM_RBUTTONDOWN:
-	case WM_LBUTTONUP:
-	case WM_MOUSEMOVE:
-		if(ctx->searchstate==0) {
-			ButtonClick(ctx,msg,LOWORD(lParam),HIWORD(lParam),wParam);
-		}
-		return 0;
-	}
-
-	return (DefWindowProc(hWnd, msg, wParam, lParam));
-}
-
-static void Handle_ToolbarCreate(struct wcontext *ctx, HWND hWnd, LPARAM lParam)
-{
-	CREATESTRUCT *cs;
-
-	cs = (CREATESTRUCT*)lParam;
-
-	ctx->hwndGen=CreateWindow(_T("Static"),_T("0"),
-		WS_CHILD|WS_BORDER|SS_CENTER|SS_NOPREFIX,
-		1,1,40,TOOLBARHEIGHT-2,
-		hWnd,NULL,ctx->hInst,NULL);
-	SendMessage(ctx->hwndGen,WM_SETFONT,(WPARAM)ctx->statusfont,(LPARAM)FALSE);
-	ShowWindow(ctx->hwndGen,SW_SHOW);
-
-	ctx->hwndGenScroll=CreateWindow(_T("Scrollbar"),_T("wls_gen_scrollbar"),
-		WS_CHILD|WS_VISIBLE|SBS_HORZ,
-		41,1,80,TOOLBARHEIGHT-2,
-		hWnd,NULL,ctx->hInst,NULL);
-
-	ctx->hwndStatus=CreateWindow(_T("Static"),_T(""),
-		WS_CHILD|WS_BORDER|SS_LEFTNOWORDWRAP|SS_NOPREFIX,
-		121,1,cs->cx-121,TOOLBARHEIGHT-2,
-		hWnd,NULL,ctx->hInst,NULL);
-	SendMessage(ctx->hwndStatus,WM_SETFONT,(WPARAM)ctx->statusfont,(LPARAM)FALSE);
-	ShowWindow(ctx->hwndStatus,SW_SHOW);
-
-#ifdef _DEBUG
-		wlsStatusf(ctx,_T("DEBUG BUILD"));
-#endif
-		draw_gen_counter(ctx);
-}
-
-static void Handle_ToolbarSize(struct wcontext *ctx, HWND hWnd, LPARAM lParam)
-{
-	int newwidth = LOWORD(lParam);
-
-	if(!ctx->hwndStatus) return;
-
-	// Resize the status window accordingly
-	SetWindowPos(ctx->hwndStatus,NULL,0,0,newwidth-121,TOOLBARHEIGHT-2,
-		/*SWP_NOACTIVATE|*/SWP_NOMOVE/*|SWP_NOOWNERZORDER*/|SWP_NOZORDER);
-}
-
-static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	HWND htmp;
-	WORD id;
-	struct wcontext *ctx = gctx;
-
-	int ori_gen;
-
-	id=LOWORD(wParam);
-
-	switch(msg) {
-
-	case WM_CREATE:
-		Handle_ToolbarCreate(ctx,hWnd,lParam);
-		return 0;
-
-	case WM_SIZE:
-		Handle_ToolbarSize(ctx,hWnd,lParam);
-		return 0;
-
-	case WM_HSCROLL:
-		htmp=(HWND)(lParam);
-		if(htmp==ctx->hwndGenScroll) {
-			ori_gen=g.curgen;
-			switch(id) {
-			case SB_LINELEFT: g.curgen--; break;
-			case SB_LINERIGHT: g.curgen++; break;
-			case SB_PAGELEFT: g.curgen--; break;
-			case SB_PAGERIGHT: g.curgen++; break;
-			case SB_LEFT: g.curgen=0; break;
-			case SB_RIGHT: g.curgen=g.genmax-1; break;
-			case SB_THUMBPOSITION: g.curgen=HIWORD(wParam); break;
-			case SB_THUMBTRACK: g.curgen=HIWORD(wParam); break;
-			}
-			if(g.curgen<0) g.curgen=g.genmax-1;  // wrap around
-			if(g.curgen>=g.genmax) g.curgen=0;
-			if(g.curgen!=ori_gen) {
-				draw_gen_counter(ctx);
-				InvalidateRect(ctx->hwndMain,NULL,FALSE);
-			}
-			return 0;
-		}
-		break;
-	}
-
-	return (DefWindowProc(hWnd, msg, wParam, lParam));
-}
-
-static INT_PTR CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	WORD id;
-	id=LOWORD(wParam);
-
-	switch (msg) {
-	case WM_INITDIALOG:
-		SetDlgItemText(hWnd,IDC_ABOUTTEXT,WLS_APPNAME _T(" v0.61+\r\n\r\n")
-			_T("A Windows port of David Bell\x2019s LIFESRC v3.5\r\n\r\n")
-			_T("By Jason Summers and Karel Suhajda"));
-		return 1;   // didn't call SetFocus
-
-	case WM_COMMAND:
-		if (id == IDOK || id == IDCANCEL) {
-			EndDialog(hWnd, TRUE);
-			return 1;
-		}
-		break;
-	}
-	return 0;		// Didn't process a message
-}
-
-static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	WORD id;
-	struct wcontext *ctx = gctx;
-
-	id=LOWORD(wParam);
-
-	switch (msg) {
-	case WM_INITDIALOG:
-		SetDlgItemInt(hWnd,IDC_COLUMNS,g.colmax,FALSE);
-		SetDlgItemInt(hWnd,IDC_ROWS,g.rowmax,FALSE);
-		return 1;   // didn't call SetFocus
-
-	case WM_COMMAND:
-		switch(id) {
-		case IDOK:
-			g.colmax=GetDlgItemInt(hWnd,IDC_COLUMNS,NULL,FALSE);
-			g.rowmax=GetDlgItemInt(hWnd,IDC_ROWS,NULL,FALSE);
-			if(g.colmax<1) g.colmax=1;
-			if(g.rowmax<1) g.rowmax=1;
-			if(g.colmax>COLMAX) g.colmax=COLMAX;
-			if(g.rowmax>ROWMAX) g.rowmax=ROWMAX;
-			RecalcCenter(ctx);
-
-			// put these in a separate Validate function
-			if(g.colmax!=g.rowmax) {
-				if(symmap[g.symmetry] & 0x66) {
-					MessageBox(hWnd,_T("Current symmetry requires that rows and ")
-						_T("columns be equal. Your symmetry setting has been altered."),
-						_T("Warning"),MB_OK|MB_ICONWARNING);
-					switch(g.symmetry) {
-					case 3: case 4: g.symmetry=0; break;
-					case 7: case 8: g.symmetry=5; break;
-					case 9: g.symmetry=6;
-					}
-				}
-			}
-
-			if(g.colmax != g.rowmax) {
-				if(g.trans_rotate==1 || g.trans_rotate==3) {
-					MessageBox(hWnd,_T("Current rotation setting requires that rows and ")
-						_T("columns be equal. Your translation setting has been altered."),
-						_T("Warning"),MB_OK|MB_ICONWARNING);
-					g.trans_rotate--;
-				}
-			}
-
-			set_main_scrollbars(ctx, 1, 1);
-			// fall through
-		case IDCANCEL:
-			EndDialog(hWnd, TRUE);
-			return 1;
-		}
-	}
-	return 0;		// Didn't process a message
-}
-
-
-static INT_PTR CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	WORD id;
-	TCHAR buf[80];
-	struct wcontext *ctx = gctx;
-
-	id=LOWORD(wParam);
-
-	switch (msg) {
-	case WM_INITDIALOG:
-		StringCbPrintf(buf,sizeof(buf),_T("Enter a period from 1 to %d"),GENMAX);
-		SetDlgItemText(hWnd,IDC_PERIODTEXT,buf);
-		SetDlgItemInt(hWnd,IDC_PERIOD1,g.genmax,FALSE);
-		return 1;
-
-	case WM_COMMAND:
-		switch(id) {
-		case IDOK:
-			g.genmax=GetDlgItemInt(hWnd,IDC_PERIOD1,NULL,FALSE);
-			if(g.genmax>GENMAX) g.genmax=GENMAX;
-			if(g.genmax<1) g.genmax=1;
-			if(g.curgen>=g.genmax) g.curgen=g.genmax-1;
-
-			draw_gen_counter(ctx);
-			InvalidateRect(ctx->hwndMain,NULL,TRUE);
-			// fall through
-		case IDCANCEL:
-			EndDialog(hWnd, TRUE);
-			return 1;
-		}
-	}
-	return 0;		// Didn't process a message
-}
 
 static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -3822,8 +3439,13 @@ static BOOL InitApp(struct wcontext *ctx, int nCmdShow)
 {
 	RECT r;
 
+#ifdef JS
+	ctx->cellwidth = 15;
+	ctx->cellheight = 15;
+#else
 	ctx->cellwidth = 16;
 	ctx->cellheight = 16;
+#endif
 	ctx->scrollpos.x=0; ctx->scrollpos.y=0;
 
 	InitGameSettings(ctx);

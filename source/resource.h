@@ -117,7 +117,6 @@
 #define IDC_COPYRESULT                  40029
 #define IDC_SHIFTGUP                    40032
 #define IDC_SHIFTGDOWN                  40033
-#define IDCSHIFTGLEFT                   40034
 #define IDC_SHIFTGRIGHT                 40035
 #define IDC_SHIFTGLEFT                  40036
 #define IDC_SHIFTAUP                    40037

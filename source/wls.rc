@@ -210,7 +210,7 @@ BEGIN
             BEGIN
                 MENUITEM "&Up\tShift+Up",               IDC_SHIFTGUP
                 MENUITEM "&Down\tShift+Down",           IDC_SHIFTGDOWN
-                MENUITEM "&Left\tShift+Left",           IDCSHIFTGLEFT
+                MENUITEM "&Left\tShift+Left",           IDC_SHIFTGLEFT
                 MENUITEM "&Right\tShift+Right",         IDC_SHIFTGRIGHT
             END
             POPUP "&All generations"
