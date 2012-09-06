@@ -73,6 +73,9 @@ struct wcontext {
 	RECT selectrect;
 	int inverted;
 	HANDLE hthread;
+#define WLS_SRCH_OFF      0
+#define WLS_SRCH_PAUSED   1
+#define WLS_SRCH_RUNNING  2
 	int searchstate;
 	pens_type pens;
 	brushes_type brushes;
@@ -1045,7 +1048,7 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 
 	SelectOff(ctx,hDC);
 
-	if(ctx->searchstate == 0) {
+	if(ctx->searchstate == WLS_SRCH_OFF) {
 		if(tmp==WLS_SEL_SELECTED) {
 			if(newval>=0) {
 				for(i=ctx->selectrect.left;i<=ctx->selectrect.right;i++) {
@@ -1497,8 +1500,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 		goto done;
 	}
 done:
-	ctx->searchstate=1;
-	//ExitThread(0);
+	ctx->searchstate=WLS_SRCH_PAUSED;
 	_endthreadex(0);
 	return 0;
 }
@@ -1593,12 +1595,12 @@ done:
 			for(i=0;i<COLMAX;i++)
 				for(j=0;j<ROWMAX;j++)
 					g.currfield[k][i][j]=g.origfield[k][i][j];
-		ctx->searchstate = 0;
+		ctx->searchstate=WLS_SRCH_OFF;
 		wlsRepaintCells(ctx,FALSE);
 	}
 	else
 	{
-		ctx->searchstate=1;
+		ctx->searchstate = WLS_SRCH_PAUSED;
 	}
 	_endthreadex(0);
 	return 0;
@@ -1615,19 +1617,19 @@ static void resume_search(struct wcontext *ctx)
 	SetWindowText(ctx->hwndFrame,WLS_APPNAME);
 	wlsStatusf(ctx,_T("Searching..."));
 
-	if(ctx->searchstate!=1) {
+	if(ctx->searchstate!=WLS_SRCH_PAUSED) {
 		wlsErrorf(ctx,_T("No search is paused"));
 		return;
 	}
 	abortthread=0;
 
-	ctx->searchstate=2;
+	ctx->searchstate=WLS_SRCH_RUNNING;
 	ctx->hthread=(HANDLE)_beginthreadex(NULL,0,search_thread,(void*)0,0,&threadid);
 
 
 	if(ctx->hthread==NULL) {
 		wlsErrorf(ctx,_T("Unable to create search thread"));
-		ctx->searchstate=1;
+		ctx->searchstate=WLS_SRCH_PAUSED;
 	}
 	else {
 		SetWindowText(ctx->hwndFrame,WLS_APPNAME);
@@ -1663,19 +1665,19 @@ static void resume_search(struct wcontext *ctx)
 		wlsStatusf(ctx,_T("Searching..."));
 	}
 
-	if(ctx->searchstate!=1) {
+	if(ctx->searchstate!=WLS_SRCH_PAUSED) {
 		wlsErrorf(ctx,_T("No search is paused"));
 		return;
 	}
 	abortthread=0;
 
-	ctx->searchstate=2;
+	ctx->searchstate=WLS_SRCH_RUNNING;
 	ctx->hthread=(HANDLE)_beginthreadex(NULL,0,search_thread,(void*)0,0,&threadid);
 
 
 	if(ctx->hthread==NULL) {
 		wlsErrorf(ctx,_T("Unable to create search thread"));
-		ctx->searchstate=1;
+		ctx->searchstate=WLS_SRCH_PAUSED;
 	}
 	else {
 		SetWindowText(ctx->hwndFrame,WLS_APPNAME);
@@ -1697,7 +1699,7 @@ static void start_search(struct wcontext *ctx, TCHAR *statefile)
 	int i,j,k;
 //	CELL *cell;
 
-	if(ctx->searchstate!=0) {
+	if(ctx->searchstate!=WLS_SRCH_OFF) {
 		wlsErrorf(ctx,_T("A search is already running"));
 		return;
 	}
@@ -1744,7 +1746,7 @@ static void start_search(struct wcontext *ctx, TCHAR *statefile)
 
 		printgen(g.curgen);
 		draw_gen_counter(ctx);
-		ctx->searchstate=1;
+		ctx->searchstate=WLS_SRCH_PAUSED;
 /*
 		// set up the starting position
 		for(k=0;k<genmax;k++) 
@@ -1776,7 +1778,7 @@ static void start_search(struct wcontext *ctx, TCHAR *statefile)
 		}
 
 		ctx->foundcount=0;
-		ctx->searchstate=1;  // pretend the search is "paused"
+		ctx->searchstate=WLS_SRCH_PAUSED;  // pretend the search is "paused"
 		resume_search(ctx);
 	}
 }
@@ -1787,7 +1789,7 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 {
 	int i;
 
-	if(ctx->searchstate!=0) {
+	if(ctx->searchstate!=WLS_SRCH_OFF) {
 		wlsErrorf(ctx,_T("A search is already running"));
 		return FALSE;
 	}
@@ -1856,7 +1858,7 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 
 		initsearchorder(); 
 	}
-	ctx->searchstate=1;  // pretend the search is "paused"
+	ctx->searchstate=WLS_SRCH_PAUSED;  // pretend the search is "paused"
 
 	printgen();
 
@@ -1877,7 +1879,7 @@ static void pause_search(struct wcontext *ctx)
 {
 	DWORD exitcode;
 
-	if(ctx->searchstate!=2) {
+	if(ctx->searchstate!=WLS_SRCH_RUNNING) {
 		wlsErrorf(ctx,_T("No search is running"));
 		return;
 	}
@@ -1890,7 +1892,7 @@ static void pause_search(struct wcontext *ctx)
 		}
 	} while(exitcode==STILL_ACTIVE);
 	CloseHandle(ctx->hthread);
-	ctx->searchstate=1;
+	ctx->searchstate=WLS_SRCH_PAUSED;
 
 	// Tell Windows we're okay with the computer going to sleep.
 	SetThreadExecutionState(ES_CONTINUOUS);
@@ -1906,17 +1908,17 @@ static void reset_search(struct wcontext *ctx)
 {
 	int i,j,k;
 
-	if(ctx->searchstate==0) {
+	if(ctx->searchstate==WLS_SRCH_OFF) {
 		wlsErrorf(ctx,_T("No search in progress"));
 		goto here;
 	}
 
 	// stop the search thread if it is running
-	if(ctx->searchstate==2) {
+	if(ctx->searchstate==WLS_SRCH_RUNNING) {
 		pause_search(ctx);
 	}
 
-	ctx->searchstate=0;
+	ctx->searchstate=WLS_SRCH_OFF;
 
 	record_malloc(0,NULL);    // free memory
 
@@ -1934,7 +1936,7 @@ here:
 
 static void open_state(struct wcontext *ctx)
 {
-	if(ctx->searchstate!=0) reset_search(ctx);
+	if(ctx->searchstate!=WLS_SRCH_OFF) reset_search(ctx);
 
 #ifdef JS
 	start_search(ctx,_T(""));
@@ -2124,9 +2126,9 @@ static void copy_result(struct wcontext *ctx)
 {
 	int g1, i, j;
 
-	if (ctx->searchstate == 0) return;
+	if (ctx->searchstate == WLS_SRCH_OFF) return;
 
-	if (ctx->searchstate != 1) pause_search(ctx);
+	if (ctx->searchstate != WLS_SRCH_PAUSED) pause_search(ctx);
 
 	for(g1=0;g1<g.genmax;g1++) {
 		for(i=0;i<g.colmax;i++){
@@ -2136,16 +2138,16 @@ static void copy_result(struct wcontext *ctx)
 		}
 	}
 
-	if (ctx->searchstate != 0) reset_search(ctx);
+	if (ctx->searchstate != WLS_SRCH_OFF) reset_search(ctx);
 }
 
 static void copy_combination(struct wcontext *ctx)
 {
 	int g1, i, j;
 
-	if (ctx->searchstate == 0) return;
+	if (ctx->searchstate == WLS_SRCH_OFF) return;
 
-	if (ctx->searchstate != 1) pause_search(ctx);
+	if (ctx->searchstate != WLS_SRCH_PAUSED) pause_search(ctx);
 
 	show_combine(ctx);
 
@@ -2157,14 +2159,14 @@ static void copy_combination(struct wcontext *ctx)
 		}
 	}
 
-	if (ctx->searchstate != 0) reset_search(ctx);
+	if (ctx->searchstate != WLS_SRCH_OFF) reset_search(ctx);
 }
 
 static void clear_combination(struct wcontext *ctx)
 {
-	if (ctx->searchstate == 0) return;
+	if (ctx->searchstate == WLS_SRCH_OFF) return;
 
-	if (ctx->searchstate != 1) pause_search(ctx);
+	if (ctx->searchstate != WLS_SRCH_PAUSED) pause_search(ctx);
 
 	g.combining = 0;
 }
@@ -2181,7 +2183,7 @@ static void copytoclipboard(struct wcontext *ctx)
 	int i,j;
 	int offset;
 
-	if(ctx->searchstate==0) {
+	if(ctx->searchstate==WLS_SRCH_OFF) {
 		// bornrules/liverules may not be set up yet
 		// probably we could call setrules().
 		StringCbCopy(buf,sizeof(buf),_T("#P 0 0\r\n"));
@@ -2300,23 +2302,23 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		
 	case WM_INITMENU:
 #ifdef JS
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHSTART,ctx->searchstate==0?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESET,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHPAUSE,ctx->searchstate==2?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESUME,ctx->searchstate==1?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP,ctx->searchstate==1?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP2,ctx->searchstate==1?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHSTART,ctx->searchstate==WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESET,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHPAUSE,ctx->searchstate==WLS_SRCH_RUNNING?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESUME,ctx->searchstate==WLS_SRCH_PAUSED?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP,ctx->searchstate==WLS_SRCH_PAUSED?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP2,ctx->searchstate==WLS_SRCH_PAUSED?MF_ENABLED:MF_GRAYED);
 #else
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHSTART,ctx->searchstate==0?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHPREPARE,ctx->searchstate==0?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESET,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHPAUSE,ctx->searchstate==2?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESUME,ctx->searchstate==1?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP2,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_COPYRESULT,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_COPYCOMBINATION,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_CLEARCOMBINATION,ctx->searchstate!=0?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHSTART,ctx->searchstate==WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHPREPARE,ctx->searchstate==WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESET,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHPAUSE,ctx->searchstate==WLS_SRCH_RUNNING?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESUME,ctx->searchstate==WLS_SRCH_PAUSED?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP2,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_COPYRESULT,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_COPYCOMBINATION,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_CLEARCOMBINATION,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
 #endif
 		return 0;
 
@@ -2374,24 +2376,24 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			return 0;
 		case IDC_SEARCHBACKUP:
 #ifdef JS
-			if(ctx->searchstate==1)
+			if(ctx->searchstate==WLS_SRCH_PAUSED)
 				getbackup("1 ");
 #else
-			if (ctx->searchstate==2)
+			if (ctx->searchstate==WLS_SRCH_RUNNING)
 				pause_search(ctx);
-			if(ctx->searchstate==1)
+			if(ctx->searchstate==WLS_SRCH_PAUSED)
 				getbackup("1 ");
 
 #endif
 			return 0;
 		case IDC_SEARCHBACKUP2:
 #ifdef JS
-			if(ctx->searchstate==1)
+			if(ctx->searchstate==WLS_SRCH_PAUSED)
 				getbackup("20 ");
 #else
-			if (ctx->searchstate==2)
+			if (ctx->searchstate==WLS_SRCH_RUNNING)
 				pause_search(ctx);
-			if(ctx->searchstate==1)
+			if(ctx->searchstate==WLS_SRCH_PAUSED)
 				getbackup("20 ");
 #endif
 			return 0;
@@ -2400,17 +2402,17 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			return 0;
 		case IDC_SAVEGAME:
 #ifdef JS
-			if(ctx->searchstate==1)
+			if(ctx->searchstate==WLS_SRCH_PAUSED)
 				dumpstate(ctx->hwndFrame, NULL);
 #else
-			if (ctx->searchstate==0) {
+			if (ctx->searchstate==WLS_SRCH_OFF) {
 				if (prepare_search(ctx,FALSE)) {
 					dumpstate(ctx->hwndFrame, NULL, FALSE);
 					reset_search(ctx);
 				}
-			} else if (ctx->searchstate==1) {
+			} else if (ctx->searchstate==WLS_SRCH_PAUSED) {
 				dumpstate(ctx->hwndFrame, NULL, FALSE);
-			} else if (ctx->searchstate==2) {
+			} else if (ctx->searchstate==WLS_SRCH_RUNNING) {
 				pause_search(ctx);
 				dumpstate(ctx->hwndFrame, NULL, FALSE);
 				resume_search(ctx);
@@ -2432,7 +2434,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			hide_selection(ctx);
 			wlsRepaintCells(ctx,FALSE);
 #else
-			if(ctx->searchstate == 0) clear_gen(g.curgen);
+			if(ctx->searchstate == WLS_SRCH_OFF) clear_gen(g.curgen);
 			hide_selection(ctx);
 			wlsRepaintCells(ctx,FALSE);
 #endif
@@ -2442,84 +2444,84 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			clear_all(ctx);
 			wlsRepaintCells(ctx,FALSE);
 #else
-			if(ctx->searchstate == 0) clear_all(ctx);
+			if(ctx->searchstate == WLS_SRCH_OFF) clear_all(ctx);
 			wlsRepaintCells(ctx,FALSE);
 #endif
 			return 0;
 
 #ifndef JS
 		case IDC_COPYRESULT:
-			if(ctx->searchstate != 0) copy_result(ctx);
+			if(ctx->searchstate != WLS_SRCH_OFF) copy_result(ctx);
 			return 0;
 		case IDC_COPYCOMBINATION:
-			if (ctx->searchstate != 0) copy_combination(ctx);
+			if (ctx->searchstate != WLS_SRCH_OFF) copy_combination(ctx);
 			return 0;
 		case IDC_CLEARCOMBINATION:
-			if (ctx->searchstate != 0) clear_combination(ctx);
+			if (ctx->searchstate != WLS_SRCH_OFF) clear_combination(ctx);
 			return 0;
 #endif
 		case IDC_SHIFTGUP:
-			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 0, -1);
+			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, g.curgen, g.curgen, 0, 0, -1);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTGDOWN:
-			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 0, 1);
+			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, g.curgen, g.curgen, 0, 0, 1);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTGLEFT:
-			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, -1, 0);
+			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, g.curgen, g.curgen, 0, -1, 0);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTGRIGHT:
-			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 1, 0);
+			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, g.curgen, g.curgen, 0, 1, 0);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTAUP:
-			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, 0, -1);
+			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, 0, GENMAX-1, 0, 0, -1);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTADOWN:
-			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, 0, 1);
+			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, 0, GENMAX-1, 0, 0, 1);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTALEFT:
-			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, -1, 0);
+			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, 0, GENMAX-1, 0, -1, 0);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTARIGHT:
-			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, 1, 0);
+			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, 0, GENMAX-1, 0, 1, 0);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTAPAST:
-			if(ctx->searchstate == 0) shift_gen(ctx, 0, g.genmax-1, -1, 0, 0);
+			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, 0, g.genmax-1, -1, 0, 0);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTAFUTURE:
-			if(ctx->searchstate == 0) shift_gen(ctx, 0, g.genmax-1, 1, 0, 0);
+			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, 0, g.genmax-1, 1, 0, 0);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_FLIP_GEN_H:
-			if(ctx->searchstate == 0) flip_h(ctx, g.curgen, g.curgen);
+			if(ctx->searchstate == WLS_SRCH_OFF) flip_h(ctx, g.curgen, g.curgen);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_FLIP_GEN_V:
-			if(ctx->searchstate == 0) flip_v(ctx, g.curgen, g.curgen);
+			if(ctx->searchstate == WLS_SRCH_OFF) flip_v(ctx, g.curgen, g.curgen);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_FLIP_ALL_H:
-			if(ctx->searchstate == 0) flip_h(ctx, 0, GENMAX - 1);
+			if(ctx->searchstate == WLS_SRCH_OFF) flip_h(ctx, 0, GENMAX - 1);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_FLIP_ALL_V:
-			if(ctx->searchstate == 0) flip_v(ctx, 0, GENMAX - 1);
+			if(ctx->searchstate == WLS_SRCH_OFF) flip_v(ctx, 0, GENMAX - 1);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_TRANS_GEN:
-			if(ctx->searchstate == 0) transpose(ctx, g.curgen, g.curgen);
+			if(ctx->searchstate == WLS_SRCH_OFF) transpose(ctx, g.curgen, g.curgen);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_TRANS_ALL:
-			if(ctx->searchstate == 0) transpose(ctx, 0, GENMAX - 1);
+			if(ctx->searchstate == WLS_SRCH_OFF) transpose(ctx, 0, GENMAX - 1);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_HIDESEL:
@@ -2603,7 +2605,7 @@ static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 	case WM_RBUTTONDOWN:
 	case WM_LBUTTONUP:
 	case WM_MOUSEMOVE:
-		if(ctx->searchstate==0) {
+		if(ctx->searchstate==WLS_SRCH_OFF) {
 			ButtonClick(ctx,msg,LOWORD(lParam),HIWORD(lParam),wParam);
 		}
 		return 0;
