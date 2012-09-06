@@ -187,6 +187,13 @@ void record_malloc(int func,void *m)
 	}
 }
 
+// Set full_repaint to 1 if something other than cell states has changed
+// (e.g. the number of cells).
+static void wlsRepaintCells(struct wcontext *ctx, int full_repaint)
+{
+	InvalidateRect(ctx->hwndMain,NULL,full_repaint?TRUE:FALSE);
+}
+
 /* Returns all the cells symmetric to the given cell.
  * Returns an array irs of (x,y) coords.
  * (it will be 0, 1, 3, or 7.)
@@ -330,7 +337,7 @@ static void set_main_scrollbars(struct wcontext *ctx, int redraw, int checkscrol
 	hDC=GetDC(ctx->hwndMain);
 	SetViewportOrgEx(hDC,-ctx->scrollpos.x,-ctx->scrollpos.y,NULL);
 	ReleaseDC(ctx->hwndMain,hDC);
-	if(redraw) InvalidateRect(ctx->hwndMain,NULL,TRUE);
+	if(redraw) wlsRepaintCells(ctx,TRUE);
 }
 
 static void DrawGuides(struct wcontext *ctx, HDC hDC)
@@ -448,11 +455,11 @@ static void DrawGuides(struct wcontext *ctx, HDC hDC)
 }
 
 // pen & brush must already be selected
-static void ClearCell(struct wcontext *ctx, HDC hDC,int x,int y, int dblsize)
+static void ClearCell(struct wcontext *ctx, HDC hDC,int x,int y, int thick_outline)
 {
 	Rectangle(hDC,x*ctx->cellwidth+1,y*ctx->cellheight+1,
 	    (x+1)*ctx->cellwidth,(y+1)*ctx->cellheight);
-	if(dblsize) {
+	if(thick_outline) {
 		Rectangle(hDC,x*ctx->cellwidth+2,y*ctx->cellheight+2,
 			(x+1)*ctx->cellwidth-1,(y+1)*ctx->cellheight-1);
 	}
@@ -467,6 +474,7 @@ static void DrawCell(struct wcontext *ctx, HDC hDC,int x,int y)
 	SelectObject(hDC,ctx->pens.celloutline);
 	SelectObject(hDC,ctx->brushes.cell);
 
+	// If all generations are the same, draw the cell in a different style.
 	tmp=g.currfield[0][x][y];
 	for(i=1;i<g.genmax;i++) {
 		if(g.currfield[i][x][y]!=tmp) allsame=0;
@@ -1298,7 +1306,7 @@ void printgen(int gen)
 				}
 			}
 
-	InvalidateRect(gctx->hwndMain,NULL,TRUE);
+	wlsRepaintCells(gctx,FALSE);
 }
 
 #else
@@ -1335,7 +1343,7 @@ void printgen(void)
 		}
 	}
 
-	InvalidateRect(ctx->hwndMain,NULL,FALSE);
+	wlsRepaintCells(gctx,FALSE);
 }
 
 #endif
@@ -1409,7 +1417,7 @@ static void show_combine(struct wcontext *ctx)
 		}
 	}
 
-	InvalidateRect(ctx->hwndMain,NULL,FALSE);
+	wlsRepaintCells(gctx,FALSE);
 }
 
 #endif
@@ -1585,7 +1593,7 @@ done:
 				for(j=0;j<ROWMAX;j++)
 					g.currfield[k][i][j]=g.origfield[k][i][j];
 		ctx->searchstate = 0;
-		InvalidateRect(ctx->hwndMain,NULL,FALSE);
+		wlsRepaintCells(ctx,FALSE);
 	}
 	else
 	{
@@ -1829,11 +1837,11 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 	if (load) {
 		if(!loadstate(ctx->hwndFrame))
 		{
-			InvalidateRect(ctx->hwndMain,NULL,TRUE);
+			wlsRepaintCells(ctx,TRUE);
 			return FALSE;
 		}
 
-		InvalidateRect(ctx->hwndMain,NULL,TRUE);
+		wlsRepaintCells(ctx,TRUE);
 
 		draw_gen_counter(ctx);
 	} else {
@@ -1918,12 +1926,7 @@ static void reset_search(struct wcontext *ctx)
 				g.currfield[k][i][j]=g.origfield[k][i][j];
 
 here:
-#ifdef JS
-	InvalidateRect(ctx->hwndMain,NULL,TRUE);
-#else
-	InvalidateRect(ctx->hwndMain,NULL,FALSE);
-#endif
-
+	wlsRepaintCells(ctx,FALSE);
 	SetWindowText(ctx->hwndFrame,WLS_APPNAME);
 	wlsStatusf(ctx,_T(""));
 }
@@ -1947,11 +1950,7 @@ static void gen_changeby(struct wcontext *ctx, int delta)
 	if(g.curgen<0) g.curgen=g.genmax-1;
 
 	draw_gen_counter(ctx);
-#ifdef JS
-	InvalidateRect(ctx->hwndMain,NULL,TRUE);
-#else
-	InvalidateRect(ctx->hwndMain,NULL,FALSE);
-#endif
+	wlsRepaintCells(ctx,FALSE);
 }
 
 static void hide_selection(struct wcontext *ctx)
@@ -2430,20 +2429,20 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 #ifdef JS
 			clear_gen(g.curgen);
 			hide_selection(ctx);
-			InvalidateRect(ctx->hwndMain,NULL,TRUE);
+			wlsRepaintCells(ctx,FALSE);
 #else
 			if(ctx->searchstate == 0) clear_gen(g.curgen);
 			hide_selection(ctx);
-			InvalidateRect(ctx->hwndMain,NULL,FALSE);
+			wlsRepaintCells(ctx,FALSE);
 #endif
 			return 0;
 		case IDC_CLEAR:
 #ifdef JS
 			clear_all(ctx);
-			InvalidateRect(ctx->hwndMain,NULL,TRUE);
+			wlsRepaintCells(ctx,FALSE);
 #else
 			if(ctx->searchstate == 0) clear_all(ctx);
-			InvalidateRect(ctx->hwndMain,NULL,FALSE);
+			wlsRepaintCells(ctx,FALSE);
 #endif
 			return 0;
 
@@ -2460,67 +2459,67 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 #endif
 		case IDC_SHIFTGUP:
 			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 0, -1);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == 2);
 			return 0;
 		case IDC_SHIFTGDOWN:
 			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 0, 1);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == 2);
 			return 0;
 		case IDC_SHIFTGLEFT:
 			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, -1, 0);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == 2);
 			return 0;
 		case IDC_SHIFTGRIGHT:
 			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 1, 0);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == 2);
 			return 0;
 		case IDC_SHIFTAUP:
 			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, 0, -1);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == 2);
 			return 0;
 		case IDC_SHIFTADOWN:
 			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, 0, 1);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == 2);
 			return 0;
 		case IDC_SHIFTALEFT:
 			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, -1, 0);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == 2);
 			return 0;
 		case IDC_SHIFTARIGHT:
 			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, 1, 0);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == 2);
 			return 0;
 		case IDC_SHIFTAPAST:
 			if(ctx->searchstate == 0) shift_gen(ctx, 0, g.genmax-1, -1, 0, 0);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == 2);
 			return 0;
 		case IDC_SHIFTAFUTURE:
 			if(ctx->searchstate == 0) shift_gen(ctx, 0, g.genmax-1, 1, 0, 0);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == 2);
 			return 0;
 		case ID_FLIP_GEN_H:
 			if(ctx->searchstate == 0) flip_h(ctx, g.curgen, g.curgen);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == 2);
 			return 0;
 		case ID_FLIP_GEN_V:
 			if(ctx->searchstate == 0) flip_v(ctx, g.curgen, g.curgen);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == 2);
 			return 0;
 		case ID_FLIP_ALL_H:
 			if(ctx->searchstate == 0) flip_h(ctx, 0, GENMAX - 1);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == 2);
 			return 0;
 		case ID_FLIP_ALL_V:
 			if(ctx->searchstate == 0) flip_v(ctx, 0, GENMAX - 1);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == 2);
 			return 0;
 		case ID_TRANS_GEN:
 			if(ctx->searchstate == 0) transpose(ctx, g.curgen, g.curgen);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == 2);
 			return 0;
 		case ID_TRANS_ALL:
 			if(ctx->searchstate == 0) transpose(ctx, 0, GENMAX - 1);
-			InvalidateRect(ctx->hwndMain,NULL,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == 2);
 			return 0;
 		case ID_HIDESEL:
 			hide_selection(ctx);
@@ -2691,11 +2690,7 @@ static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			if(g.curgen>=g.genmax) g.curgen=0;
 			if(g.curgen!=ori_gen) {
 				draw_gen_counter(ctx);
-#ifdef JS
-				InvalidateRect(ctx->hwndMain,NULL,TRUE);
-#else
-				InvalidateRect(ctx->hwndMain,NULL,FALSE);
-#endif
+				wlsRepaintCells(ctx,FALSE);
 			}
 			return 0;
 		}
@@ -2814,7 +2809,7 @@ static INT_PTR CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 			if(g.curgen>=g.genmax) g.curgen=g.genmax-1;
 
 			draw_gen_counter(ctx);
-			InvalidateRect(ctx->hwndMain,NULL,TRUE);
+			wlsRepaintCells(ctx,FALSE);
 			// fall through
 		case IDCANCEL:
 			EndDialog(hWnd, TRUE);
@@ -3002,11 +2997,7 @@ static INT_PTR CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			if(IsDlgButtonChecked(hWnd,IDC_SYM8)==BST_CHECKED) g.symmetry=8;
 			if(IsDlgButtonChecked(hWnd,IDC_SYM9)==BST_CHECKED) g.symmetry=9;
 
-#ifdef JS
-			InvalidateRect(ctx->hwndMain,NULL,TRUE);
-#else
-			InvalidateRect(ctx->hwndMain,NULL,FALSE);
-#endif
+			wlsRepaintCells(ctx,TRUE);
 			// fall through
 		case IDCANCEL:
 			EndDialog(hWnd, TRUE);
@@ -3068,11 +3059,8 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 			if(IsDlgButtonChecked(hWnd,IDC_TRANS5)==BST_CHECKED) { g.trans_flip=1; g.trans_rotate=1; }
 			if(IsDlgButtonChecked(hWnd,IDC_TRANS6)==BST_CHECKED) { g.trans_flip=1; g.trans_rotate=2; }
 			if(IsDlgButtonChecked(hWnd,IDC_TRANS7)==BST_CHECKED) { g.trans_flip=1; g.trans_rotate=3; }
-#ifdef JS
-			InvalidateRect(ctx->hwndMain,NULL,TRUE);
-#else
-			InvalidateRect(ctx->hwndMain,NULL,FALSE);
-#endif
+
+			wlsRepaintCells(ctx,TRUE);
 			// fall through
 		case IDCANCEL:
 			EndDialog(hWnd, TRUE);
