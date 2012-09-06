@@ -65,6 +65,9 @@ struct wcontext {
 	HWND hwndFrame,hwndMain,hwndToolbar;
 	HWND hwndGen,hwndGenScroll;
 	HWND hwndStatus;
+#define WLS_SEL_OFF        0
+#define WLS_SEL_SELECTING  1
+#define WLS_SEL_SELECTED   2
 	int selectstate;
 	POINT startcell, endcell;
 	RECT selectrect;
@@ -635,15 +638,13 @@ static void InvertCells(struct wcontext *ctx, HDC hDC1)
 // HDC can be NULL
 static void SelectOff(struct wcontext *ctx, HDC hDC)
 {
-	if(ctx->selectstate<1) return;
+	if(ctx->selectstate==WLS_SEL_OFF) return;
 
-	if(ctx->selectstate) {
-		if(ctx->inverted) {
-			InvertCells(ctx,hDC);
-			ctx->inverted=0;
-		}
-		ctx->selectstate=0;
+	if(ctx->inverted) {
+		InvertCells(ctx,hDC);
+		ctx->inverted=0;
 	}
+	ctx->selectstate=WLS_SEL_OFF;
 }
 
 static void DrawWindow(struct wcontext *ctx, HDC hDC)
@@ -657,7 +658,7 @@ static void DrawWindow(struct wcontext *ctx, HDC hDC)
 	}
 	DrawGuides(ctx,hDC);
 
-	if(ctx->selectstate>0) {
+	if(ctx->selectstate!=WLS_SEL_OFF) {
 		InvertCells(ctx, hDC);
 	}
 }
@@ -734,7 +735,7 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 	switch(msg) {
 
 	case WM_MOUSEMOVE:
-		if(ctx->selectstate!=1) return 1;
+		if(ctx->selectstate!=WLS_SEL_SELECTING) return 1;
 
 		if(x==ctx->endcell.x && y==ctx->endcell.y) {   // cursor hasn't moved to a new cell
 			return 0;
@@ -787,11 +788,11 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 		return 0;
 
 	case WM_LBUTTONDOWN:
-		if(ctx->selectstate>0) {
+		if(ctx->selectstate!=WLS_SEL_OFF) {
 			SelectOff(ctx,NULL);
 		}
 
-		ctx->selectstate=1;
+		ctx->selectstate=WLS_SEL_SELECTING;
 		ctx->startcell.x=x;
 		ctx->startcell.y=y;
 		ctx->endcell.x=x;
@@ -801,14 +802,14 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 	case WM_LBUTTONUP:
 		if(wParam & MK_SHIFT) allgens=1;
 		if(x==ctx->startcell.x && y==ctx->startcell.y) {
-			ctx->selectstate=0;
+			ctx->selectstate=WLS_SEL_OFF;
 			if(g.currfield[g.curgen][x][y]==1) newval=2; //g.currfield[g.curgen][x][y]=2;
 			else newval=1;  //g.currfield[g.curgen][x][y]=1;
 			//Symmetricalize(hDC,x,y,allgens);
 		}
-		else if(ctx->selectstate==1) {
+		else if(ctx->selectstate==WLS_SEL_SELECTING) {
 			// selecting an area
-			ctx->selectstate=2;
+			ctx->selectstate=WLS_SEL_SELECTED;
 			return 0;
 
 		}
@@ -862,7 +863,7 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 
 	SelectOff(ctx, hDC);
 
-	if(tmp==2) {
+	if(tmp==WLS_SEL_SELECTED) {
 		if(newval>=0) {
 			for(i=ctx->selectrect.left;i<=ctx->selectrect.right;i++) {
 				for(j=ctx->selectrect.top;j<=ctx->selectrect.bottom;j++) {
@@ -916,7 +917,7 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 	switch(msg) {
 
 	case WM_MOUSEMOVE:
-		if(ctx->selectstate!=1) return 1;
+		if(ctx->selectstate!=WLS_SEL_SELECTING) return 1;
 
 		if(x==ctx->endcell.x && y==ctx->endcell.y) {   // cursor hasn't moved to a new cell
 			return 0;
@@ -969,11 +970,11 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 		return 0;
 
 	case WM_LBUTTONDOWN:
-		if(ctx->selectstate>0) {
+		if(ctx->selectstate!=WLS_SEL_OFF) {
 			SelectOff(ctx,NULL);
 		}
 
-		ctx->selectstate=1;
+		ctx->selectstate=WLS_SEL_SELECTING;
 		ctx->startcell.x=x;
 		ctx->startcell.y=y;
 		ctx->endcell.x=x;
@@ -983,14 +984,14 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 	case WM_LBUTTONUP:
 		if(wParam & MK_SHIFT) allgens=1;
 		if(x==ctx->startcell.x && y==ctx->startcell.y) {
-			ctx->selectstate=0;
+			ctx->selectstate=WLS_SEL_OFF;
 			if(g.currfield[g.curgen][x][y]==1) newval=2; //g.currfield[g.curgen][x][y]=2;
 			else newval=1;  //g.currfield[g.curgen][x][y]=1;
 			//Symmetricalize(hDC,x,y,allgens);
 		}
-		else if(ctx->selectstate==1) {
+		else if(ctx->selectstate==WLS_SEL_SELECTING) {
 			// selecting an area
-			ctx->selectstate=2;
+			ctx->selectstate=WLS_SEL_SELECTED;
 			return 0;
 
 		}
@@ -1045,7 +1046,7 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 	SelectOff(ctx,hDC);
 
 	if(ctx->searchstate == 0) {
-		if(tmp==2) {
+		if(tmp==WLS_SEL_SELECTED) {
 			if(newval>=0) {
 				for(i=ctx->selectrect.left;i<=ctx->selectrect.right;i++) {
 					for(j=ctx->selectrect.top;j<=ctx->selectrect.bottom;j++) {
@@ -1979,7 +1980,7 @@ static void flip_h(struct wcontext *ctx, int fromgen, int togen)
 	int fromrow, torow, fromcol, tocol;
 	int buffer;
 
-	if (ctx->selectstate == 2)
+	if (ctx->selectstate == WLS_SEL_SELECTED)
 	{
 		fromcol = ctx->selectrect.left;
 		tocol = ctx->selectrect.right;
@@ -2012,7 +2013,7 @@ static void flip_v(struct wcontext *ctx, int fromgen, int togen)
 	int fromrow, torow, fromcol, tocol;
 	int buffer;
 
-	if (ctx->selectstate == 2)
+	if (ctx->selectstate == WLS_SEL_SELECTED)
 	{
 		fromcol = ctx->selectrect.left;
 		tocol = ctx->selectrect.right;
@@ -2045,7 +2046,7 @@ static void transpose(struct wcontext *ctx, int fromgen, int togen)
 	int fromrow, torow, fromcol, tocol;
 	int buffer;
 
-	if (ctx->selectstate == 2)
+	if (ctx->selectstate == WLS_SEL_SELECTED)
 	{
 		fromcol = ctx->selectrect.left;
 		tocol = ctx->selectrect.right;
@@ -2084,7 +2085,7 @@ static void shift_gen(struct wcontext *ctx, int fromgen, int togen, int gend, in
 	int fromrow, torow, fromcol, tocol;
 	int gx,rx,cx;
 
-	if (ctx->selectstate == 2)
+	if (ctx->selectstate == WLS_SEL_SELECTED)
 	{
 		fromcol = ctx->selectrect.left;
 		tocol = ctx->selectrect.right;
@@ -2459,67 +2460,67 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 #endif
 		case IDC_SHIFTGUP:
 			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 0, -1);
-			wlsRepaintCells(ctx,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTGDOWN:
 			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 0, 1);
-			wlsRepaintCells(ctx,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTGLEFT:
 			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, -1, 0);
-			wlsRepaintCells(ctx,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTGRIGHT:
 			if(ctx->searchstate == 0) shift_gen(ctx, g.curgen, g.curgen, 0, 1, 0);
-			wlsRepaintCells(ctx,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTAUP:
 			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, 0, -1);
-			wlsRepaintCells(ctx,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTADOWN:
 			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, 0, 1);
-			wlsRepaintCells(ctx,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTALEFT:
 			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, -1, 0);
-			wlsRepaintCells(ctx,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTARIGHT:
 			if(ctx->searchstate == 0) shift_gen(ctx, 0, GENMAX-1, 0, 1, 0);
-			wlsRepaintCells(ctx,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTAPAST:
 			if(ctx->searchstate == 0) shift_gen(ctx, 0, g.genmax-1, -1, 0, 0);
-			wlsRepaintCells(ctx,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTAFUTURE:
 			if(ctx->searchstate == 0) shift_gen(ctx, 0, g.genmax-1, 1, 0, 0);
-			wlsRepaintCells(ctx,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_FLIP_GEN_H:
 			if(ctx->searchstate == 0) flip_h(ctx, g.curgen, g.curgen);
-			wlsRepaintCells(ctx,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_FLIP_GEN_V:
 			if(ctx->searchstate == 0) flip_v(ctx, g.curgen, g.curgen);
-			wlsRepaintCells(ctx,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_FLIP_ALL_H:
 			if(ctx->searchstate == 0) flip_h(ctx, 0, GENMAX - 1);
-			wlsRepaintCells(ctx,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_FLIP_ALL_V:
 			if(ctx->searchstate == 0) flip_v(ctx, 0, GENMAX - 1);
-			wlsRepaintCells(ctx,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_TRANS_GEN:
 			if(ctx->searchstate == 0) transpose(ctx, g.curgen, g.curgen);
-			wlsRepaintCells(ctx,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_TRANS_ALL:
 			if(ctx->searchstate == 0) transpose(ctx, 0, GENMAX - 1);
-			wlsRepaintCells(ctx,ctx->selectstate == 2);
+			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_HIDESEL:
 			hide_selection(ctx);
