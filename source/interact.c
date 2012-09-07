@@ -266,7 +266,7 @@ void writegen(HWND hwndParent, TCHAR *file1, BOOL append)
 
 	if (fp == NULL)
 	{
-		ttystatus(_T("Cannot create \"%s\"\n"), file);
+		ttystatus(_T("Cannot create \x201c%s\x201d\n"), file);
 
 		return;
 	}
@@ -347,14 +347,14 @@ void writegen(HWND hwndParent, TCHAR *file1, BOOL append)
 
 	if ((fp != stdout) && fclose(fp))
 	{
-		ttystatus(_T("Error writing \"%s\"\n"), file);
+		ttystatus(_T("Error writing \x201c%s\x201d\n"), file);
 
 		return;
 	}
 
 	g.writecount++;
 	if (fp != stdout) {
-		wlsStatusf(NULL,_T("\"%s\" written (%d)"),file,g.writecount);
+		wlsStatusf(NULL,_T("\x201c%s\x201d written (%d)"),file,g.writecount);
 	}
 
 	g.quitok = TRUE;
@@ -395,7 +395,7 @@ void dumpstate(HWND hwndParent, TCHAR *file1)
 
 	if (fp == NULL)
 	{
-		ttystatus(_T("Cannot create \"%s\"\n"), file);
+		ttystatus(_T("Cannot create \x201c%s\x201d\n"), file);
 
 		return;
 	}
@@ -499,12 +499,12 @@ void dumpstate(HWND hwndParent, TCHAR *file1)
 
 	if (fclose(fp))
 	{
-		ttystatus(_T("Error writing \"%s\"\n"), file);
+		ttystatus(_T("Error writing \x201c%s\x201d\n"), file);
 
 		return;
 	}
 
-	ttystatus(_T("State dumped to \"%s\"\n"), file);
+	ttystatus(_T("State dumped to \x201c%s\x201d\n"), file);
 	g.quitok = TRUE;
 }
 
@@ -546,7 +546,7 @@ STATUS loadstate(HWND hwndParent, TCHAR *file1)
 
 	if (fp == NULL)
 	{
-		ttystatus(_T("Cannot open state file \"%s\"\n"), file);
+		ttystatus(_T("Cannot open state file \x201c%s\x201d\n"), file);
 
 		return ERROR1;
 	}
@@ -556,7 +556,7 @@ STATUS loadstate(HWND hwndParent, TCHAR *file1)
 
 	if (buf[0] != 'V')
 	{
-		ttystatus(_T("Missing version line in file \"%s\"\n"), file);
+		ttystatus(_T("Missing version line in file \x201c%s\x201d\n"), file);
 		fclose(fp);
 
 		return ERROR1;
@@ -566,7 +566,7 @@ STATUS loadstate(HWND hwndParent, TCHAR *file1)
 /*
 	if (getnum(&cp, 0) != DUMPVERSION)
 	{
-		ttystatus("Unknown version in state file \"%s\"\n", file);
+		ttystatus(_T("Unknown version in state file \x201c%s\x201d\n"), file);
 		fclose(fp);
 
 		return ERROR1;
@@ -759,12 +759,12 @@ STATUS loadstate(HWND hwndParent, TCHAR *file1)
 
 	if (fclose(fp))
 	{
-		ttystatus(_T("Error reading \"%s\"\n"), file);
+		ttystatus(_T("Error reading \x201c%s\x201d\n"), file);
 
 		return ERROR1;
 	}
 
-	ttystatus(_T("State loaded from \"%s\"\n"), file);
+	ttystatus(_T("State loaded from \x201c%s\x201d\n"), file);
 	g.quitok = TRUE;
 
 	return OK;
@@ -800,7 +800,7 @@ readfile(TCHAR *file)
 
 	if (fp == NULL)
 	{
-		ttystatus(_T("Cannot open \"%s\"\n"), file);
+		ttystatus(_T("Cannot open \x201c%s\x201d\n"), file);
 
 		return ERROR1;
 	}
@@ -869,7 +869,7 @@ readfile(TCHAR *file)
 
 	if (fclose(fp))
 	{
-		ttystatus(_T("Error reading \"%s\"\n"), file);
+		ttystatus(_T("Error reading \x201c%s\x201d\n"), file);
 
 		return ERROR1;
 	}
@@ -1234,7 +1234,7 @@ void writegen(HWND hwndParent, TCHAR *file1, BOOL append)
 
 	if (fp == NULL)
 	{
-		ttystatus(_T("Cannot create \"%s\"\n"), file);
+		ttystatus(_T("Cannot create \x201c%s\x201d\n"), file);
 
 		return;
 	}
@@ -1331,14 +1331,14 @@ void writegen(HWND hwndParent, TCHAR *file1, BOOL append)
 
 	if ((fp != stdout) && fclose(fp))
 	{
-		ttystatus(_T("Error writing \"%s\"\n"), file);
+		ttystatus(_T("Error writing \x201c%s\x201d\n"), file);
 
 		return;
 	}
 
 	g.writecount++;
 	if (fp != stdout) {
-		wlsStatusf(NULL,_T("\"%s\" written (%d)"),file,g.writecount);
+		wlsStatusf(NULL,_T("\x201c%s\x201d written (%d)"),file,g.writecount);
 	}
 }
 
@@ -1375,7 +1375,7 @@ void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo)
 
 	if (fp == NULL)
 	{
-		ttystatus(_T("Cannot create \"%s\"\n"), g.state_filename);
+		ttystatus(_T("Cannot create \x201c%s\x201d\n"), g.state_filename);
 
 		return;
 	}
@@ -1466,14 +1466,14 @@ void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo)
 
 	if (fclose(fp))
 	{
-		ttystatus(_T("Error writing \"%s\"\n"), g.state_filename);
+		ttystatus(_T("Error writing \x201c%s\x201d\n"), g.state_filename);
 
 		return;
 	}
 
 	if (echo) 
 	{
-		wlsStatusf(NULL,_T("State dumped to \"%s\"\n"), g.state_filename);
+		wlsStatusf(NULL,_T("State dumped to \x201c%s\x201d\n"), g.state_filename);
 	}
 }
 
@@ -1505,7 +1505,7 @@ BOOL loadstate(HWND hwndParent)
 
 	if (fp == NULL)
 	{
-		ttystatus(_T("Cannot open state file \"%s\"\n"), g.state_filename);
+		ttystatus(_T("Cannot open state file \x201c%s\x201d\n"), g.state_filename);
 
 		return FALSE;
 	}
@@ -1519,7 +1519,7 @@ BOOL loadstate(HWND hwndParent)
 
 	if (buf[0] != 'V')
 	{
-		ttystatus(_T("Missing version line in file \"%s\"\n"), g.state_filename);
+		ttystatus(_T("Missing version line in file \x201c%s\x201d\n"), g.state_filename);
 		fclose(fp);
 
 		return FALSE;
@@ -1720,12 +1720,12 @@ BOOL loadstate(HWND hwndParent)
 
 	if (fclose(fp))
 	{
-		ttystatus(_T("Error reading \"%s\"\n"), g.state_filename);
+		ttystatus(_T("Error reading \x201c%s\x201d\n"), g.state_filename);
 
 		return FALSE;
 	}
 
-	wlsStatusf(NULL,_T("State loaded from \"%s\"\n"), g.state_filename);
+	wlsStatusf(NULL,_T("State loaded from \x201c%s\x201d\n"), g.state_filename);
 	return TRUE;
 }
 

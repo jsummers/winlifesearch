@@ -1615,7 +1615,7 @@ static void resume_search(struct wcontext *ctx)
 	DWORD threadid;
 
 	SetWindowText(ctx->hwndFrame,WLS_APPNAME);
-	wlsStatusf(ctx,_T("Searching..."));
+	wlsStatusf(ctx,_T("Searching\x2026"));
 
 	if(ctx->searchstate!=WLS_SRCH_PAUSED) {
 		wlsErrorf(ctx,_T("No search is paused"));
@@ -1657,12 +1657,12 @@ static void resume_search(struct wcontext *ctx)
 		}
 		else
 		{
-			wlsStatusf(ctx,_T("Combining..."));
+			wlsStatusf(ctx,_T("Combining\x2026"));
 		}
 	}
 	else
 	{
-		wlsStatusf(ctx,_T("Searching..."));
+		wlsStatusf(ctx,_T("Searching\x2026"));
 	}
 
 	if(ctx->searchstate!=WLS_SRCH_PAUSED) {
