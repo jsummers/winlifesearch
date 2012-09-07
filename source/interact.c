@@ -16,6 +16,65 @@
 
 extern struct globals_struct g;
 
+// Get a filename for loading a state file.
+static BOOL getfilename_l(HWND hwndParent, TCHAR *filename)
+{
+	OPENFILENAME ofn;
+
+	ZeroMemory(&ofn,sizeof(OPENFILENAME));
+
+	ofn.lStructSize=sizeof(OPENFILENAME);
+	ofn.hwndOwner=hwndParent;
+#ifdef JS
+	ofn.lpstrFilter=_T("*.txt\0*.txt\0All files\0*.*\0\0");
+#else
+	ofn.lpstrFilter=_T("WLS Dump Files (*.wdf)\0*.wdf\0Text Files (*.txt)\0*.txt\0All files\0*.*\0\0");
+#endif
+	ofn.nFilterIndex=1;
+	ofn.lpstrTitle=_T("Load state");
+	ofn.lpstrFile=filename;
+	ofn.nMaxFile=MAX_PATH;
+	ofn.Flags=OFN_FILEMUSTEXIST|OFN_HIDEREADONLY;
+
+	if(GetOpenFileName(&ofn)) {
+		return TRUE;
+	}
+#ifdef JS
+	StringCchCopy(filename,MAX_PATH,_T(""));
+#endif
+	return FALSE;
+}
+
+// Get a filename for saving a state file.
+static BOOL getfilename_s(HWND hwndParent, TCHAR *filename)
+{
+	OPENFILENAME ofn;
+
+	ZeroMemory(&ofn,sizeof(OPENFILENAME));
+
+	ofn.lStructSize=sizeof(OPENFILENAME);
+	ofn.hwndOwner=hwndParent;
+#ifdef JS
+	ofn.lpstrFilter=_T("*.txt\0*.txt\0All files\0*.*\0\0");
+#else
+	ofn.lpstrFilter=_T("WLS Dump Files (*.wdf)\0*.wdf\0Text Files (*.txt)\0*.txt\0All files\0*.*\0\0");
+#endif
+	ofn.nFilterIndex=1;
+	ofn.lpstrTitle=_T("Save state");
+	ofn.lpstrDefExt=_T("txt");
+	ofn.lpstrFile=filename;
+	ofn.nMaxFile=MAX_PATH;
+	ofn.Flags=OFN_HIDEREADONLY|OFN_OVERWRITEPROMPT;
+
+	if(GetSaveFileName(&ofn)) {
+		return TRUE;
+	}
+#ifdef JS
+	StringCchCopy(filename,MAX_PATH,_T(""));
+#endif
+	return FALSE;
+}
+
 #ifdef JS
 
 
@@ -166,52 +225,6 @@ getbackup(char *cp)
 	}
 
 	printgen(g.curgen);
-}
-
-static int getfilename_l(HWND hwndParent, TCHAR *fn)
-{
-	OPENFILENAME ofn;
-
-	ZeroMemory(&ofn,sizeof(OPENFILENAME));
-
-	ofn.lStructSize=sizeof(OPENFILENAME);
-	ofn.hwndOwner=hwndParent;
-	ofn.lpstrFilter=_T("*.txt\0*.txt\0All files\0*.*\0\0");
-	ofn.nFilterIndex=1;
-	ofn.lpstrTitle=_T("Load state");
-	ofn.lpstrFile=fn;
-	ofn.nMaxFile=MAX_PATH;
-	ofn.Flags=OFN_FILEMUSTEXIST|OFN_HIDEREADONLY;
-
-	if(GetOpenFileName(&ofn)) {
-		return 1;
-	}
-	StringCchCopy(fn,MAX_PATH,_T(""));
-	return 0;
-}
-
-
-static int getfilename_s(HWND hwndParent, TCHAR *fn)
-{
-	OPENFILENAME ofn;
-
-	ZeroMemory(&ofn,sizeof(OPENFILENAME));
-
-	ofn.lStructSize=sizeof(OPENFILENAME);
-	ofn.hwndOwner=hwndParent;
-	ofn.lpstrFilter=_T("*.txt\0*.txt\0All files\0*.*\0\0");
-	ofn.nFilterIndex=1;
-	ofn.lpstrTitle=_T("Save state");
-	ofn.lpstrDefExt=_T("txt");
-	ofn.lpstrFile=fn;
-	ofn.nMaxFile=MAX_PATH;
-	ofn.Flags=OFN_FILEMUSTEXIST|OFN_HIDEREADONLY;
-
-	if(GetSaveFileName(&ofn)) {
-		return 1;
-	}
-	StringCchCopy(fn,MAX_PATH,_T(""));
-	return 0;
 }
 
 /*
@@ -1180,55 +1193,6 @@ getbackup(char *cp)
 	}
 
 	printgen();
-}
-
-static BOOL getfilename_l(HWND hwndParent, TCHAR *filename)
-{
-	OPENFILENAME ofn;
-
-	ZeroMemory(&ofn,sizeof(OPENFILENAME));
-
-	ofn.lStructSize=sizeof(OPENFILENAME);
-	ofn.hwndOwner=hwndParent;
-	ofn.lpstrFilter=_T("WLS Dump Files (*.wdf)\0*.wdf\0Text Files (*.txt)\0*.txt\0All files\0*.*\0\0");
-	ofn.nFilterIndex=1;
-	ofn.lpstrTitle=_T("Load state");
-	ofn.lpstrFile=filename;
-	ofn.nMaxFile=MAX_PATH;
-	ofn.Flags=OFN_FILEMUSTEXIST|OFN_HIDEREADONLY;
-
-	if(GetOpenFileName(&ofn)) 
-	{
-		return TRUE;
-	}
-	return FALSE;
-}
-
-
-static BOOL getfilename_s(HWND hwndParent, TCHAR *filename)
-{
-	OPENFILENAME ofn;
-	HWND hWnd;
-
-	hWnd=NULL;
-
-	ZeroMemory(&ofn,sizeof(OPENFILENAME));
-
-	ofn.lStructSize=sizeof(OPENFILENAME);
-	ofn.hwndOwner=hwndParent;
-	ofn.lpstrFilter=_T("WLS Dump Files (*.wdf)\0*.wdf\0Text Files (*.txt)\0*.txt\0All files\0*.*\0\0");
-	ofn.nFilterIndex=1;
-	ofn.lpstrTitle=_T("Save state");
-	ofn.lpstrDefExt=_T("txt");
-	ofn.lpstrFile=filename;
-	ofn.nMaxFile=MAX_PATH;
-	ofn.Flags=OFN_HIDEREADONLY|OFN_OVERWRITEPROMPT;
-
-	if(GetSaveFileName(&ofn)) 
-	{
-		return TRUE;
-	}
-	return FALSE;
 }
 
 /*
