@@ -306,9 +306,9 @@ struct globals_struct {
 	int saveoutputallgen;
 	int stoponfound;
 	int stoponstep;
-	int foundcount;
 	TCHAR state_filename[MAX_PATH];
 #endif
+	int foundcount;
 	int writecount;
 #ifdef JS
 	BOOL islife;  /* whether the rules are for standard Life */

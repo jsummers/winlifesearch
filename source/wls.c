@@ -84,9 +84,6 @@ struct wcontext {
 	POINT scrollpos;
 	HFONT statusfont;
 	__int64 showcount_tot;
-#ifdef JS
-	int foundcount;
-#endif
 };
 
 struct globals_struct g;
@@ -96,13 +93,13 @@ struct wcontext *gctx;
 volatile int abortthread;
 
 
-/* \2 | 1/    
+/* \2 | 1/
    3 \|/ 0
    ---+---
    4 /|\ 7
    /5 | 6\  */
 
-static const int symmap[10] = { 
+static const int symmap[10] = {
 			// 76543210
 	0x01,	// 00000001  no symmetry
 	0x09,	// 00001001  mirror-x
@@ -369,7 +366,7 @@ static void DrawGuides(struct wcontext *ctx, HDC hDC)
 
 
 	// horizontal line
-	if(g.symmetry==2 || g.symmetry==6 || g.symmetry==9) {	
+	if(g.symmetry==2 || g.symmetry==6 || g.symmetry==9) {
 		MoveToEx(hDC,0,centerpy,NULL);
 		LineTo(hDC,g.colmax*ctx->cellwidth,centerpy);
 	}
@@ -403,8 +400,7 @@ static void DrawGuides(struct wcontext *ctx, HDC hDC)
 		MoveToEx(hDC,g.colmax*ctx->cellwidth,g.rowmax*ctx->cellheight,NULL);
 		LineTo(hDC,(g.colmax-2)*ctx->cellwidth,g.rowmax*ctx->cellheight);
 	}
-		
-		
+
 	if(g.trans_rotate || g.trans_flip || g.trans_x || g.trans_y) {
 		// the px & py values are pixels offsets from the center
 		px1=0;           py1=2*ctx->cellheight;
@@ -459,7 +455,7 @@ static void DrawGuides(struct wcontext *ctx, HDC hDC)
 		py1+=g.trans_y*ctx->cellheight;
 		py2+=g.trans_y*ctx->cellheight;
 		py3+=g.trans_y*ctx->cellheight;
-		
+
 		SelectObject(hDC,ctx->pens.arrow2);
 		MoveToEx(hDC,centerpx+px1,centerpy+py1,NULL);
 		LineTo(hDC,centerpx+px2,centerpy+py2);
@@ -750,7 +746,7 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 
 
 		// else we're at a different cell
-			
+
 		hDC=GetDC(ctx->hwndMain);
 		if(ctx->inverted) InvertCells(ctx,hDC);    // turn off
 		ctx->inverted=0;
@@ -780,7 +776,7 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 
 		ctx->inverted=1;
 		ReleaseDC(ctx->hwndMain,hDC);
-		
+
 		return 0;
 
 	case WM_LBUTTONDOWN:
@@ -932,7 +928,7 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 
 
 		// else we're at a different cell
-			
+
 		hDC=GetDC(ctx->hwndMain);
 		if(ctx->inverted) InvertCells(ctx,hDC);    // turn off
 		ctx->inverted=0;
@@ -962,7 +958,7 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 
 		ctx->inverted=1;
 		ReleaseDC(ctx->hwndMain,hDC);
-		
+
 		return 0;
 
 	case WM_LBUTTONDOWN:
@@ -1057,7 +1053,7 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 				}
 			}
 		} else {
-			if(newval>=0) 
+			if(newval>=0)
 			{
 				if (newval < 10)
 				{
@@ -1088,7 +1084,7 @@ static int set_initial_cells(void)
 	int i,j,g1;
 	struct wcontext *ctx = gctx;
 
-	for(g1=0;g1<g.genmax;g1++) 
+	for(g1=0;g1<g.genmax;g1++)
 		for(i=0;i<g.colmax;i++)
 			for(j=0;j<g.rowmax;j++) {
 				switch(g.origfield[g1][i][j]) {
@@ -1194,7 +1190,7 @@ BOOL set_initial_cells(void)
 									wlsMessagef(ctx,_T("Program inconsistency found"));
 									return FALSE;
 								}
-							}							
+							}
 						} else {
 							// can't set OFF state
 							// let's try ON state
@@ -1270,7 +1266,7 @@ void printgen(int gen)
 	g.curgen=gen;
 
 	// copy dbell's format back into mine
-	for(g1=0;g1<g.genmax;g1++) 
+	for(g1=0;g1<g.genmax;g1++)
 		for(i=0;i<g.colmax;i++)
 			for(j=0;j<g.rowmax;j++) {
 				cell=findcell(j+1,i+1,g1);
@@ -1355,7 +1351,7 @@ static void do_combine(void)
 		g.combinedcells = 0;
 		for(g1=0;g1<g.genmax;g1++) {
 			for(i=0;i<g.colmax;i++){
-				for(j=0;j<g.rowmax;j++) {					
+				for(j=0;j<g.rowmax;j++) {
 					cell=findcell(j+1,i+1,g1);
 					if ((g.origfield[g1][i][j] > 1) && ((cell->state == ON) || (cell->state == OFF)))
 					{
@@ -1381,7 +1377,7 @@ static void show_combine(struct wcontext *ctx)
 	{
 		for(g1=0;g1<g.genmax;g1++) {
 			for(i=0;i<g.colmax;i++){
-				for(j=0;j<g.rowmax;j++) {					
+				for(j=0;j<g.rowmax;j++) {
 					cell=findcell(j+1,i+1,g1);
 					switch(cell->combined) {
 					case ON:
@@ -1454,7 +1450,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 
 			if (!g.quiet) {
 				printgen(0);
-				wlsStatusf(ctx,_T("Object %d found."), ++ctx->foundcount);
+				wlsStatusf(ctx,_T("Object %d found."), ++g.foundcount);
 			}
 
 			writegen(ctx->hwndFrame, g.outputfile, TRUE);
@@ -1463,7 +1459,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 //			continue;
 		}
 
-		if (ctx->foundcount == 0) {
+		if (g.foundcount == 0) {
 			wlsStatusf(ctx,_T(""));
 			wlsMessagef(ctx,_T("No objects found"));
 			goto done;
@@ -1471,7 +1467,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 
 		if (!g.quiet) {
 			wlsMessagef(ctx,_T("Search completed: %d object%s found"),
-				ctx->foundcount, (ctx->foundcount == 1) ? _T("") : _T("s"));
+				g.foundcount, (g.foundcount == 1) ? _T("") : _T("s"));
 		}
 
 		goto done;
@@ -1519,7 +1515,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 		{
 			g.curstatus = OK;
 			++g.foundcount;
-            do_combine();
+			do_combine();
 			writegen(NULL, g.outputfile, TRUE);
 			wlsStatusf(ctx,_T("Combine: %d cells remaining from %d solutions"), g.combinedcells, g.foundcount);
 			continue;
@@ -1568,7 +1564,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 done:
 	if (reset)
 	{
-		for(k=0;k<GENMAX;k++) 
+		for(k=0;k<GENMAX;k++)
 			for(i=0;i<COLMAX;i++)
 				for(j=0;j<ROWMAX;j++)
 					g.currfield[k][i][j]=g.origfield[k][i][j];
@@ -1671,7 +1667,7 @@ static void resume_search(struct wcontext *ctx)
 
 #ifdef JS
 
-static void start_search(struct wcontext *ctx, TCHAR *statefile)
+static void prepare_and_start_search(struct wcontext *ctx, TCHAR *statefile)
 {
 	int i,j,k;
 //	CELL *cell;
@@ -1685,7 +1681,7 @@ static void start_search(struct wcontext *ctx, TCHAR *statefile)
 	showcount();
 
 	// save a copy or the starting position
-	for(k=0;k<GENMAX;k++) 
+	for(k=0;k<GENMAX;k++)
 		for(i=0;i<COLMAX;i++)
 			for(j=0;j<ROWMAX;j++)
 				g.origfield[k][i][j]=g.currfield[k][i][j];
@@ -1727,7 +1723,7 @@ static void start_search(struct wcontext *ctx, TCHAR *statefile)
 		ctx->searchstate=WLS_SRCH_PAUSED;
 /*
 		// set up the starting position
-		for(k=0;k<genmax;k++) 
+		for(k=0;k<genmax;k++)
 			for(i=0;i<colmax;i++)
 				for(j=0;j<rowmax;j++) {
 //					origfield[k][i][j]=currfield[k][i][j];
@@ -1755,7 +1751,7 @@ static void start_search(struct wcontext *ctx, TCHAR *statefile)
 			return;   // there was probably an inconsistency in the initial cells
 		}
 
-		ctx->foundcount=0;
+		g.foundcount=0;
 		ctx->searchstate=WLS_SRCH_PAUSED;  // pretend the search is "paused"
 		resume_search(ctx);
 	}
@@ -1830,13 +1826,13 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 			return FALSE;
 		}
 
-		if(!set_initial_cells()) 
+		if(!set_initial_cells())
 		{
 			record_malloc(0,NULL); // release allocated memory
 			return FALSE;   // there was probably an inconsistency in the initial cells
 		}
 
-		initsearchorder(); 
+		initsearchorder();
 	}
 	ctx->searchstate=WLS_SRCH_PAUSED;  // pretend the search is "paused"
 
@@ -1903,7 +1899,7 @@ static void reset_search(struct wcontext *ctx)
 	record_malloc(0,NULL);    // free memory
 
 	// restore the original cells
-	for(k=0;k<GENMAX;k++) 
+	for(k=0;k<GENMAX;k++)
 		for(i=0;i<COLMAX;i++)
 			for(j=0;j<ROWMAX;j++)
 				g.currfield[k][i][j]=g.origfield[k][i][j];
@@ -1919,7 +1915,7 @@ static void open_state(struct wcontext *ctx)
 	if(ctx->searchstate!=WLS_SRCH_OFF) reset_search(ctx);
 
 #ifdef JS
-	start_search(ctx,_T(""));
+	prepare_and_start_search(ctx,_T(""));
 #else
 	prepare_search(ctx,TRUE);
 #endif
@@ -1986,7 +1982,7 @@ static void flip_h(struct wcontext *ctx, int fromgen, int togen)
 				g.currfield[g1][c][r] = g.currfield[g1][tocol + fromcol - c][r];
 				g.currfield[g1][tocol + fromcol - c][r] = buffer;
 			}
-		}	
+		}
 	}
 }
 
@@ -2019,7 +2015,7 @@ static void flip_v(struct wcontext *ctx, int fromgen, int togen)
 				g.currfield[g1][c][r] = g.currfield[g1][c][torow + fromrow - r];
 				g.currfield[g1][c][torow + fromrow - r] = buffer;
 			}
-		}	
+		}
 	}
 }
 
@@ -2058,7 +2054,7 @@ static void transpose(struct wcontext *ctx, int fromgen, int togen)
 				g.currfield[g1][c][r] = g.currfield[g1][fromcol - fromrow + r][fromrow - fromcol + c];
 				g.currfield[g1][fromcol - fromrow + r][fromrow - fromcol + c] = buffer;
 			}
-		}	
+		}
 	}
 }
 
@@ -2280,15 +2276,15 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		SetWindowPos(ctx->hwndToolbar,NULL,0,HIWORD(lParam)-TOOLBARHEIGHT,
 			LOWORD(lParam),TOOLBARHEIGHT,SWP_NOZORDER);
 		return 0;
-		
+
 	case WM_INITMENU:
 #ifdef JS
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHSTART,ctx->searchstate==WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESET,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHPAUSE,ctx->searchstate==WLS_SRCH_RUNNING?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESUME,ctx->searchstate==WLS_SRCH_PAUSED?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP,ctx->searchstate==WLS_SRCH_PAUSED?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP2,ctx->searchstate==WLS_SRCH_PAUSED?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP2,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
 #else
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHSTART,ctx->searchstate==WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHPREPARE,ctx->searchstate==WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
@@ -2334,18 +2330,21 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		case IDC_SEARCHSETTINGS:
 			DialogBox(ctx->hInst,_T("DLGSEARCHSETTINGS"),hWnd,DlgProcSearch);
 			return 0;
+
 		case IDC_SEARCHSTART:
 #ifdef JS
-			start_search(ctx,NULL);
+			prepare_and_start_search(ctx,NULL);
 #else
 			start_search(ctx);
 #endif
 			return 0;
+
 #ifndef JS
 		case IDC_SEARCHPREPARE:
 			prepare_search(ctx,FALSE);
 			return 0;
 #endif
+
 		case IDC_SEARCHPAUSE:
 			pause_search(ctx);
 			return 0;
@@ -2355,29 +2354,21 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		case IDC_SEARCHRESUME:
 			resume_search(ctx);
 			return 0;
-		case IDC_SEARCHBACKUP:
-#ifdef JS
-			if(ctx->searchstate==WLS_SRCH_PAUSED)
-				getbackup("1 ");
-#else
-			if (ctx->searchstate==WLS_SRCH_RUNNING)
-				pause_search(ctx);
-			if(ctx->searchstate==WLS_SRCH_PAUSED)
-				getbackup("1 ");
 
-#endif
-			return 0;
-		case IDC_SEARCHBACKUP2:
-#ifdef JS
+		case IDC_SEARCHBACKUP:
+			if (ctx->searchstate==WLS_SRCH_RUNNING)
+				pause_search(ctx);
 			if(ctx->searchstate==WLS_SRCH_PAUSED)
-				getbackup("20 ");
-#else
+				getbackup("1 ");
+			return 0;
+
+		case IDC_SEARCHBACKUP2:
 			if (ctx->searchstate==WLS_SRCH_RUNNING)
 				pause_search(ctx);
 			if(ctx->searchstate==WLS_SRCH_PAUSED)
 				getbackup("20 ");
-#endif
 			return 0;
+
 		case IDC_OPENSTATE:
 			open_state(ctx);
 			return 0;
@@ -2410,24 +2401,13 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			copytoclipboard(ctx);
 			return 0;
 		case IDC_CLEARGEN:
-#ifdef JS
-			clear_gen(g.curgen);
-			hide_selection(ctx);
-			wlsRepaintCells(ctx,FALSE);
-#else
 			if(ctx->searchstate == WLS_SRCH_OFF) clear_gen(g.curgen);
 			hide_selection(ctx);
 			wlsRepaintCells(ctx,FALSE);
-#endif
 			return 0;
 		case IDC_CLEAR:
-#ifdef JS
-			clear_all(ctx);
-			wlsRepaintCells(ctx,FALSE);
-#else
 			if(ctx->searchstate == WLS_SRCH_OFF) clear_all(ctx);
 			wlsRepaintCells(ctx,FALSE);
-#endif
 			return 0;
 
 #ifndef JS
@@ -3061,7 +3041,7 @@ static void InitGameSettings(struct wcontext *ctx)
 {
 	int i,j,k;
 
-	for(k=0;k<GENMAX;k++) 
+	for(k=0;k<GENMAX;k++)
 		for(i=0;i<COLMAX;i++)
 			for(j=0;j<ROWMAX;j++) {
 				g.origfield[k][i][j]=2;       // set all cells to "don't care"
@@ -3167,7 +3147,7 @@ static BOOL RegisterClasses(struct wcontext *ctx)
 	wc.lpszMenuName =  NULL;
 	wc.lpszClassName = _T("WLSCLASSMAIN");
 	RegisterClass(&wc);
-	
+
 	wc.style = 0;
 	wc.lpfnWndProc = WndProcToolbar;
 	wc.cbClsExtra = 0;

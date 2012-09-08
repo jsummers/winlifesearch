@@ -1097,19 +1097,18 @@ static	long	getnum(char **, int);
 static	int *param_table[] =
 {
 	&g.curstatus,
-	&g.rowmax, &g.colmax, &g.genmax, 
+	&g.rowmax, &g.colmax, &g.genmax,
 	&g.rowtrans, &g.coltrans,
 	&g.rowsym, &g.colsym, &g.pointsym, &g.fwdsym, &g.bwdsym,
 	&g.fliprows, &g.flipcols, &g.flipquads,
 	&g.parent, &g.allobjects, &g.nearcols, &g.maxcount,
 	&g.userow, &g.usecol, &g.colcells, &g.colwidth, &g.follow,
-	&g.orderwide, &g.ordergens, &g.ordermiddle, &g.followgens, 
+	&g.orderwide, &g.ordergens, &g.ordermiddle, &g.followgens,
 	&g.diagsort, &g.symmetry, &g.trans_rotate, &g.trans_flip, &g.trans_x, &g.trans_y,
 	&g.knightsort,
 	&g.smart, &g.smartwindow, &g.smartthreshold,
 	&g.foundcount,
-	&g.combine, &g.combining, &g.combinedcells, &g.setcombinedcells, &g.differentcombinedcells, 
-
+	&g.combine, &g.combining, &g.combinedcells, &g.setcombinedcells, &g.differentcombinedcells,
 	NULL
 };
 
@@ -1295,16 +1294,16 @@ void writegen(HWND hwndParent, TCHAR *file1, BOOL append)
 				cell = findcell(row, col, gen);
 				switch (cell->state)
 				{
-				case OFF:	
-					ch = '.'; 
+				case OFF:
+					ch = '.';
 					break;
 
-				case ON:	
-					ch = '*'; 
+				case ON:
+					ch = '*';
 					break;
 
-				case UNK:	
-					ch = cell->unchecked ? 'X' : '?'; 
+				case UNK:
+					ch = cell->unchecked ? 'X' : '?';
 					break;
 
 				default:
@@ -1361,9 +1360,9 @@ void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo)
 	if(file1) {
 		file = file1;
 	}
-	else 
+	else
 	{
-		if (!getfilename_s(hwndParent,g.state_filename)) 
+		if (!getfilename_s(hwndParent,g.state_filename))
 		{
 			return;
 		}
@@ -1441,7 +1440,7 @@ void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo)
 	 * save combination
 	 */
 
-	if (g.combining) 
+	if (g.combining)
 	{
 		for(col=1;col<=g.colmax;col++) {
 			for(row=1;row<=g.rowmax;row++) {
@@ -1469,7 +1468,7 @@ void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo)
 		return;
 	}
 
-	if (echo) 
+	if (echo)
 	{
 		wlsStatusf(NULL,_T("State dumped to \x201c%s\x201d\n"), g.state_filename);
 	}
@@ -1701,7 +1700,7 @@ BOOL loadstate(HWND hwndParent)
 
 		buf[0] = '\0';
 		fgets(buf, LINESIZE, fp);
-	
+
 	}
 
 //*********************************************

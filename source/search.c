@@ -288,7 +288,7 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (g.orderwide)?1:(-1);
 		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (g.orderwide)?(-1):1;
 	}
-	
+
 
 	/*
 	 * Sort on the column number.
@@ -324,7 +324,7 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 		if (c1->col < c2->col)
 			return -1;
 
-		if (c1->col > c2->col) 
+		if (c1->col > c2->col)
 			return 1;
 	}
 
@@ -390,7 +390,7 @@ initsearchorder(void)
 	for (gen = 0; gen < g.genmax; gen++)
 		for (col = 1; col <= g.colmax; col++)
 			for (row = 1; row <= g.rowmax; row++)	{
-				
+
 				nrow=g.rowmax+1-row;
 				ncol=g.colmax+1-col;
 
@@ -427,7 +427,7 @@ initsearchorder(void)
 					if(col>row || row>nrow) continue;
 					break;
 				}
-				
+
 
 /*				if (rowsym && (row * 2 > rowmax + 1))
 					continue;
@@ -457,7 +457,7 @@ initsearchorder(void)
 		cell->search = g.searchlist;
 		g.searchlist = cell;
 	}
-	
+
 	g.fullsearchlist = g.searchlist;
 }
 
@@ -1495,7 +1495,7 @@ static CELL *symcell(CELL *cell)
 		return findcell(col,row,cell->gen);
 	}
 
-/*    special symmetry 
+/*    special symmetry
 	if(symmetry==4) {
 		if(col>=row)
 			return findcell(col,row-1,cell->gen);
@@ -1539,7 +1539,7 @@ static CELL *symcell(CELL *cell)
 			return findcell(ncol,nrow,cell->gen);
 	}
 
-	if(g.symmetry==8) {      // origin*4 symmetry 
+	if(g.symmetry==8) {      // origin*4 symmetry
 		// this is surprisingly simple
 			return findcell(ncol,row,cell->gen);
 	}
@@ -1846,12 +1846,12 @@ transition(state, OFFcount, ONcount)
 	BOOL	on_always;
 	BOOL	off_always;
 	int	UNKcount;
- 	int	i;
+	int	i;
 
- 	on_always = TRUE;
+	on_always = TRUE;
 	off_always = TRUE;
 	UNKcount = SUMCOUNT - OFFcount - ONcount;
- 
+
 	for (i = 0; i <= UNKcount; i++)
 	{
 		switch (nextstate(state, ONcount + i))
@@ -1896,7 +1896,7 @@ implication(state, OFFcount, ONcount)
 
 	UNKcount = SUMCOUNT - OFFcount - ONcount;
 	flags = 0;
-	
+
 	if (state == UNK)
 	{
 		flags |= (N0IC0 | N0IC1 | N1IC0 | N1IC1);   /* set them all and */
@@ -1918,7 +1918,7 @@ implication(state, OFFcount, ONcount)
 				flags &= ~N0IC0;
 		}
 	}
-	
+
 	if (UNKcount)
 	{
 		flags |= (N0ICUN0 | N0ICUN1 | N1ICUN0 | N1ICUN1);
@@ -1980,7 +1980,7 @@ implication(state, OFFcount, ONcount)
 			}
 		}
 	}
-  
+
 	return flags;
 }
 
@@ -2243,7 +2243,7 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (g.orderwide)?1:(-1);
 		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (g.orderwide)?(-1):1;
 	}
-	
+
 	/*
 	 * Sort on the column number.
 	 * By default this is from left to right.
@@ -2374,7 +2374,7 @@ rescell(CELL *cell)
 
 			if (g.combining && (cell->combined != UNK))
 			{
-				if (cell->combined == ON) 
+				if (cell->combined == ON)
 				{
 					++g.differentcombinedcells;
 				}
@@ -2397,7 +2397,7 @@ rescell(CELL *cell)
 
 			if (g.combining && (cell->combined != UNK))
 			{
-				if (cell->combined == OFF) 
+				if (cell->combined == OFF)
 				{
 					++g.differentcombinedcells;
 				}
@@ -2507,12 +2507,12 @@ setcell(CELL *cell, STATE state, BOOL free)
 
 			if (g.combining &&(cell->combined != UNK))
 			{
-				if (cell->combined == ON) 
+				if (cell->combined == ON)
 				{
 					--g.differentcombinedcells;
 				}
 				++g.setcombinedcells;
-				if ((g.setcombinedcells == g.combinedcells) && (g.differentcombinedcells == 0)) 
+				if ((g.setcombinedcells == g.combinedcells) && (g.differentcombinedcells == 0))
 				{
 					return FALSE;
 				}
@@ -2553,12 +2553,12 @@ setcell(CELL *cell, STATE state, BOOL free)
 
 			if (g.combining && (cell->combined != UNK))
 			{
-				if (cell->combined == OFF) 
+				if (cell->combined == OFF)
 				{
 					--g.differentcombinedcells;
 				}
 				++g.setcombinedcells;
-				if ((g.setcombinedcells == g.combinedcells) && (g.differentcombinedcells == 0)) 
+				if ((g.setcombinedcells == g.combinedcells) && (g.differentcombinedcells == 0))
 				{
 					return FALSE;
 				}
@@ -2583,7 +2583,7 @@ sumtodesc(STATE futurestate, STATE currentstate, int neighborsum)
 	// using the following expression, all different
 	// combinations are mapped to different numbers
 	// if you don't believe it, just try it
-	
+
 	return (neighborsum*10 + currentstate*3 + futurestate);
 }
 
@@ -2593,7 +2593,7 @@ sumtodesc(STATE futurestate, STATE currentstate, int neighborsum)
 static __inline short
 getdesc(CELL *cell)
 {
-	return sumtodesc(cell->future->state, cell->state, 
+	return sumtodesc(cell->future->state, cell->state,
 					cell->cul->state + cell->cu->state + cell->cur->state
 					+ cell->cdl->state + cell->cd->state + cell->cdr->state
 					+ cell->cl->state + cell->cr->state);
@@ -2955,7 +2955,7 @@ static BOOL getsmartnumbers(CELL *cell)
 		comb1 = g.differentcombinedcells  + g.setcombinedcells - comb1;
 
 		// back up
-		backup(); 
+		backup();
 
 		// and now let's try the OFF choice
 
@@ -3073,7 +3073,7 @@ getsmartunknown(void)
 					n2 = n1 + bestlen1;
 					n1 += bestlen0;
 
-					if (n1 > n2) 
+					if (n1 > n2)
 					{
 						a = n1;
 						b = n2;
@@ -3141,7 +3141,7 @@ getsmartunknown(void)
 			++g.smartstatsumwndc;
 			g.smartstatsumlen += max;
 			++g.smartstatsumlenc;
-		
+
 			if (g.smartstatsumwndc >= 100000) {
 				g.smartstatwnd = g.smartstatsumwnd / g.smartstatsumwndc;
 				g.smartstatsumwnd = 0;
@@ -3184,7 +3184,7 @@ static STATE
 choose(cell)
 	CELL *	cell;
 {
-	/* 
+	/*
 	 * if something pre-set by the select algorithm,
 	 * use the selection
 	 */
@@ -3206,7 +3206,7 @@ choose(cell)
 
 	}
 
-	/* 
+	/*
 	 * In all other cases
 	 * try the OFF state first
 	 */
@@ -3228,7 +3228,7 @@ search(void)
 	BOOL	needwrite;
 	STATE	state;
 
- 	cell = (*getunknown)();
+	cell = (*getunknown)();
 
 	if (cell == NULL)
 	{
@@ -3252,14 +3252,14 @@ search(void)
 	}
 
 	for (;;) {
-		if(abortthread) 
+		if(abortthread)
 		{
 			return OK;
 		}
 
 		// Set the state of the new cell.
 
-		if (!go(cell, state, free)) 
+		if (!go(cell, state, free))
 		{
 			showcount();
 			printgen();
@@ -3667,7 +3667,7 @@ static CELL *symcell(CELL *cell)
 			return findcell(ncol,nrow,cell->gen);
 	}
 
-	if(g.symmetry==8) {      // origin*4 symmetry 
+	if(g.symmetry==8) {      // origin*4 symmetry
 		// this is surprisingly simple
 			return findcell(ncol,row,cell->gen);
 	}
