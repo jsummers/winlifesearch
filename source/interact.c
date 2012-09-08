@@ -200,7 +200,7 @@ getbackup(char *cp)
 	{
 		cell = backup();
 
-		if (cell == NULL_CELL)
+		if (cell == NULL)
 		{
 			printgen(g.curgen);
 			ttystatus(_T("Backed up over all possibilities\n"));

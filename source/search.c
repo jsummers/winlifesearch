@@ -89,7 +89,7 @@ sumtodesc(STATE state, int sum)
  * Boundary cells are set to zero state.
  */
 STATUS
-initcells()
+initcells(void)
 {
 	int	row, col, gen;
 	int	i;
@@ -374,7 +374,7 @@ ordersortfunc(const void *xxx1, const void *xxx2)
  * from the left to the right columns.  The order can be changed though.
  */
 static void
-initsearchorder()
+initsearchorder(void)
 {
 	int	row, col, gen;
 	int	count;
@@ -772,7 +772,7 @@ consistify10(cell)
  * Examine the next choice of cell settings.
  */
 static STATUS
-examinenext()
+examinenext(void)
 {
 	CELL *	cell;
 
@@ -833,10 +833,10 @@ proceed(cell, state, free)
 /*
  * Back up the list of set cells to undo choices.
  * Returns the cell which is to be tried for the other possibility.
- * Returns NULL_CELL on an "object cannot exist" error.
+ * Returns NULL CELL on an "object cannot exist" error.
  */
 CELL *
-backup()
+backup(void)
 {
 	CELL *	cell;
 
@@ -879,7 +879,7 @@ backup()
 	}
 
 	g.nextset = g.baseset;
-	return NULL_CELL;
+	return NULL;
 }
 
 
@@ -906,7 +906,7 @@ go(cell, state, free)
 
 		cell = backup();
 
-		if (cell == NULL_CELL)
+		if (cell == NULL)
 			return ERROR1;
 
 		free = FALSE;
@@ -918,10 +918,10 @@ go(cell, state, free)
 
 /*
  * Find another unknown cell in a normal search.
- * Returns NULL_CELL if there are no more unknown cells.
+ * Returns NULL CELL if there are no more unknown cells.
  */
 static CELL *
-getnormalunknown()
+getnormalunknown(void)
 {
 	CELL *	cell;
 
@@ -938,16 +938,16 @@ getnormalunknown()
 		}
 	}
 
-	return NULL_CELL;
+	return NULL;
 }
 
 
 /*
  * Find another unknown cell when averaging is done.
- * Returns NULL_CELL if there are no more unknown cells.
+ * Returns NULL CELL if there are no more unknown cells.
  */
 static CELL *
-getaverageunknown()
+getaverageunknown(void)
 {
 	CELL *	cell;
 	CELL *	bestcell;
@@ -957,7 +957,7 @@ getaverageunknown()
 	int	curcol;
 	int	testcol;
 
-	bestcell = NULL_CELL;
+	bestcell = NULL;
 	bestdist = -1;
 
 	cell = g.searchlist;
@@ -1004,7 +1004,7 @@ getaverageunknown()
 			return bestcell;
 	}
 
-	return NULL_CELL;
+	return NULL;
 }
 
 
@@ -1046,7 +1046,7 @@ choose(cell)
  * Returns if an object is found, or is impossible.
  */
 STATUS
-search()
+search(void)
 {
 	CELL *	cell;
 	BOOL	free;
@@ -1055,11 +1055,11 @@ search()
 
 	cell = (*getunknown)();
 
-	if (cell == NULL_CELL)
+	if (cell == NULL)
 	{
 		cell = backup();
 
-		if (cell == NULL_CELL)
+		if (cell == NULL)
 			return ERROR1;
 
 		free = FALSE;
@@ -1139,7 +1139,7 @@ search()
 		 */
 		cell = (*getunknown)();
 
-		if (cell == NULL_CELL)
+		if (cell == NULL)
 			return FOUND;
 
 		state = choose(cell);
@@ -1268,7 +1268,7 @@ checkwidth(cell)
  * Returns TRUE if there is an identical generation.
  */
 BOOL
-subperiods()
+subperiods(void)
 {
 	int	row;
 	int	col;
@@ -1363,7 +1363,7 @@ STATUS loopcells(CELL *cell1, CELL *cell2)
 	CELL *	cell;
 	BOOL	frozen;
 
-	if(cell2==NULL_CELL) return OK;
+	if(cell2==NULL) return OK;
 
 	/*
 	 * Check simple cases of equality, or of either cell
@@ -1437,7 +1437,7 @@ STATUS loopcells(CELL *cell1, CELL *cell2)
  * It is not necessary to know all symmetric cells to a single cell,
  * as long as all symmetric cells are chained in a loop.  Thus a single
  * pointer is good enough even for the case of both row and column symmetry.
- * Returns NULL_CELL if there is no symmetry.
+ * Returns NULL CELL if there is no symmetry.
  */
 
 
@@ -1449,10 +1449,10 @@ static CELL *symcell(CELL *cell)
 	int	ncol;
 
 //	if (!rowsym && !colsym && !pointsym && !fwdsym && !bwdsym)
-//		return NULL_CELL;
+//		return NULL;
 
 	if(!g.symmetry)
-		return NULL_CELL;
+		return NULL;
 
 	row = cell->row;
 	col = cell->col;
@@ -1471,14 +1471,14 @@ static CELL *symcell(CELL *cell)
 				}
 				if(row>nrow && cell->gen==0) cell->colinfo->setcount++;
 
-				return NULL_CELL;
+				return NULL;
 			}
 			else {       // even sym
 				if(abs(nrow-row)==1) {
 					return findcell(nrow,col,cell->gen);
 				}
 				if(nrow>row && cell->gen==0) cell->colinfo->setcount++;
-				return NULL_CELL;
+				return NULL;
 			}
 
 		}
@@ -1496,7 +1496,7 @@ static CELL *symcell(CELL *cell)
 				return findcell(col,row,cell->gen);
 			if(abs(col-row)==2)
 				return findcell(col,row,cell->gen);
-			return NULL_CELL;
+			return NULL;
 		}
 		return findcell(col,row,cell->gen);
 	}
@@ -1572,7 +1572,7 @@ static CELL *symcell(CELL *cell)
 
 	}
 
-	return NULL_CELL;   // crash if we get here :)
+	return NULL;   // crash if we get here :)
 }
 
 /*
@@ -1688,7 +1688,7 @@ findcell(row, col, gen)
  * Warning: The first allocation MUST be of the deadcell.
  */
 static CELL *
-allocatecell()
+allocatecell(void)
 {
 	CELL *	cell;
 
@@ -1783,7 +1783,7 @@ initimplic(void)
  * Initialize the transition table.
  */
 static void
-inittransit()
+inittransit(void)
 {
 	int	state;
 	int	OFFcount;
@@ -2303,7 +2303,7 @@ ordersortfunc(const void *xxx1, const void *xxx2)
  * from the left to the right columns.  The order can be changed though.
  */
 void
-initsearchorder()
+initsearchorder(void)
 {
 	int	row, col, gen;
 	int	count;
@@ -2722,7 +2722,7 @@ consistify10(CELL *cell)
  * Examine the next choice of cell settings.
  */
 STATUS
-examinenext()
+examinenext(void)
 {
 	CELL *	cell;
 
@@ -2776,7 +2776,7 @@ proceed(cell, state, free)
  * Returns NULL on an "object cannot exist" error.
  */
 CELL *
-backup()
+backup(void)
 {
 	CELL *	cell;
 
@@ -2855,7 +2855,7 @@ go(CELL *cell, STATE state, BOOL free)
  * Returns NULL if there are no more unknown cells.
  */
 static CELL *
-getnormalunknown()
+getnormalunknown(void)
 {
 	CELL *	cell;
 
@@ -2878,7 +2878,7 @@ getnormalunknown()
  */
 
 static CELL *
-getaverageunknown()
+getaverageunknown(void)
 {
 	CELL *	cell;
 	CELL *	bestcell;
@@ -3228,7 +3228,7 @@ CELL *combinebackup(void);
  * Returns if an object is found, or is impossible.
  */
 STATUS
-search()
+search(void)
 {
 	CELL *	cell;
 	BOOL	free;
@@ -3458,7 +3458,7 @@ checkwidth(cell)
  * Returns TRUE if there is an identical generation.
  */
 BOOL
-subperiods()
+subperiods(void)
 {
 	int	row;
 	int	col;
@@ -3810,7 +3810,7 @@ findcell(row, col, gen)
  * The cell is initialized as if it was a boundary cell.
  */
 static CELL *
-allocatecell()
+allocatecell(void)
 {
 	CELL *	cell;
 
@@ -3870,7 +3870,7 @@ initimplic(void)
 	int	nunk, non, noff, cunk, con, coff, funk, fon, foff, naon, caon, faon, desc;
 	BOOL valid, cison, cisoff, fison, fisoff, nison, nisoff;
 
-	for (desc=0; desc<sizeof(g.implic)/sizeof(g.implic[0]); desc++) {
+	for (desc=0; desc<WLS_IMPLIC_LEN; desc++) {
 		g.implic[desc] = IMPVOID;
 	}
 
@@ -3962,7 +3962,7 @@ initimplic(void)
 		}
 	}
 
-	for (desc=0; desc<sizeof(g.implic)/sizeof(g.implic[0]); desc++) {
+	for (desc=0; desc<WLS_IMPLIC_LEN; desc++) {
 		if (g.implic[desc] == IMPVOID) {
 			g.implic[desc] = IMPBAD;
 		}

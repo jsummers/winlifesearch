@@ -69,24 +69,18 @@
 //#define	isdigit(ch)	(((ch) >= '0') && ((ch) <= '9'))
 #define	isblank(ch)	(((ch) == ' ') || ((ch) == '\t'))
 
-#ifdef JS
-typedef	unsigned int  PACKED_BOOL;
-typedef	unsigned int  STATE;
-typedef	unsigned int  STATUS;
-#else
-typedef	char		PACKED_BOOL;
-typedef	unsigned char	STATE;
-typedef	unsigned int	STATUS;
-#endif
+typedef	unsigned char  PACKED_BOOL;
+typedef	unsigned char  STATE;
+typedef	unsigned int   STATUS;
 
 /*
  * Status returned by routines
  */
-#define	OK		((STATUS) 0)
-#define	ERROR1		((STATUS) 1)
-#define	CONSISTENT	((STATUS) 2)
-#define	NOTEXIST	((STATUS) 3)
-#define	FOUND		((STATUS) 4)
+#define	OK          ((STATUS) 0)
+#define	ERROR1      ((STATUS) 1)
+#define	CONSISTENT  ((STATUS) 2)
+#define	NOTEXIST    ((STATUS) 3)
+#define	FOUND       ((STATUS) 4)
 
 
 /*
@@ -177,9 +171,6 @@ struct cell
 #endif
 };
 
-#ifdef JS
-#define	NULL_CELL	((CELL *) 0)
-#endif
 
 typedef	unsigned char   FLAGS;
 
@@ -332,6 +323,7 @@ struct globals_struct {
 	 */
 	STATE transit[256];
 #endif
+
 	/*
 	 * Table of implications.
 	 * Given the state of a cell and its neighbors in one generation,
@@ -340,10 +332,12 @@ struct globals_struct {
 	 * The table is indexed by the descriptor value of a cell.
 	 */
 #ifdef JS
-	FLAGS implic[256];
+#define WLS_IMPLIC_LEN 256
 #else
-	FLAGS implic[1000];
+#define WLS_IMPLIC_LEN 1000
 #endif
+	FLAGS implic[WLS_IMPLIC_LEN];
+
 	int	newcellcount; /* number of cells ready for allocation */
 	int	auxcellcount; /* number of cells in auxillary table */
 	CELL * newcells; /* cells ready for allocation */
