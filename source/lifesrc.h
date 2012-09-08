@@ -349,6 +349,9 @@ struct globals_struct {
 #endif
 	CELL * celltable[MAXCELLS]; /* table of usual cells */
 	CELL * auxtable[AUXCELLS]; /* table of auxillary cells */
+
+	void *memblks[2000];
+	int memblks_used;
 };
 
 
@@ -410,8 +413,4 @@ void record_malloc(int func,void *m);
 #ifndef JS
 BOOL set_initial_cells(void);
 #endif
-#ifdef JS
-void showcount(int c);
-#else
 void showcount(void);
-#endif

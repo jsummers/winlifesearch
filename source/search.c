@@ -1109,7 +1109,7 @@ search(void)
 		 */
 		if (needwrite || (g.viewfreq && (++g.viewcount >= g.viewfreq)))
 		{
-			showcount(g.viewcount);
+			showcount();
 			printgen(g.curgen);
 			g.viewcount = 0;
 		}
@@ -2007,9 +2007,7 @@ implication(state, OFFcount, ONcount)
  */
 static	void	initimplic(void);
 static	void	linkcell(CELL *);
-static __inline	STATE	transition(STATE, int, int);
 static	STATE	choose(CELL *);
-static	FLAGS	implication(STATE, int, int);
 static	CELL *	symcell(CELL *);
 static	CELL *	mapcell(CELL *);
 static	CELL *	allocatecell(void);

@@ -83,9 +83,9 @@ struct wcontext {
 	int centerx,centery,centerxodd,centeryodd;
 	POINT scrollpos;
 	HFONT statusfont;
+	__int64 showcount_tot;
 #ifdef JS
 	int foundcount;
-	__int64 showcount_tot;
 #endif
 };
 
@@ -102,7 +102,7 @@ volatile int abortthread;
    4 /|\ 7
    /5 | 6\  */
 
-static int symmap[] = { 
+static const int symmap[10] = { 
 			// 76543210
 	0x01,	// 00000001  no symmetry
 	0x09,	// 00001001  mirror-x
@@ -175,20 +175,26 @@ void wlsStatusf(struct wcontext *ctx, TCHAR *fmt, ...)
 	va_end(ap);
 }
 
-void record_malloc(int func,void *m)
+// TODO: Find a better way to keep track of allocated memory.
+// At least use a linked list or something.
+// (The original lifesrc did not bother to free memory or to make it easy to
+// free, because only one search would ever be done per process. Since we do
+// multiple searches, we have to be able to free it.)
+// func == 0: Free all recorded pointers.
+// func == 1: Record pointer m.
+void record_malloc(int func, void *m)
 {
-	static void *memblks[2000];
-	static int used=0;
 	int i;
 
 	switch(func) {
 	case 0:
-		for(i=0;i<used;i++)
-			free(memblks[i]);
-		used=0;
+		for(i=0;i<g.memblks_used;i++)
+			free(g.memblks[i]);
+		g.memblks_used=0;
 		break;
 	case 1:      // record this pointer
-		memblks[used++]=m;
+		if(g.memblks_used<2000)
+			g.memblks[g.memblks_used++]=m;
 		break;
 	}
 }
@@ -200,18 +206,20 @@ static void wlsRepaintCells(struct wcontext *ctx, int full_repaint)
 	InvalidateRect(ctx->hwndMain,NULL,full_repaint?TRUE:FALSE);
 }
 
-/* Returns all the cells symmetric to the given cell.
- * Returns an array irs of (x,y) coords.
- * (it will be 0, 1, 3, or 7.)
- *
+/* Find all the cells symmetric to the given cell.
+ * Populates the pt array with (x,y) coords.
+ * pt[0] will be the given (x,y) point.
+ * sets *num to the number of cells (it will be 1, 2, 4, or 8).
+ * Caller must supply pt[8]
  */
-static POINT *GetSymmetricCells(int x,int y,int *num)
+static POINT *GetSymmetricCells(int x, int y, POINT *pt, int *num)
 {
-	static POINT pt[7];
 	int s,n;
 
 	s=symmap[g.symmetry];
-	n=0;
+	pt[0].x = x;
+	pt[0].y = y;
+	n=1;
 
 	if(s & 0x02) {
 		assert(g.colmax==g.rowmax);
@@ -528,7 +536,7 @@ static void DrawCell(struct wcontext *ctx, HDC hDC,int x,int y)
 // Set/reset unknown/unchecked
 static void ChangeChecking(struct wcontext *ctx, HDC hDC, int x, int y, int allgens, int set)
 {
-	POINT *pts;
+	POINT pts[8];
 	int numpts,i,j;
 	int s1, s2;
 	int g1, g2;
@@ -553,16 +561,7 @@ static void ChangeChecking(struct wcontext *ctx, HDC hDC, int x, int y, int allg
 		g2 = g.curgen;
 	}
 
-	pts=GetSymmetricCells(x,y,&numpts);
-
-	for(j=g1;j<=g2;j++)
-	{
-		if (g.currfield[j][x][y] == s1)
-		{
-			g.currfield[j][x][y] = s2;
-		}
-	}
-	DrawCell(ctx,hDC,x,y);
+	GetSymmetricCells(x,y,pts,&numpts);
 
 	for(i=0;i<numpts;i++) {
 		for(j=g1;j<=g2;j++)
@@ -581,20 +580,14 @@ static void ChangeChecking(struct wcontext *ctx, HDC hDC, int x, int y, int allg
 // (including the given cell)
 static void Symmetricalize(struct wcontext *ctx, HDC hDC,int x,int y,int allgens)
 {
-	POINT *pts;
+	POINT pts[8];
 	int numpts,i,j;
 
-	pts=GetSymmetricCells(x,y,&numpts);
-
-	if(allgens) {
-		for(j=0;j<GENMAX;j++) {
-			g.currfield[j][x][y]=g.currfield[g.curgen][x][y];
-		}
-	}
-	DrawCell(ctx,hDC,x,y);
+	GetSymmetricCells(x,y,pts,&numpts);
 
 	for(i=0;i<numpts;i++) {
-		g.currfield[g.curgen][pts[i].x][pts[i].y]=g.currfield[g.curgen][x][y];
+		if(i>0)
+			g.currfield[g.curgen][pts[i].x][pts[i].y]=g.currfield[g.curgen][x][y];
 		if(allgens) {
 			for(j=0;j<GENMAX;j++) {
 				g.currfield[j][pts[i].x][pts[i].y]=g.currfield[g.curgen][x][y];
@@ -1248,40 +1241,24 @@ static void draw_gen_counter(struct wcontext *ctx)
 	SetWindowText(ctx->hwndGen,buf);
 }
 
-#ifdef JS
-
-void showcount(int c)
-{
-	TCHAR buf[80];
-	struct wcontext *ctx = gctx;
-
-	if(c<0) ctx->showcount_tot=0;
-	else ctx->showcount_tot+=c;
-
-	StringCbPrintf(buf,sizeof(buf),WLS_APPNAME _T(" [%I64d]"),ctx->showcount_tot);
-	SetWindowText(gctx->hwndFrame,buf);
-}
-
-#else
-
+// g.viewcount is the number of calculations since showcount() was last
+// called.
+// To reset the counter, set g.viewcount to -1 before calling showcount().
 void showcount(void)
 {
 	TCHAR buf[80];
 	struct wcontext *ctx = gctx;
-	static int tot=0;
 
 	if (g.viewcount<0) {
-		tot=0;
+		ctx->showcount_tot=0;
 	} else {
-		tot += g.viewcount;
+		ctx->showcount_tot += g.viewcount;
 	}
 	g.viewcount = 0;
 
-	StringCbPrintf(buf,sizeof(buf),WLS_APPNAME _T(" [%d]"),tot);
+	StringCbPrintf(buf,sizeof(buf),WLS_APPNAME _T(" [%I64d]"),ctx->showcount_tot);
 	SetWindowText(ctx->hwndFrame,buf);
 }
-
-#endif
 
 #ifdef JS
 
@@ -1704,7 +1681,8 @@ static void start_search(struct wcontext *ctx, TCHAR *statefile)
 		return;
 	}
 
-	showcount(-1);
+	g.viewcount = -1;
+	showcount();
 
 	// save a copy or the starting position
 	for(k=0;k<GENMAX;k++) 
@@ -1964,7 +1942,8 @@ static void hide_selection(struct wcontext *ctx)
 }
 
 static void clear_gen(int g1)
-{	int i,j;
+{
+	int i,j;
 	for(i=0;i<COLMAX;i++)
 		for(j=0;j<ROWMAX;j++)
 			g.currfield[g1][i][j]=2;
@@ -3160,7 +3139,8 @@ static void InitGameSettings(struct wcontext *ctx)
 }
 
 static BOOL RegisterClasses(struct wcontext *ctx)
-{   WNDCLASS  wc;
+{
+	WNDCLASS  wc;
 	HICON iconWLS;
 
 	wc.style = 0;
