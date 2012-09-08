@@ -181,6 +181,7 @@ struct cell
 #define	NULL_CELL	((CELL *) 0)
 #endif
 
+typedef	unsigned char   FLAGS;
 
 struct globals_struct {
 /*
@@ -321,6 +322,39 @@ struct globals_struct {
 #ifdef JS
 	BOOL islife;  /* whether the rules are for standard Life */
 #endif
+
+#ifdef JS
+	/*
+	 * Table of transitions.
+	 * Given the state of a cell and its neighbors in one generation,
+	 * this table determines the state of the cell in the next generation.
+	 * The table is indexed by the descriptor value of a cell.
+	 */
+	STATE transit[256];
+#endif
+	/*
+	 * Table of implications.
+	 * Given the state of a cell and its neighbors in one generation,
+	 * this table determines deductions about the cell and its neighbors
+	 * in the previous generation.
+	 * The table is indexed by the descriptor value of a cell.
+	 */
+#ifdef JS
+	FLAGS implic[256];
+#else
+	FLAGS implic[1000];
+#endif
+	int	newcellcount; /* number of cells ready for allocation */
+	int	auxcellcount; /* number of cells in auxillary table */
+	CELL * newcells; /* cells ready for allocation */
+	CELL * searchlist; /* current list of cells to search */
+	ROWINFO	dummyrowinfo; /* dummy info for ignored cells */
+	COLINFO	dummycolinfo; /* dummy info for ignored cells */
+#ifdef JS
+	CELL * deadcell; /* boundary cell value */
+#endif
+	CELL * celltable[MAXCELLS]; /* table of usual cells */
+	CELL * auxtable[AUXCELLS]; /* table of auxillary cells */
 };
 
 

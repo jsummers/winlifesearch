@@ -14,12 +14,6 @@
 #include <search.h>
 #include "lifesrc.h"
 
-#ifdef JS
-
-// Uncommenting this line will disable certain features in an attempt
-// to make the search go a little faster. Maybe 10% faster or so...
-//#define FASTER
-
 
 #define SUMCOUNT 8
 
@@ -27,10 +21,17 @@ extern struct globals_struct g;
 
 extern volatile int abortthread;
 
+
+#ifdef JS
+
+// Uncommenting this line will disable certain features in an attempt
+// to make the search go a little faster. Maybe 10% faster or so...
+//#define FASTER
+
+
 /*
  * IMPLIC flag values.
  */
-typedef	unsigned char	FLAGS;
 #define	N0IC0	((FLAGS) 0x01)	/* new cell 0 ==> current cell 0 */
 #define	N0IC1	((FLAGS) 0x02)	/* new cell 0 ==> current cell 1 */
 #define	N1IC0	((FLAGS) 0x04)	/* new cell 1 ==> current cell 0 */
@@ -40,44 +41,10 @@ typedef	unsigned char	FLAGS;
 #define	N1ICUN0	((FLAGS) 0x40)	/* new cell 1 ==> current unknown neighbors 0 */
 #define	N1ICUN1	((FLAGS) 0x80)	/* new cell 1 ==> current unknown neighbors 1 */
 
-
-/*
- * Table of transitions.
- * Given the state of a cell and its neighbors in one generation,
- * this table determines the state of the cell in the next generation.
- * The table is indexed by the descriptor value of a cell.
- */
-static	STATE	transit[256];
-
-
-/*
- * Table of implications.
- * Given the state of a cell and its neighbors in one generation,
- * this table determines deductions about the cell and its neighbors
- * in the previous generation.
- * The table is indexed by the descriptor value of a cell.
- */
-static	FLAGS	implic[256];
-
-
 /*
  * Table of state values.
  */
-static	STATE	states[NSTATES] = {OFF, ON, UNK};
-
-
-/*
- * Other local data.
- */
-static	int	newcellcount;	/* number of cells ready for allocation */
-static	int	auxcellcount;	/* number of cells in auxillary table */
-static	CELL *	newcells;	/* cells ready for allocation */
-static	CELL *	deadcell;	/* boundary cell value */
-static	CELL *	searchlist;	/* current list of cells to search */
-static	CELL *	celltable[MAXCELLS];	/* table of usual cells */
-static	CELL *	auxtable[AUXCELLS];	/* table of auxillary cells */
-static	ROWINFO	dummyrowinfo;	/* dummy info for ignored cells */
-static	COLINFO	dummycolinfo;	/* dummy info for ignored cells */
+static const STATE g_states[NSTATES] = {OFF, ON, UNK};
 
 
 /*
@@ -131,13 +98,13 @@ initcells()
 	CELL *	cell;
 	CELL *	cell2;
 
-	newcellcount=0;
-	auxcellcount=0;
-	newcells=NULL;
-	deadcell=NULL;
-	searchlist=NULL;
-	dummyrowinfo.oncount=0;
-	dummycolinfo.oncount=0;
+	g.newcellcount=0;
+	g.auxcellcount=0;
+	g.newcells=NULL;
+	g.deadcell=NULL;
+	g.searchlist=NULL;
+	g.dummyrowinfo.oncount=0;
+	g.dummycolinfo.oncount=0;
 
 
 	if ((g.rowmax <= 0) || (g.rowmax > ROWMAX) ||
@@ -154,10 +121,10 @@ initcells()
 	 * The first allocation of a cell MUST be deadcell.
 	 * Then allocate the cells in the cell table.
 	 */
-	deadcell = allocatecell();
+	g.deadcell = allocatecell();
 
 	for (i = 0; i < MAXCELLS; i++)
-		celltable[i] = allocatecell();
+		g.celltable[i] = allocatecell();
 
 	/*
 	 * Link the cells together.
@@ -176,8 +143,8 @@ initcells()
 				cell->row = row;
 				cell->col = col;
 				cell->choose = TRUE;
-				cell->rowinfo = &dummyrowinfo;
-				cell->colinfo = &dummycolinfo;
+				cell->rowinfo = &g.dummyrowinfo;
+				cell->colinfo = &g.dummycolinfo;
 
 				/*
 				 * If this is not an edge cell, then its state
@@ -482,16 +449,16 @@ initsearchorder()
 	 * Finally build the search list from the table elements in the
 	 * final order.
 	 */
-	searchlist = NULL;
+	g.searchlist = NULL;
 
 	while (--count >= 0)
 	{
 		cell = table[count];
-		cell->search = searchlist;
-		searchlist = cell;
+		cell->search = g.searchlist;
+		g.searchlist = cell;
 	}
 	
-	g.fullsearchlist = searchlist;
+	g.fullsearchlist = g.searchlist;
 }
 
 
@@ -674,7 +641,7 @@ static STATUS consistify(CELL *cell)
 	 */
 	prevcell = cell->past;
 	desc = getdesc(prevcell);
-	state = transit[desc];
+	state = g.transit[desc];
 
 	if ((state != UNK) && (state != cell->state))
 	{
@@ -687,7 +654,7 @@ static STATUS consistify(CELL *cell)
 	 * If this cell implies anything about the cell or its neighbors
 	 * in the previous generation, then handle that.
 	 */
-	flags = implic[desc];
+	flags = g.implic[desc];
 
 	if ((flags == 0) || (cell->state == UNK))
 		return OK;
@@ -873,7 +840,7 @@ backup()
 {
 	CELL *	cell;
 
-	searchlist = g.fullsearchlist;
+	g.searchlist = g.fullsearchlist;
 
 	while (g.newset != g.baseset)
 	{
@@ -958,14 +925,14 @@ getnormalunknown()
 {
 	CELL *	cell;
 
-	for (cell = searchlist; cell; cell = cell->search)
+	for (cell = g.searchlist; cell; cell = cell->search)
 	{
 		if (!cell->choose)
 			continue;
 
 		if (cell->state == UNK)
 		{
-			searchlist = cell;
+			g.searchlist = cell;
 
 			return cell;
 		}
@@ -993,11 +960,11 @@ getaverageunknown()
 	bestcell = NULL_CELL;
 	bestdist = -1;
 
-	cell = searchlist;
+	cell = g.searchlist;
 
 	while (cell)
 	{
-		searchlist = cell;
+		g.searchlist = cell;
 		curcol = cell->col;
 
 		testcol = curcol - 1;
@@ -1402,7 +1369,7 @@ STATUS loopcells(CELL *cell1, CELL *cell2)
 	 * Check simple cases of equality, or of either cell
 	 * being the deadcell.
 	 */
-	if ((cell1 == deadcell) || (cell2 == deadcell))
+	if ((cell1 == g.deadcell) || (cell2 == g.deadcell))
 	{
 		wlsErrorf(NULL,_T("Attemping to use deadcell in a loop"));
 		return ERROR1;
@@ -1682,15 +1649,15 @@ findcell(row, col, gen)
 		(col >= 0) && (col <= g.colmax + 1) &&
 		(gen >= 0) && (gen < g.genmax))
 	{
-		return celltable[(col * (g.rowmax + 2) + row) * g.genmax + gen];
+		return g.celltable[(col * (g.rowmax + 2) + row) * g.genmax + gen];
 	}
 
 	/*
 	 * See if the cell is already allocated in the auxillary table.
 	 */
-	for (i = 0; i < auxcellcount; i++)
+	for (i = 0; i < g.auxcellcount; i++)
 	{
-		cell = auxtable[i];
+		cell = g.auxtable[i];
 
 		if ((cell->row == row) && (cell->col == col) &&
 			(cell->gen == gen))
@@ -1706,10 +1673,10 @@ findcell(row, col, gen)
 	cell->row = row;
 	cell->col = col;
 	cell->gen = gen;
-	cell->rowinfo = &dummyrowinfo;
-	cell->colinfo = &dummycolinfo;
+	cell->rowinfo = &g.dummyrowinfo;
+	cell->colinfo = &g.dummycolinfo;
 
-	auxtable[auxcellcount++] = cell;
+	g.auxtable[g.auxcellcount++] = cell;
 
 	return cell;
 }
@@ -1728,29 +1695,29 @@ allocatecell()
 	/*
 	 * Allocate a new chunk of cells if there are none left.
 	 */
-	if (newcellcount <= 0)
+	if (g.newcellcount <= 0)
 	{
-		newcells = (CELL *) malloc(sizeof(CELL) * ALLOCSIZE);
+		g.newcells = (CELL *) malloc(sizeof(CELL) * ALLOCSIZE);
 
-		if (newcells == NULL)
+		if (g.newcells == NULL)
 		{
 			wlsErrorf(NULL,_T("Cannot allocate cell structure"));
 			exit(1);
 		}
 
-		record_malloc(1,(void*)newcells);
+		record_malloc(1,(void*)g.newcells);
 
-		newcellcount = ALLOCSIZE;
+		g.newcellcount = ALLOCSIZE;
 	}
 
-	newcellcount--;
-	cell = newcells++;
+	g.newcellcount--;
+	cell = g.newcells++;
 
 	/*
 	 * If this is the first allocation, then make deadcell be this cell.
 	 */
-	if (deadcell == NULL)
-		deadcell = cell;
+	if (g.deadcell == NULL)
+		g.deadcell = cell;
 
 	/*
 	 * Fill in the cell as if it was a boundary cell.
@@ -1762,16 +1729,16 @@ allocatecell()
 	cell->gen = -1;
 	cell->row = -1;
 	cell->col = -1;
-	cell->past = deadcell;
-	cell->future = deadcell;
-	cell->cul = deadcell;
-	cell->cu = deadcell;
-	cell->cur = deadcell;
-	cell->cl = deadcell;
-	cell->cr = deadcell;
-	cell->cdl = deadcell;
-	cell->cd = deadcell;
-	cell->cdr = deadcell;
+	cell->past = g.deadcell;
+	cell->future = g.deadcell;
+	cell->cul = g.deadcell;
+	cell->cu = g.deadcell;
+	cell->cur = g.deadcell;
+	cell->cl = g.deadcell;
+	cell->cr = g.deadcell;
+	cell->cdl = g.deadcell;
+	cell->cd = g.deadcell;
+	cell->cdr = g.deadcell;
 	cell->loop = NULL;
 
 	//cell->specsym=0;
@@ -1795,7 +1762,7 @@ initimplic(void)
 
 	for (i = 0; i < NSTATES; i++)
 	{
-		state = states[i];
+		state = g_states[i];
 
 		for (OFFcount = SUMCOUNT; OFFcount >= 0; OFFcount--)
 		{
@@ -1804,7 +1771,7 @@ initimplic(void)
 				sum = ONcount + (SUMCOUNT - ONcount - OFFcount) * UNK;
 				desc = sumtodesc(state, sum);
 
-				implic[desc] =
+				g.implic[desc] =
 					implication(state, OFFcount, ONcount);
 			}
 		}
@@ -1827,7 +1794,7 @@ inittransit()
 
 	for (i = 0; i < NSTATES; i++)
 	{
-		state = states[i];
+		state = g_states[i];
 
 		for (OFFcount = SUMCOUNT; OFFcount >= 0; OFFcount--)
 		{
@@ -1836,7 +1803,7 @@ inittransit()
 				sum = ONcount + (SUMCOUNT - ONcount - OFFcount) * UNK;
 				desc = sumtodesc((STATE)state, sum);
 
-				transit[desc] =
+				g.transit[desc] =
 					transition(state, OFFcount, ONcount);
 			}
 		}
@@ -2025,16 +1992,11 @@ implication(state, OFFcount, ONcount)
 
 #else // KS:
 
-#define SUMCOUNT 8
-
-extern struct globals_struct g;
-
-extern volatile int abortthread;
 
 /*
  * IMPLIC flag values.
  */
-typedef	unsigned char	FLAGS;
+//typedef	unsigned char	FLAGS;
 #define IMPBAD	((FLAGS) 0x00)	// the cell state is inconsistent
 #define IMPUN	((FLAGS) 0x01)	// change unknown neighbors (there are some)
 #define IMPUN1	((FLAGS) 0x02)	// change unknown neighbors to 1 (if not set, then change to 0)
@@ -2044,27 +2006,6 @@ typedef	unsigned char	FLAGS;
 #define IMPN1	((FLAGS) 0x20)	// change new cell to 1 (if not set, change it to 0)
 #define IMPVOID ((FLAGS) 0x40)  // invalid/unset implication
 #define IMPOK   ((FLAGS) 0x80)  // valid state
-
-/*
- * Table of implications.
- * Given the state of a cell and its neighbors in one generation,
- * this table determines deductions about the cell and its neighbors
- * in the previous generation.
- * The table is indexed by the descriptor value of a cell.
- */
-static	FLAGS	implic[1000];
-
-/*
- * Other local data.
- */
-static	int	newcellcount;	/* number of cells ready for allocation */
-static	int	auxcellcount;	/* number of cells in auxillary table */
-static	CELL *	newcells;	/* cells ready for allocation */
-static	CELL *	searchlist;	/* current list of cells to search */
-static	CELL *	celltable[MAXCELLS];	/* table of usual cells */
-static	CELL *	auxtable[AUXCELLS];	/* table of auxillary cells */
-static	ROWINFO	dummyrowinfo;	/* dummy info for ignored cells */
-static	COLINFO	dummycolinfo;	/* dummy info for ignored cells */
 
 
 /*
@@ -2092,7 +2033,7 @@ static	CELL *	(*getunknown)(void);
  * Boundary cells are set to zero state.
  */
 void
-initcells()
+initcells(void)
 {
 	int	row, col, gen;
 	int	i;
@@ -2102,12 +2043,12 @@ initcells()
 
 	g.inited = FALSE;
 
-	newcellcount=0;
-	auxcellcount=0;
-	newcells=NULL;
-	searchlist=NULL;
-	dummyrowinfo.oncount=0;
-	dummycolinfo.oncount=0;
+	g.newcellcount=0;
+	g.auxcellcount=0;
+	g.newcells=NULL;
+	g.searchlist=NULL;
+	g.dummyrowinfo.oncount=0;
+	g.dummycolinfo.oncount=0;
 
 
 	if ((g.rowmax <= 0) || (g.rowmax > ROWMAX) ||
@@ -2121,7 +2062,7 @@ initcells()
 	}
 
 	for (i = 0; i < MAXCELLS; i++)
-		celltable[i] = allocatecell();
+		g.celltable[i] = allocatecell();
 
 	/*
 	 * Link the cells together.
@@ -2139,8 +2080,8 @@ initcells()
 				cell->gen = gen;
 				cell->row = row;
 				cell->col = col;
-				cell->rowinfo = &dummyrowinfo;
-				cell->colinfo = &dummycolinfo;
+				cell->rowinfo = &g.dummyrowinfo;
+				cell->colinfo = &g.dummycolinfo;
 
 				cell->active = TRUE;
 				cell->unchecked = FALSE;
@@ -2397,13 +2338,13 @@ initsearchorder()
 	 * Finally build the search list from the table elements in the
 	 * final order.
 	 */
-	searchlist = NULL;
+	g.searchlist = NULL;
 
 	while (--count >= 0)
 	{
 		cell = table[count];
-		cell->search = searchlist;
-		searchlist = cell;
+		cell->search = g.searchlist;
+		g.searchlist = cell;
 	}
 }
 
@@ -2561,10 +2502,10 @@ setcell(CELL *cell, STATE state, BOOL free)
 			if (cell->active) {
 				*g.newset++ = cell;
 
-				*g.searchset++ = searchlist;
+				*g.searchset++ = g.searchlist;
 
-				while ((searchlist != NULL) && (searchlist->state != UNK)) {
-					searchlist = searchlist->search;
+				while ((g.searchlist != NULL) && (g.searchlist->state != UNK)) {
+					g.searchlist = g.searchlist->search;
 				}
 
 				free = FALSE; // all following cells in the loop are not free
@@ -2608,10 +2549,10 @@ setcell(CELL *cell, STATE state, BOOL free)
 			if (cell->active) {
 				*g.newset++ = cell;
 
-				*g.searchset++ = searchlist;
+				*g.searchset++ = g.searchlist;
 
-				while ((searchlist != NULL) && (searchlist->state != UNK)) {
-					searchlist = searchlist->search;
+				while ((g.searchlist != NULL) && (g.searchlist->state != UNK)) {
+					g.searchlist = g.searchlist->search;
 				}
 
 				free = FALSE;
@@ -2693,7 +2634,7 @@ static BOOL consistify(CELL *cell)
 
 	// the implic table will tell us everything we need to know
 
-	flags = implic[desc];
+	flags = g.implic[desc];
 
 	// first check if the state is consistent
 
@@ -2854,7 +2795,7 @@ backup()
 		// record old status
 		g.prevstate = cell->state;
 
-		searchlist = *g.searchset;
+		g.searchlist = *g.searchset;
 
 		// reset the stack and return the cell
 		while (g.newset != g.nextset) {
@@ -2918,11 +2859,11 @@ getnormalunknown()
 {
 	CELL *	cell;
 
-	for (cell = searchlist; cell != NULL; cell = cell->search)
+	for (cell = g.searchlist; cell != NULL; cell = cell->search)
 	{
 		if (cell->state == UNK)
 		{
-			searchlist = cell;
+			g.searchlist = cell;
 
 			return cell;
 		}
@@ -2950,11 +2891,11 @@ getaverageunknown()
 	bestcell = NULL;
 	bestdist = -1;
 
-	cell = searchlist;
+	cell = g.searchlist;
 
 	while (cell)
 	{
-		searchlist = cell;
+		g.searchlist = cell;
 		curcol = cell->col;
 
 		testcol = curcol - 1;
@@ -3086,7 +3027,7 @@ static BOOL getsmartnumbers(CELL *cell)
 // Smart cell ordering
 
 static CELL *
-getsmartunknown()
+getsmartunknown(void)
 {
 	CELL *cell;
 	CELL *best;
@@ -3094,12 +3035,12 @@ getsmartunknown()
 	int max, window, threshold, bestlen1, bestlen0, bestcomb, wnd, n1, n2, a, b, c, d;
 
 	// Move the searchlist over all known cells
-	while ((searchlist != NULL) && (searchlist->state != UNK)) {
-		searchlist = searchlist->search;
+	while ((g.searchlist != NULL) && (g.searchlist->state != UNK)) {
+		g.searchlist = g.searchlist->search;
 	}
 
 	// Return NULL if no unknown cells
-	if (searchlist == NULL) return NULL;
+	if (g.searchlist == NULL) return NULL;
 
 	// Prepare threshold
 	threshold = g.smartthreshold;
@@ -3116,7 +3057,7 @@ getsmartunknown()
 	wnd = 0;
 
 	window = g.smartwindow;
-	cell = searchlist;
+	cell = g.searchlist;
 
 	while ((cell != NULL) && (window > 0) && (max < threshold)) {
 		++wnd;
@@ -3236,7 +3177,7 @@ getsmartunknown()
 	// Just return the first UNK cell
 	// This shouldn't be often anyway
 
-	return searchlist;
+	return g.searchlist;
 }
 
 /*
@@ -3831,15 +3772,15 @@ findcell(row, col, gen)
 		(col >= 0) && (col <= g.colmax + 1) &&
 		(gen >= 0) && (gen < g.genmax))
 	{
-		return celltable[(col * (g.rowmax + 2) + row) * g.genmax + gen];
+		return g.celltable[(col * (g.rowmax + 2) + row) * g.genmax + gen];
 	}
 
 	/*
 	 * See if the cell is already allocated in the auxillary table.
 	 */
-	for (i = 0; i < auxcellcount; i++)
+	for (i = 0; i < g.auxcellcount; i++)
 	{
-		cell = auxtable[i];
+		cell = g.auxtable[i];
 
 		if ((cell->row == row) && (cell->col == col) &&
 			(cell->gen == gen))
@@ -3855,10 +3796,10 @@ findcell(row, col, gen)
 	cell->row = row;
 	cell->col = col;
 	cell->gen = gen;
-	cell->rowinfo = &dummyrowinfo;
-	cell->colinfo = &dummycolinfo;
+	cell->rowinfo = &g.dummyrowinfo;
+	cell->colinfo = &g.dummycolinfo;
 
-	auxtable[auxcellcount++] = cell;
+	g.auxtable[g.auxcellcount++] = cell;
 
 	return cell;
 }
@@ -3876,23 +3817,23 @@ allocatecell()
 	/*
 	 * Allocate a new chunk of cells if there are none left.
 	 */
-	if (newcellcount <= 0)
+	if (g.newcellcount <= 0)
 	{
-		newcells = (CELL *) malloc(sizeof(CELL) * ALLOCSIZE);
+		g.newcells = (CELL *) malloc(sizeof(CELL) * ALLOCSIZE);
 
-		if (newcells == NULL)
+		if (g.newcells == NULL)
 		{
 			wlsErrorf(NULL,_T("Cannot allocate cell structure"));
 			exit(1);
 		}
 
-		record_malloc(1,(void*)newcells);
+		record_malloc(1,(void*)g.newcells);
 
-		newcellcount = ALLOCSIZE;
+		g.newcellcount = ALLOCSIZE;
 	}
 
-	newcellcount--;
-	cell = newcells++;
+	g.newcellcount--;
+	cell = g.newcells++;
 
 	/*
 	 * Fill in the cell as if it was a boundary cell.
@@ -3929,8 +3870,8 @@ initimplic(void)
 	int	nunk, non, noff, cunk, con, coff, funk, fon, foff, naon, caon, faon, desc;
 	BOOL valid, cison, cisoff, fison, fisoff, nison, nisoff;
 
-	for (desc=0; desc<sizeof(implic)/sizeof(implic[0]); desc++) {
-		implic[desc] = IMPVOID;
+	for (desc=0; desc<sizeof(g.implic)/sizeof(g.implic[0]); desc++) {
+		g.implic[desc] = IMPVOID;
 	}
 
 	for (nunk=0; nunk<=8; nunk++) { // unknown neighbors
@@ -3943,7 +3884,7 @@ initimplic(void)
 						for (fon=0; fon+funk<=1; fon++) { // on future cell
 							foff=1-(fon+funk); // off future cell
 							desc = sumtodesc((STATE)(funk*UNK+fon*ON+foff*OFF), (STATE)(cunk*UNK+con*ON+coff*OFF), nunk*UNK+non*ON+noff*OFF);
-							if (implic[desc] != IMPVOID) {
+							if (g.implic[desc] != IMPVOID) {
 								ttystatus(_T("Duplicate descriptor!!!"));
 								exit(1);
 							}
@@ -3986,30 +3927,30 @@ initimplic(void)
 							// descriptor examination has ended
 							// now for the results
 							if (!valid) {
-								implic[desc] = IMPBAD;
+								g.implic[desc] = IMPBAD;
 							} else {
-								implic[desc] = IMPOK;
+								g.implic[desc] = IMPOK;
 								if (funk != 0) { // future cell is unknown
 									if (fison || fisoff) { // and just one state is possible
-										implic[desc] |= IMPN;
+										g.implic[desc] |= IMPN;
 										if (fison) {
-											implic[desc] |= IMPN1;
+											g.implic[desc] |= IMPN1;
 										}
 									}
 								}
 								if (cunk != 0) {
 									if (cison || cisoff) {
-										implic[desc] |= IMPC;
+										g.implic[desc] |= IMPC;
 										if (cison) {
-											implic[desc] |= IMPC1;
+											g.implic[desc] |= IMPC1;
 										}
 									}
 								}
 								if (nunk != 0) {
 									if (nison || nisoff) {
-										implic[desc] |= IMPUN;
+										g.implic[desc] |= IMPUN;
 										if (nison) {
-											implic[desc] |= IMPUN1;
+											g.implic[desc] |= IMPUN1;
 										}
 									}
 								}
@@ -4021,9 +3962,9 @@ initimplic(void)
 		}
 	}
 
-	for (desc=0; desc<sizeof(implic)/sizeof(implic[0]); desc++) {
-		if (implic[desc] == IMPVOID) {
-			implic[desc] = IMPBAD;
+	for (desc=0; desc<sizeof(g.implic)/sizeof(g.implic[0]); desc++) {
+		if (g.implic[desc] == IMPVOID) {
+			g.implic[desc] = IMPBAD;
 		}
 	}
 
