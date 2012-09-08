@@ -356,13 +356,7 @@ struct globals_struct {
  * Global procedures
  */
 
-void getcommands(void);
-
-#ifdef JS
-STATUS initcells(void);
-#else
-void initcells(void);
-#endif
+BOOL initcells(void);
 
 #ifndef JS
 void initsearchorder(void);
@@ -383,35 +377,25 @@ void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo);
 
 void adjustnear(CELL *, int);
 STATUS search(void);
-#ifdef JS
-STATUS proceed(CELL *, STATE, BOOL);
-STATUS go(CELL *, STATE, BOOL);
-STATUS setcell(CELL *, STATE, BOOL);
-#else
 BOOL proceed(CELL *, STATE, BOOL);
 BOOL go(CELL *, STATE, BOOL);
 BOOL setcell(CELL *, STATE, BOOL);
+#ifndef JS
 STATUS examinenext(void);
 #endif
 
 CELL * findcell(int, int, int);
 CELL * backup(void);
 BOOL subperiods(void);
-#ifdef JS
-STATUS loopcells(CELL *, CELL *);
-#else
-void loopcells(CELL *, CELL *);
-#endif
+BOOL loopcells(CELL *, CELL *);
 #ifdef JS
 void excludecone(int, int, int);
-STATUS freezecell(int, int);
-#else
-void freezecell(int, int);
 #endif
+BOOL freezecell(int, int);
 BOOL setrules(TCHAR *);
 BOOL setrulesA(char *);
 #ifdef JS
-STATUS loadstate(HWND hwndParent, TCHAR *file1);
+BOOL loadstate(HWND hwndParent, TCHAR *file1);
 #else
 BOOL loadstate(HWND hwndParent);
 #endif

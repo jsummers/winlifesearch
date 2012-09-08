@@ -141,7 +141,7 @@ excludecone(int row, int col, int gen)
  * the generation into the same loop so that they will be forced
  * to have the same state.
  */
-STATUS
+BOOL
 freezecell(int row, int col)
 {
 	int	gen;
@@ -158,9 +158,9 @@ freezecell(int row, int col)
 		cell->frozen = TRUE;
 
 		ret = loopcells(cell0, cell);
-		if(ret!=OK) return ret;
+		if(!ret) return FALSE;
 	}
-	return OK;
+	return TRUE;
 }
 
 /*
@@ -215,7 +215,7 @@ getbackup(char *cp)
 
 		cell->state = UNK;
 
-		if (go(cell, state, FALSE) != OK)
+		if (!go(cell, state, FALSE))
 		{
 			printgen(g.curgen);
 			ttystatus(_T("Backed up over all possibilities\n"));
@@ -512,16 +512,15 @@ void dumpstate(HWND hwndParent, TCHAR *file1)
 /*
  * Load a previously dumped state from a file.
  * Warning: Almost no checks are made for validity of the state.
- * Returns OK on success, ERROR1 on failure.
+ * Returns TRUE on success.
  */
-STATUS loadstate(HWND hwndParent, TCHAR *file1)
+BOOL loadstate(HWND hwndParent, TCHAR *file1)
 {
 	FILE *	fp;
 	char *	cp;
 	int	row;
 	int	col;
 	int	gen;
-	STATUS ret;
 	STATE	state;
 	BOOL	free;
 //	BOOL	choose;
@@ -539,8 +538,8 @@ STATUS loadstate(HWND hwndParent, TCHAR *file1)
 	getfilename_l(hwndParent,file);
 
 	//if (*file == '\0')
-	//	return OK;
-	if(file[0]=='\0') return ERROR1;
+	//	return TRUE;
+	if(file[0]=='\0') return FALSE;
 
 	fp = _tfopen(file, _T("r"));
 
@@ -548,7 +547,7 @@ STATUS loadstate(HWND hwndParent, TCHAR *file1)
 	{
 		ttystatus(_T("Cannot open state file \x201c%s\x201d\n"), file);
 
-		return ERROR1;
+		return FALSE;
 	}
 
 	buf[0] = '\0';
@@ -559,7 +558,7 @@ STATUS loadstate(HWND hwndParent, TCHAR *file1)
 		ttystatus(_T("Missing version line in file \x201c%s\x201d\n"), file);
 		fclose(fp);
 
-		return ERROR1;
+		return FALSE;
 	}
 
 	cp = &buf[1];
@@ -569,7 +568,7 @@ STATUS loadstate(HWND hwndParent, TCHAR *file1)
 		ttystatus(_T("Unknown version in state file \x201c%s\x201d\n"), file);
 		fclose(fp);
 
-		return ERROR1;
+		return FALSE;
 	}
 */
 
@@ -621,7 +620,7 @@ STATUS loadstate(HWND hwndParent, TCHAR *file1)
 			ttystatus(_T("Bad Life rules in state file\n"));
 			fclose(fp);
 
-			return ERROR1;
+			return FALSE;
 		}
 
 		fgets(buf, LINESIZE, fp);
@@ -636,7 +635,7 @@ STATUS loadstate(HWND hwndParent, TCHAR *file1)
 		ttystatus(_T("Missing parameter line in state file\n"));
 		fclose(fp);
 
-		return ERROR1;
+		return FALSE;
 	}
 
 	cp = &buf[1];
@@ -647,9 +646,9 @@ STATUS loadstate(HWND hwndParent, TCHAR *file1)
 	/*
 	 * Initialize the cells.
 	 */
-	if(OK != initcells()) {
+	if(!initcells()) {
 		fclose(fp);
-		return ERROR1;
+		return FALSE;
 	}
 
 	/*
@@ -674,7 +673,7 @@ STATUS loadstate(HWND hwndParent, TCHAR *file1)
 
 		cell = findcell(row, col, gen);
 
-		if (setcell(cell, state, free) != OK)
+		if (!setcell(cell, state, free))
 		{
 			ttystatus(
 				_T("Inconsistently setting cell at r%d c%d g%d \n"),
@@ -682,7 +681,7 @@ STATUS loadstate(HWND hwndParent, TCHAR *file1)
 
 			fclose(fp);
 
-			return ERROR1;
+			return FALSE;
 		}
 	}
 
@@ -711,10 +710,9 @@ STATUS loadstate(HWND hwndParent, TCHAR *file1)
 		row = getnum(&cp, 0);
 		col = getnum(&cp, 0);
 
-		ret = freezecell(row, col);
-		if(ret!=OK) {
+		if(!freezecell(row, col)) {
 			fclose(fp);
-			return ERROR1;
+			return FALSE;
 		}
 
 		buf[0] = '\0';
@@ -740,7 +738,7 @@ STATUS loadstate(HWND hwndParent, TCHAR *file1)
 		ttystatus(_T("Missing table line in state file\n"));
 		fclose(fp);
 
-		return ERROR1;
+		return FALSE;
 	}
 
 	cp = &buf[1];
@@ -754,20 +752,20 @@ STATUS loadstate(HWND hwndParent, TCHAR *file1)
 		ttystatus(_T("Missing end of file line in state file\n"));
 		fclose(fp);
 
-		return ERROR1;
+		return FALSE;
 	}
 
 	if (fclose(fp))
 	{
 		ttystatus(_T("Error reading \x201c%s\x201d\n"), file);
 
-		return ERROR1;
+		return FALSE;
 	}
 
 	ttystatus(_T("State loaded from \x201c%s\x201d\n"), file);
 	g.quitok = TRUE;
 
-	return OK;
+	return TRUE;
 }
 
 
@@ -855,8 +853,7 @@ readfile(TCHAR *file)
 					return ERROR1;
 			}
 
-			if (proceed(findcell(row, col, gen), state, FALSE)
-				!= OK)
+			if (proceed(findcell(row, col, gen), state, FALSE))
 			{
 				ttystatus(_T("Inconsistent state for cell %d %d\n"),
 					row, col);
@@ -1123,7 +1120,7 @@ static	int *param_table[] =
  * the generation into the same loop so that they will be forced
  * to have the same state.
  */
-void
+BOOL
 freezecell(int row, int col)
 {
 	int	gen;
@@ -1140,6 +1137,7 @@ freezecell(int row, int col)
 
 		loopcells(cell0, cell);
 	}
+	return TRUE;
 }
 
 /*

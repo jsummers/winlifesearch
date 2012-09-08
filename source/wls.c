@@ -1100,13 +1100,13 @@ static int set_initial_cells(void)
 			for(j=0;j<g.rowmax;j++) {
 				switch(g.origfield[g1][i][j]) {
 				case 0:  // forced off
-					if(proceed(findcell(j+1,i+1,g1),OFF,FALSE)!=OK) {
+					if(!proceed(findcell(j+1,i+1,g1),OFF,FALSE)) {
 						wlsMessagef(ctx,_T("Inconsistent OFF state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
 						return 0;
 					}
 					break;
 				case 1:  // forced on
-					if(proceed(findcell(j+1,i+1,g1),ON,FALSE)!=OK) {
+					if(!proceed(findcell(j+1,i+1,g1),ON,FALSE)) {
 						wlsMessagef(ctx,_T("Inconsistent ON state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
 						return 0;
 					}
@@ -1742,7 +1742,7 @@ static void start_search(struct wcontext *ctx, TCHAR *statefile)
 	g.curstatus=OK;
 
 	if(statefile) {
-		if(loadstate(ctx->hwndFrame, statefile) == ERROR1) return;
+		if(!loadstate(ctx->hwndFrame, statefile)) return;
 
 		printgen(g.curgen);
 		draw_gen_counter(ctx);
@@ -1765,7 +1765,7 @@ static void start_search(struct wcontext *ctx, TCHAR *statefile)
 	else {
 		g.inited=FALSE;
 
-		if(OK != initcells()) {
+		if(!initcells()) {
 			return;
 		}
 		g.baseset = g.nextset;
@@ -1848,7 +1848,9 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 
 		draw_gen_counter(ctx);
 	} else {
-		initcells();
+		if(!initcells()) {
+			return FALSE;
+		}
 
 		if(!set_initial_cells()) 
 		{

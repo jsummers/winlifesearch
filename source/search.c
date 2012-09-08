@@ -88,7 +88,7 @@ sumtodesc(STATE state, int sum)
  * Each cell in the active area is set to unknown state.
  * Boundary cells are set to zero state.
  */
-STATUS
+BOOL
 initcells(void)
 {
 	int	row, col, gen;
@@ -114,7 +114,7 @@ initcells(void)
 		(g.coltrans < -TRANSMAX) || (g.coltrans > TRANSMAX))
 	{
 		wlsErrorf(NULL,_T("ROW, COL, GEN, or TRANS out of range"));
-		return ERROR1;
+		return FALSE;
 	}
 
 	/*
@@ -179,7 +179,7 @@ initcells(void)
 				if(g.symmetry)
 				{
 					ret = loopcells(cell, symcell(cell));
-					if(ret!=OK) return ret;
+					if(!ret) return FALSE;
 				}
 			}
 		}
@@ -238,7 +238,7 @@ initcells(void)
 	g.curstatus = OK;
 	inittransit();
 	initimplic();
-	return OK;
+	return TRUE;
 }
 
 
@@ -467,10 +467,10 @@ initsearchorder(void)
 /*
  * Set the state of a cell to the specified state.
  * The state is either ON or OFF.
- * Returns ERROR if the setting is inconsistent.
+ * Returns FALSE if the setting is inconsistent.
  * If the cell is newly set, then it is added to the set table.
  */
-STATUS
+BOOL
 setcell(cell, state, free)
 	CELL *	cell;
 	STATE	state;
@@ -482,7 +482,7 @@ setcell(cell, state, free)
 			cell->row, cell->col, cell->gen,
 			(state == ON) ? "on" : "off");
 
-		return OK;
+		return TRUE;
 	}
 
 	if (cell->state != UNK)
@@ -491,7 +491,7 @@ setcell(cell, state, free)
 			cell->row, cell->col, cell->gen,
 			(state == ON) ? "on" : "off");
 
-		return ERROR1;
+		return FALSE;
 	}
 
 	if (cell->gen == 0)
@@ -499,7 +499,7 @@ setcell(cell, state, free)
 		if (g.usecol && (g.colinfo[g.usecol].oncount == 0)
 			&& (g.colinfo[g.usecol].setcount == g.rowmax) && g.inited)
 		{
-			return ERROR1;
+			return FALSE;
 		}
 
 		if (state == ON)
@@ -512,23 +512,23 @@ setcell(cell, state, free)
 				DPRINTF2("setcell %d %d 0 on exceeds maxcount\n",
 					cell->row, cell->col);
 
-				return ERROR1;
+				return FALSE;
 			}
 
 			if (g.nearcols && (cell->near1 <= 0) && (cell->col > 1)
 				&& g.inited)
 			{
-				return ERROR1;
+				return FALSE;
 			}
 
 			if (g.colcells && (cell->colinfo->oncount >= g.colcells)
 				&& g.inited)
 			{
-				return ERROR1;
+				return FALSE;
 			}
 
 			if (g.colwidth && g.inited && checkwidth(cell))
-				return ERROR1;
+				return FALSE;
 
 			if (g.nearcols)
 				adjustnear(cell, 1);
@@ -554,7 +554,7 @@ setcell(cell, state, free)
 	if ((cell->gen == 0) && (cell->colinfo->setcount == g.rowmax))
 		g.fullcolumns++;
 
-	return OK;
+	return TRUE;
 }
 
 
@@ -645,7 +645,7 @@ static STATUS consistify(CELL *cell)
 
 	if ((state != UNK) && (state != cell->state))
 	{
-		if (setcell(cell, state, FALSE) == ERROR1)
+		if (!setcell(cell, state, FALSE))
 			return ERROR1;
 	}
 
@@ -662,13 +662,13 @@ static STATUS consistify(CELL *cell)
 	DPRINTF1("Implication flags %x\n", flags);
 
 	if ((flags & N0IC0) && (cell->state == OFF) &&
-		(setcell(prevcell, OFF, FALSE) != OK))
+		!setcell(prevcell, OFF, FALSE))
 	{
 		return ERROR1;
 	}
 
 	if ((flags & N1IC1) && (cell->state == ON) &&
-		(setcell(prevcell, ON, FALSE) != OK))
+		!setcell(prevcell, ON, FALSE))
 	{
 		return ERROR1;
 	}
@@ -704,31 +704,31 @@ static STATUS consistify(CELL *cell)
 
 //	if(cell->specsym==0) {
 		if ((prevcell->cul->state == UNK) &&
-			(setcell(prevcell->cul, state, FALSE) != OK)) return ERROR1;
+			!setcell(prevcell->cul, state, FALSE)) return ERROR1;
 
 		if ((prevcell->cu->state == UNK) &&
-			(setcell(prevcell->cu, state, FALSE) != OK)) return ERROR1;
+			!setcell(prevcell->cu, state, FALSE)) return ERROR1;
 
 		if ((prevcell->cur->state == UNK) &&
-			(setcell(prevcell->cur, state, FALSE) != OK)) return ERROR1;
+			!setcell(prevcell->cur, state, FALSE)) return ERROR1;
 //	}
 
 
 
 	if ((prevcell->cl->state == UNK) &&
-		(setcell(prevcell->cl, state, FALSE) != OK)) return ERROR1;
+		!setcell(prevcell->cl, state, FALSE)) return ERROR1;
 
 	if ((prevcell->cr->state == UNK) &&
-		(setcell(prevcell->cr, state, FALSE) != OK)) return ERROR1;
+		!setcell(prevcell->cr, state, FALSE)) return ERROR1;
 
 	if ((prevcell->cdl->state == UNK) &&
-		(setcell(prevcell->cdl, state, FALSE) != OK)) return ERROR1;
+		!setcell(prevcell->cdl, state, FALSE)) return ERROR1;
 
 	if ((prevcell->cd->state == UNK) &&
-		(setcell(prevcell->cd, state, FALSE) != OK)) return ERROR1;
+		!setcell(prevcell->cd, state, FALSE)) return ERROR1;
 
 	if ((prevcell->cdr->state == UNK) &&
-		(setcell(prevcell->cdr, state, FALSE) != OK)) return ERROR1;
+		!setcell(prevcell->cdr, state, FALSE)) return ERROR1;
 
 	DPRINTF0("Implications successful\n");
 
@@ -793,7 +793,7 @@ examinenext(void)
 		cell->row, cell->col, cell->gen,
 		(cell->free ? "free" : "forced"));
 
-	if (cell->loop && (setcell(cell->loop, cell->state, FALSE) != OK))
+	if (cell->loop && !setcell(cell->loop, cell->state, FALSE))
 	{
 		return ERROR1;
 	}
@@ -806,7 +806,7 @@ examinenext(void)
  * Set a cell to the specified value and determine all consequences we
  * can from the choice.  Consequences are a contradiction or a consistency.
  */
-STATUS
+BOOL
 proceed(cell, state, free)
 	CELL *	cell;
 	STATE	state;
@@ -814,18 +814,18 @@ proceed(cell, state, free)
 {
 	int	status;
 
-	if (setcell(cell, state, free) != OK)
-		return ERROR1;
+	if (!setcell(cell, state, free))
+		return FALSE;
 
 	for (;;)
 	{
 		status = examinenext();
 
 		if (status == ERROR1)
-			return ERROR1;
+			return FALSE;
 
 		if (status == CONSISTENT)
-			return OK;
+			return TRUE;
 	}
 }
 
@@ -887,27 +887,21 @@ backup(void)
  * Do checking based on setting the specified cell.
  * Returns ERROR if an inconsistency was found.
  */
-STATUS
+BOOL
 go(cell, state, free)
 	CELL *	cell;
 	STATE	state;
 	BOOL	free;
 {
-	STATUS	status;
-
 	g.quitok = FALSE;
 
 	for (;;)
 	{
-		status = proceed(cell, state, free);
-
-		if (status == OK)
-			return OK;
+		if (proceed(cell, state, free)) return TRUE;
 
 		cell = backup();
 
-		if (cell == NULL)
-			return ERROR1;
+		if (cell == NULL) return FALSE;
 
 		free = FALSE;
 		state = 1 - cell->state;
@@ -1080,7 +1074,7 @@ search(void)
 		/*
 		 * Set the state of the new cell.
 		 */
-		if (go(cell, state, free) != OK)
+		if (!go(cell, state, free))
 			return NOTEXIST;
 
 		/*
@@ -1358,12 +1352,12 @@ mapcell(cell)
  * Symmetry uses this feature, and so does setting stable cells.
  * If any cells in the loop are frozen, then they all are.
  */
-STATUS loopcells(CELL *cell1, CELL *cell2)
+BOOL loopcells(CELL *cell1, CELL *cell2)
 {
 	CELL *	cell;
 	BOOL	frozen;
 
-	if(cell2==NULL) return OK;
+	if(cell2==NULL) return TRUE;
 
 	/*
 	 * Check simple cases of equality, or of either cell
@@ -1372,11 +1366,11 @@ STATUS loopcells(CELL *cell1, CELL *cell2)
 	if ((cell1 == g.deadcell) || (cell2 == g.deadcell))
 	{
 		wlsErrorf(NULL,_T("Attemping to use deadcell in a loop"));
-		return ERROR1;
+		return FALSE;
 	}
 
 	if (cell1 == cell2)
-		return OK;
+		return TRUE;
 
 	/*
 	 * Make the cells belong to their own loop if required.
@@ -1396,7 +1390,7 @@ STATUS loopcells(CELL *cell1, CELL *cell2)
 	for (cell = cell1->loop; cell != cell1; cell = cell->loop)
 	{
 		if (cell == cell2)
-			return OK;
+			return TRUE;
 	}
 
 	/*
@@ -1428,7 +1422,7 @@ STATUS loopcells(CELL *cell1, CELL *cell2)
 		for (cell = cell1->loop; cell != cell1; cell = cell->loop)
 			cell->frozen = TRUE;
 	}
-	return OK;
+	return TRUE;
 }
 
 
@@ -2032,7 +2026,7 @@ static	CELL *	(*getunknown)(void);
  * Each cell in the active area is set to unknown state.
  * Boundary cells are set to zero state.
  */
-void
+BOOL
 initcells(void)
 {
 	int	row, col, gen;
@@ -2058,7 +2052,7 @@ initcells(void)
 		(g.coltrans < -TRANSMAX) || (g.coltrans > TRANSMAX))
 	{
 		wlsErrorf(NULL,_T("ROW, COL, GEN, or TRANS out of range"));
-		exit(1);
+		return FALSE;
 	}
 
 	for (i = 0; i < MAXCELLS; i++)
@@ -2195,6 +2189,7 @@ initcells(void)
 	initimplic();
 
 	g.inited = TRUE;
+	return TRUE;
 }
 
 
@@ -3548,14 +3543,14 @@ mapcell(cell)
  * Symmetry uses this feature, and so does setting stable cells.
  * If any cells in the loop are frozen, then they all are.
  */
-void loopcells(CELL *cell1, CELL *cell2)
+BOOL loopcells(CELL *cell1, CELL *cell2)
 {
 	CELL *	cell;
 	BOOL	frozen;
 
-	if (cell2==NULL) return;
+	if (cell2==NULL) return TRUE;
 
-	if (cell1 == cell2) return;
+	if (cell1 == cell2) return TRUE;
 
 	/*
 	 * See if the second cell is already part of the first cell's loop.
@@ -3564,7 +3559,7 @@ void loopcells(CELL *cell1, CELL *cell2)
 	 */
 	for (cell = cell1->loop; cell != cell1; cell = cell->loop)
 	{
-		if (cell == cell2) return;
+		if (cell == cell2) return TRUE;
 	}
 
 	/*
@@ -3596,6 +3591,8 @@ void loopcells(CELL *cell1, CELL *cell2)
 		for (cell = cell1->loop; cell != cell1; cell = cell->loop)
 			cell->frozen = TRUE;
 	}
+
+	return TRUE;
 }
 
 
