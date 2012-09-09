@@ -694,10 +694,9 @@ static void FixFrozenCells(void)
 	}
 }
 
-#ifdef JS
 
 //returns 0 if processed
-static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wParam)
+static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wParam)
 {
 	int x,y;
 	int i,j;
@@ -813,13 +812,15 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 		else newval=0; //g.currfield[g.curgen][x][y]=0;
 		break;
 
-
 	case WM_CHAR:
 		vkey=(int)wParam;
 
 		if(vkey=='C' || vkey=='X' || vkey=='A' || vkey=='S' || vkey=='F')
 			allgens=1;
-
+#ifndef JS
+		if(vkey=='I' || vkey=='O')
+			allgens=1;
+#endif
 		if(vkey=='C' || vkey=='c') {
 			newval=2;
 		}
@@ -836,18 +837,25 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 			newval=4;
 			allgens=1;
 		}
+#ifndef JS
+		else if(vkey=='I' || vkey=='i') {
+			newval=11;
+		}
+		else if(vkey=='O' || vkey=='o') {
+			newval=10;
+		}
+#endif
 		else {
 			return 1;
 		}
-
 		break;
 
 	default:
 		return 1;
 	}
 
+#ifdef JS
 	FixFrozenCells();
-
 
 	hDC=GetDC(ctx->hwndMain);
 
@@ -873,164 +881,7 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 	DrawGuides(ctx, hDC);
 
 	ReleaseDC(ctx->hwndMain,hDC);
-	return 0;
-}
-
 #else
-
-//returns 0 if processed
-static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wParam)
-{
-	int x,y;
-	int i,j;
-	HDC hDC;
-	int vkey;
-	int tmp;
-	int lastval;
-	int allgens=0;
-	int newval;
-
-	newval = -1;
-
-	xp+=(WORD)ctx->scrollpos.x;
-	yp+=(WORD)ctx->scrollpos.y;
-
-	x=xp/ctx->cellwidth;   // + scroll offset
-	y=yp/ctx->cellheight;  // + scroll offset
-
-	if(x<0 || x>=g.colmax) return 1;
-	if(y<0 || y>=g.rowmax) return 1;
-
-
-	lastval= g.currfield[g.curgen][x][y];
-//	if(lastval==4) allgens=1;       // previously frozen
-
-
-	switch(msg) {
-
-	case WM_MOUSEMOVE:
-		if(ctx->selectstate!=WLS_SEL_SELECTING) return 1;
-
-		if(x==ctx->endcell.x && y==ctx->endcell.y) {   // cursor hasn't moved to a new cell
-			return 0;
-		}
-
-		if(x==ctx->startcell.x && y==ctx->startcell.y) {  // cursor over starting cell
-			hDC=GetDC(ctx->hwndMain);
-			InvertCells(ctx,hDC); // turn off
-			ReleaseDC(ctx->hwndMain,hDC);
-
-			ctx->inverted=0;
-			ctx->endcell.x=x;
-			ctx->endcell.y=y;
-			return 0;
-		}
-
-
-		// else we're at a different cell
-
-		hDC=GetDC(ctx->hwndMain);
-		if(ctx->inverted) InvertCells(ctx,hDC);    // turn off
-		ctx->inverted=0;
-
-		ctx->endcell.x=x;
-		ctx->endcell.y=y;
-
-		InvertCells(ctx,hDC);    // turn back on
-
-		// record the select region
-		if(ctx->startcell.x<=ctx->endcell.x) {
-			ctx->selectrect.left= ctx->startcell.x;
-			ctx->selectrect.right=ctx->endcell.x;
-		}
-		else {
-			ctx->selectrect.left=ctx->endcell.x;
-			ctx->selectrect.right=ctx->startcell.x;
-		}
-		if(ctx->startcell.y<=ctx->endcell.y) {
-			ctx->selectrect.top= ctx->startcell.y;
-			ctx->selectrect.bottom=ctx->endcell.y;
-		}
-		else {
-			ctx->selectrect.top=ctx->endcell.y;
-			ctx->selectrect.bottom=ctx->startcell.y;
-		}
-
-		ctx->inverted=1;
-		ReleaseDC(ctx->hwndMain,hDC);
-
-		return 0;
-
-	case WM_LBUTTONDOWN:
-		if(ctx->selectstate!=WLS_SEL_OFF) {
-			SelectOff(ctx,NULL);
-		}
-
-		ctx->selectstate=WLS_SEL_SELECTING;
-		ctx->startcell.x=x;
-		ctx->startcell.y=y;
-		ctx->endcell.x=x;
-		ctx->endcell.y=y;
-		return 0;
-
-	case WM_LBUTTONUP:
-		if(wParam & MK_SHIFT) allgens=1;
-		if(x==ctx->startcell.x && y==ctx->startcell.y) {
-			ctx->selectstate=WLS_SEL_OFF;
-			if(g.currfield[g.curgen][x][y]==1) newval=2; //g.currfield[g.curgen][x][y]=2;
-			else newval=1;  //g.currfield[g.curgen][x][y]=1;
-			//Symmetricalize(hDC,x,y,allgens);
-		}
-		else if(ctx->selectstate==WLS_SEL_SELECTING) {
-			// selecting an area
-			ctx->selectstate=WLS_SEL_SELECTED;
-			return 0;
-
-		}
-		break;
-
-	case WM_RBUTTONDOWN:     // toggle off/unchecked
-		if(wParam & MK_SHIFT) allgens=1;
-		if(g.currfield[g.curgen][x][y]==0) newval=2; //g.currfield[g.curgen][x][y]=2;
-		else newval=0; //g.currfield[g.curgen][x][y]=0;
-		break;
-
-
-	case WM_CHAR:
-		vkey=(int)wParam;
-
-		if(vkey=='C' || vkey=='X' || vkey=='A' || vkey=='S' || vkey=='F' || vkey=='I' || vkey=='O')
-			allgens=1;
-
-		if(vkey=='C' || vkey=='c') {
-			newval=2;
-		}
-		else if(vkey=='X' || vkey=='x') {
-			newval=3;
-		}
-		else if(vkey=='A' || vkey=='a') {
-			newval=0;
-		}
-		else if(vkey=='S' || vkey=='s') {
-			newval=1;
-		}
-		else if(vkey=='F' || vkey=='f') {
-			newval=4;
-			allgens=1;
-		} else if(vkey=='I' || vkey=='i') {
-			newval=11;
-		} else if(vkey=='O' || vkey=='o') {
-			newval=10;
-		} else {
-			return 1;
-		}
-
-		break;
-
-	default:
-		return 1;
-	}
-
 	hDC=GetDC(ctx->hwndMain);
 
 	tmp=ctx->selectstate;
@@ -1071,10 +922,10 @@ static int ButtonClick(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wPa
 	DrawGuides(ctx,hDC);
 
 	ReleaseDC(ctx->hwndMain,hDC);
+#endif
+
 	return 0;
 }
-
-#endif
 
 #ifdef JS
 
@@ -2302,7 +2153,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 	case WM_CHAR:
 		GetCursorPos(&pt);
 		ScreenToClient(hWnd,&pt);
-		return ButtonClick(ctx,msg,(WORD)pt.x,(WORD)pt.y,wParam);
+		return Handle_UIEvent(ctx,msg,(WORD)pt.x,(WORD)pt.y,wParam);
 
 	case WM_COMMAND:
 		switch(id) {
@@ -2567,7 +2418,7 @@ static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 	case WM_LBUTTONUP:
 	case WM_MOUSEMOVE:
 		if(ctx->searchstate==WLS_SRCH_OFF) {
-			ButtonClick(ctx,msg,LOWORD(lParam),HIWORD(lParam),wParam);
+			Handle_UIEvent(ctx,msg,LOWORD(lParam),HIWORD(lParam),wParam);
 		}
 		return 0;
 	}
