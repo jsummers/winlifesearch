@@ -85,6 +85,7 @@ struct wcontext {
 	HFONT statusfont;
 	__int64 showcount_tot;
 	int ignore_lbuttonup;
+	int thread_stop_reason;
 };
 
 struct globals_struct g;
@@ -1275,18 +1276,17 @@ static void pause_search(struct wcontext *ctx);  // forward decl
 
 static DWORD WINAPI search_thread(LPVOID foo)
 {
-//	int i,j,k;
 	struct wcontext *ctx = gctx;
 
-	/*
-	 * Initial commands are complete, now look for the object.
-	 */
 	while (TRUE)
 	{
 		if (g.curstatus == OK)
 			g.curstatus = search();
 
-		if(abortthread) goto done;
+		if(abortthread) {
+			ctx->thread_stop_reason = 1;
+			goto done;
+		}
 
 		if ((g.curstatus == FOUND) && g.userow && (g.rowinfo[g.userow].oncount == 0)) {
 			g.curstatus = OK;
@@ -1324,22 +1324,22 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			}
 
 			writegen(ctx->hwndFrame, g.outputfile, TRUE);
+			ctx->thread_stop_reason = 0;
 			goto done;
-//			pause_search();
-//			continue;
 		}
 
 		if (g.foundcount == 0) {
 			wlsStatusf(ctx,_T(""));
 			wlsMessagef(ctx,_T("No objects found"));
-			goto done;
 		}
-
-		if (!g.quiet) {
+		else if (!g.quiet) {
 			wlsMessagef(ctx,_T("Search completed: %d object%s found"),
 				g.foundcount, (g.foundcount == 1) ? _T("") : _T("s"));
 		}
 
+		wlsStatusf(ctx,_T("Search complete."));
+
+		ctx->thread_stop_reason = 0;
 		goto done;
 	}
 done:
@@ -1364,7 +1364,10 @@ static DWORD WINAPI search_thread(LPVOID foo)
 		if (g.curstatus == OK)
 			g.curstatus = search();
 
-		if(abortthread) goto done;
+		if(abortthread) {
+			ctx->thread_stop_reason = 1;
+			goto done;
+		}
 
 		if ((g.curstatus == FOUND) && g.userow && (g.rowinfo[g.userow].oncount == 0)) {
 			g.curstatus = OK;
@@ -1404,6 +1407,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 
 			writegen(NULL, g.outputfile, TRUE);
 			if (!g.stoponfound) continue;
+			ctx->thread_stop_reason = 0;
 			goto done;
 		}
 
@@ -1428,7 +1432,14 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			wlsMessagef(ctx,_T("Search completed:  %d object%s found"),
 				g.foundcount, (g.foundcount == 1) ? _T("") : _T("s"));
 		}
+		if(reset) {
+			wlsStatusf(ctx,_T(""));
+		}
+		else {
+			wlsStatusf(ctx,_T("Search complete."));
+		}
 
+		ctx->thread_stop_reason = 0;
 		goto done;
 	}
 done:
@@ -1748,6 +1759,9 @@ static void pause_search(struct wcontext *ctx)
 #endif
 
 	SetWindowText(ctx->hwndFrame,WLS_APPNAME _T(" - Paused"));
+	if(ctx->thread_stop_reason==1) {
+		wlsStatusf(ctx,_T("Search paused."));
+	}
 }
 
 static void reset_search(struct wcontext *ctx)
