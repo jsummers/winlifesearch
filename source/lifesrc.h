@@ -296,6 +296,11 @@ struct globals_struct {
 	int differentcombinedcells;
 #endif
 
+#define CV_FORCEDOFF  0  // cell values - These must not be changed
+#define CV_FORCEDON   1
+#define CV_CLEAR      2
+#define CV_UNCHECKED  3
+#define CV_FROZEN     4
 	int origfield[GENMAX][COLMAX][ROWMAX];
 	int currfield[GENMAX][COLMAX][ROWMAX];
 

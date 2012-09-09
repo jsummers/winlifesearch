@@ -720,7 +720,7 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 
 
 	lastval= g.currfield[g.curgen][x][y];
-//	if(lastval==4) allgens=1;       // previously frozen
+	//if(lastval==CV_FROZEN) allgens=1;       // previously frozen
 
 
 	switch(msg) {
@@ -794,8 +794,8 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 		if(wParam & MK_SHIFT) allgens=1;
 		if(x==ctx->startcell.x && y==ctx->startcell.y) {
 			ctx->selectstate=WLS_SEL_OFF;
-			if(g.currfield[g.curgen][x][y]==1) newval=2; //g.currfield[g.curgen][x][y]=2;
-			else newval=1;  //g.currfield[g.curgen][x][y]=1;
+			if(g.currfield[g.curgen][x][y]==CV_FORCEDON) newval=CV_CLEAR;
+			else newval=CV_FORCEDON;
 			//Symmetricalize(hDC,x,y,allgens);
 		}
 		else if(ctx->selectstate==WLS_SEL_SELECTING) {
@@ -808,8 +808,8 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 
 	case WM_RBUTTONDOWN:     // toggle off/unchecked
 		if(wParam & MK_SHIFT) allgens=1;
-		if(g.currfield[g.curgen][x][y]==0) newval=2; //g.currfield[g.curgen][x][y]=2;
-		else newval=0; //g.currfield[g.curgen][x][y]=0;
+		if(g.currfield[g.curgen][x][y]==CV_FORCEDOFF) newval=CV_CLEAR;
+		else newval=CV_FORCEDOFF;
 		break;
 
 	case WM_CHAR:
@@ -822,19 +822,19 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 			allgens=1;
 #endif
 		if(vkey=='C' || vkey=='c') {
-			newval=2;
+			newval=CV_CLEAR;
 		}
 		else if(vkey=='X' || vkey=='x') {
-			newval=3;
+			newval=CV_UNCHECKED;
 		}
 		else if(vkey=='A' || vkey=='a') {
-			newval=0;
+			newval=CV_FORCEDOFF;
 		}
 		else if(vkey=='S' || vkey=='s') {
-			newval=1;
+			newval=CV_FORCEDON;
 		}
 		else if(vkey=='F' || vkey=='f') {
-			newval=4;
+			newval=CV_FROZEN;
 			allgens=1;
 		}
 #ifndef JS
@@ -939,22 +939,22 @@ static int set_initial_cells(void)
 		for(i=0;i<g.colmax;i++)
 			for(j=0;j<g.rowmax;j++) {
 				switch(g.origfield[g1][i][j]) {
-				case 0:  // forced off
+				case CV_FORCEDOFF:
 					if(!proceed(findcell(j+1,i+1,g1),OFF,FALSE)) {
 						wlsMessagef(ctx,_T("Inconsistent OFF state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
 						return 0;
 					}
 					break;
-				case 1:  // forced on
+				case CV_FORCEDON:
 					if(!proceed(findcell(j+1,i+1,g1),ON,FALSE)) {
 						wlsMessagef(ctx,_T("Inconsistent ON state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
 						return 0;
 					}
 					break;
-				case 3:  // eXcluded cells
+				case CV_UNCHECKED:  // eXcluded cells
 					excludecone(j+1,i+1,g1);
 					break;
-				case 4: // frozen cells
+				case CV_FROZEN:
 					freezecell(j+1, i+1);
 					break;
 				}
@@ -987,23 +987,23 @@ BOOL set_initial_cells(void)
 				g.origfield[g1][i][j] = g.currfield[g1][i][j];
 
 				switch(g.currfield[g1][i][j]) {
-				case 0:  // forced off
+				case CV_FORCEDOFF:
 					if(!proceed(findcell(j+1,i+1,g1),OFF,FALSE)) {
 						wlsMessagef(ctx,_T("Inconsistent OFF state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
 						return FALSE;
 					}
 					break;
-				case 1:  // forced on
+				case CV_FORCEDON:
 					if(!proceed(findcell(j+1,i+1,g1),ON,FALSE)) {
 						wlsMessagef(ctx,_T("Inconsistent ON state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
 						return FALSE;
 					}
 					break;
-				case 3: // unchecked
+				case CV_UNCHECKED:
 					cell = findcell(j+1,i+1,g1);
 					cell->unchecked = TRUE;
 					break;
-				case 4: // frozen cells
+				case CV_FROZEN:
 					freezecell(j+1, i+1);
 					break;
 				}
@@ -2895,8 +2895,8 @@ static void InitGameSettings(struct wcontext *ctx)
 	for(k=0;k<GENMAX;k++)
 		for(i=0;i<COLMAX;i++)
 			for(j=0;j<ROWMAX;j++) {
-				g.origfield[k][i][j]=2;       // set all cells to "don't care"
-				g.currfield[k][i][j]=2;
+				g.origfield[k][i][j]=CV_CLEAR;       // set all cells to "don't care"
+				g.currfield[k][i][j]=CV_CLEAR;
 			}
 
 	g.symmetry=0;
