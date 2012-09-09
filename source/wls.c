@@ -84,6 +84,7 @@ struct wcontext {
 	POINT scrollpos;
 	HFONT statusfont;
 	__int64 showcount_tot;
+	int ignore_lbuttonup;
 };
 
 struct globals_struct g;
@@ -781,6 +782,14 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 	case WM_LBUTTONDOWN:
 		if(ctx->selectstate!=WLS_SEL_OFF) {
 			SelectOff(ctx,NULL);
+			// The left button was used to cancel the selection (and then to
+			// potentially start a new selection.)
+			// When it is released, make sure that isn't interpreted as a
+			// command to change the contents of a cell.
+			ctx->ignore_lbuttonup = 1;
+		}
+		else {
+			ctx->ignore_lbuttonup = 0;
 		}
 
 		ctx->selectstate=WLS_SEL_SELECTING;
@@ -793,6 +802,12 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 	case WM_LBUTTONUP:
 		if(wParam & MK_SHIFT) allgens=1;
 		if(x==ctx->startcell.x && y==ctx->startcell.y) {
+			if(ctx->ignore_lbuttonup) {
+				ctx->ignore_lbuttonup=0;
+				SelectOff(ctx,NULL);
+				return 0;
+			}
+
 			ctx->selectstate=WLS_SEL_OFF;
 			if(g.currfield[g.curgen][x][y]==CV_FORCEDON) newval=CV_CLEAR;
 			else newval=CV_FORCEDON;
@@ -807,6 +822,10 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 		break;
 
 	case WM_RBUTTONDOWN:     // toggle off/unchecked
+		if(ctx->selectstate!=WLS_SEL_OFF) {
+			SelectOff(ctx,NULL);
+			return 0;
+		}
 		if(wParam & MK_SHIFT) allgens=1;
 		if(g.currfield[g.curgen][x][y]==CV_FORCEDOFF) newval=CV_CLEAR;
 		else newval=CV_FORCEDOFF;
