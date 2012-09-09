@@ -2078,6 +2078,7 @@ static void handle_MouseWheel(struct wcontext *ctx, HWND hWnd, WPARAM wParam)
 static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
+	DWORD dwtmp;
 	POINT pt;
 	struct wcontext *ctx = gctx;
 
@@ -2151,7 +2152,9 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		return 0;
 
 	case WM_CHAR:
-		GetCursorPos(&pt);
+		dwtmp = GetMessagePos();
+		pt.x = (LONG)(short)LOWORD(dwtmp);
+		pt.y = (LONG)(short)HIWORD(dwtmp);
 		ScreenToClient(hWnd,&pt);
 		return Handle_UIEvent(ctx,msg,(WORD)pt.x,(WORD)pt.y,wParam);
 
