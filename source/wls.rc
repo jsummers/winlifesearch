@@ -134,7 +134,7 @@ BEGIN
     LTEXT           "every",IDC_STATIC,113,30,18,8
     EDITTEXT        IDC_DUMPFREQ,137,28,40,14,ES_AUTOHSCROLL | WS_GROUP
     LTEXT           "calculations",IDC_STATIC,183,31,38,8
-    CONTROL         "Stop when an object is found",IDC_CHECK5,"Button",
+    CONTROL         "Stop when an object is found",IDC_STOPONFOUND,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP | WS_GROUP,7,48,108,10
     CONTROL         "Save found objects to file:",IDC_OUTPUTFILEYN,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,7,63,98,10
