@@ -256,6 +256,44 @@ BEGIN
                                                     NOINVERT
 END
 
+VS_VERSION_INFO VERSIONINFO
+    FILEVERSION     0,4,0,0
+    PRODUCTVERSION  0,4,0,0
+    FILEOS          VOS_NT_WINDOWS32
+    FILETYPE        VFT_APP
+    FILESUBTYPE     VFT2_UNKNOWN
+    FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+#ifdef _DEBUG
+	FILEFLAGS       VS_FF_DEBUG
+#else
+	FILEFLAGS       0x0L
+#endif
+{
+    BLOCK "StringFileInfo"
+    {
+        BLOCK "040904E4"
+        {
+            VALUE "Comments", ""
+            VALUE "CompanyName", ""
+            VALUE "FileDescription", "WinLifeSearch"
+            VALUE "FileVersion", "0, 4, 0, 0"
+            VALUE "InternalName", "wlsj"
+            VALUE "LegalCopyright", "(C) 2012 Jason Summers et. al."
+            VALUE "LegalTrademarks", ""
+            VALUE "OriginalFilename", "wlsj.exe"
+            VALUE "PrivateBuild", ""
+            VALUE "ProductName", "WinLifeSearch"
+            VALUE "ProductVersion", "0, 4, 0, 0"
+            VALUE "SpecialBuild", ""
+        }
+    }
+    BLOCK "VarFileInfo"
+    {
+        VALUE "Translation", 0x0409, 0x04E4
+    }
+}
+
+
 #else // KS:
 
 /////////////////////////////////////////////////////////////////////////////
@@ -522,6 +560,43 @@ BEGIN
                                                     NOINVERT
     "Y",            IDC_SEARCHBACKUP2,      VIRTKEY, NOINVERT
 END
+
+VS_VERSION_INFO VERSIONINFO
+    FILEVERSION     0,6,1,0
+    PRODUCTVERSION  0,6,1,0
+    FILEOS          VOS_NT_WINDOWS32
+    FILETYPE        VFT_APP
+    FILESUBTYPE     VFT2_UNKNOWN
+    FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+#ifdef _DEBUG
+	FILEFLAGS       VS_FF_DEBUG
+#else
+	FILEFLAGS       0x0L
+#endif
+{
+    BLOCK "StringFileInfo"
+    {
+        BLOCK "040904E4"
+        {
+            VALUE "Comments", ""
+            VALUE "CompanyName", ""
+            VALUE "FileDescription", "WinLifeSearch"
+            VALUE "FileVersion", "0, 6, 1, 0"
+            VALUE "InternalName", "wls"
+            VALUE "LegalCopyright", "(C) 2012 Jason Summers et. al."
+            VALUE "LegalTrademarks", ""
+            VALUE "OriginalFilename", "wls.exe"
+            VALUE "PrivateBuild", ""
+            VALUE "ProductName", "WinLifeSearch"
+            VALUE "ProductVersion", "0, 6, 1, 0"
+            VALUE "SpecialBuild", ""
+        }
+    }
+    BLOCK "VarFileInfo"
+    {
+        VALUE "Translation", 0x0409, 0x04E4
+    }
+}
 
 
 #endif // JS/KS
