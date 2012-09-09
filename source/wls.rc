@@ -199,63 +199,6 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,251,24,50,14
 END
 
-/////////////////////////////////////////////////////////////////////////////
-//
-// Accelerator
-//
-
-WLSACCEL ACCELERATORS DISCARDABLE 
-BEGIN
-    ",",            IDC_PREVGEN,            ASCII,  NOINVERT
-    ".",            IDC_NEXTGEN,            ASCII,  NOINVERT
-    "B",            IDC_SEARCHBACKUP,       VIRTKEY, NOINVERT
-    "C",            IDC_EDITCOPY,           VIRTKEY, CONTROL, NOINVERT
-    "D",            IDC_SAVEGAME,           VIRTKEY, NOINVERT
-    "E",            ID_FLIP_GEN_V,          VIRTKEY, CONTROL, NOINVERT
-    "E",            ID_FLIP_ALL_V,          VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    "G",            IDC_SEARCHSTART,        VIRTKEY, CONTROL, NOINVERT
-    "H",            ID_FLIP_GEN_H,          VIRTKEY, CONTROL, NOINVERT
-    "H",            ID_FLIP_ALL_H,          VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    "L",            IDC_OPENSTATE,          VIRTKEY, NOINVERT
-    "N",            IDC_NEXTGEN,            VIRTKEY, NOINVERT
-    "P",            IDC_PREVGEN,            VIRTKEY, NOINVERT
-    "R",            IDC_SEARCHRESET,        VIRTKEY, CONTROL, NOINVERT
-    "T",            ID_TRANS_GEN,           VIRTKEY, CONTROL, NOINVERT
-    "T",            ID_TRANS_ALL,           VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_ESCAPE,      IDC_SEARCHPAUSE,        VIRTKEY, NOINVERT
-    VK_F2,          IDC_ROWS,               VIRTKEY, NOINVERT
-    VK_F3,          IDC_PERIOD,             VIRTKEY, NOINVERT
-    VK_F4,          IDC_SYMMETRY,           VIRTKEY, NOINVERT
-    VK_F5,          IDC_TRANSLATE,          VIRTKEY, NOINVERT
-    VK_F6,          IDC_SEARCHSETTINGS,     VIRTKEY, NOINVERT
-    VK_F7,          IDC_OUTPUTSETTINGS,     VIRTKEY, NOINVERT
-    VK_SPACE,       IDC_SEARCHRESUME,       VIRTKEY, NOINVERT
-    "Y",            IDC_SEARCHBACKUP2,      VIRTKEY, NOINVERT
-    VK_BACK,        ID_HIDESEL,             VIRTKEY, NOINVERT
-    VK_DELETE,      IDC_CLEARGEN,           VIRTKEY, CONTROL, NOINVERT
-    VK_DELETE,      IDC_CLEAR,              VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_DOWN,        IDC_SHIFTGDOWN,         VIRTKEY, SHIFT, NOINVERT
-    VK_DOWN,        IDC_SHIFTADOWN,         VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_LEFT,        IDC_SHIFTGLEFT,         VIRTKEY, SHIFT, NOINVERT
-    VK_LEFT,        IDC_SHIFTALEFT,         VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_NEXT,        IDC_SHIFTAFUTURE,       VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_PRIOR,       IDC_SHIFTAPAST,         VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_RIGHT,       IDC_SHIFTGRIGHT,        VIRTKEY, SHIFT, NOINVERT
-    VK_RIGHT,       IDC_SHIFTARIGHT,        VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_UP,          IDC_SHIFTGUP,           VIRTKEY, SHIFT, NOINVERT
-    VK_UP,          IDC_SHIFTAUP,           VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-END
-
 VS_VERSION_INFO VERSIONINFO
     FILEVERSION     0,4,0,0
     PRODUCTVERSION  0,4,0,0
@@ -496,71 +439,6 @@ BEGIN
 END
 
 
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Accelerator
-//
-
-WLSACCEL ACCELERATORS DISCARDABLE 
-BEGIN
-    ",",            IDC_PREVGEN,            ASCII,  NOINVERT
-    ".",            IDC_NEXTGEN,            ASCII,  NOINVERT
-    "B",            IDC_SEARCHBACKUP,       VIRTKEY, NOINVERT
-    "C",            IDC_EDITCOPY,           VIRTKEY, CONTROL, NOINVERT
-    "D",            IDC_SAVEGAME,           VIRTKEY, NOINVERT
-    "E",            ID_FLIP_GEN_V,          VIRTKEY, CONTROL, NOINVERT
-    "E",            ID_FLIP_ALL_V,          VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    "G",            IDC_SEARCHSTART,        VIRTKEY, CONTROL, NOINVERT
-    "H",            ID_FLIP_GEN_H,          VIRTKEY, CONTROL, NOINVERT
-    "H",            ID_FLIP_ALL_H,          VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    "L",            IDC_OPENSTATE,          VIRTKEY, NOINVERT
-    "N",            IDC_NEXTGEN,            VIRTKEY, NOINVERT
-    "O",            IDC_OPENSTATE,          VIRTKEY, CONTROL, NOINVERT
-    "P",            IDC_PREVGEN,            VIRTKEY, NOINVERT
-    "P",            IDC_SEARCHPREPARE,      VIRTKEY, CONTROL, NOINVERT
-    "R",            IDC_SEARCHRESET,        VIRTKEY, CONTROL, NOINVERT
-    "S",            IDC_SAVEGAME,           VIRTKEY, CONTROL, NOINVERT
-    "T",            ID_TRANS_GEN,           VIRTKEY, CONTROL, NOINVERT
-    "T",            ID_TRANS_ALL,           VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_BACK,        ID_HIDESEL,             VIRTKEY, NOINVERT
-    VK_DELETE,      IDC_CLEARGEN,           VIRTKEY, CONTROL, NOINVERT
-    VK_DELETE,      IDC_CLEAR,              VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_DOWN,        IDC_SHIFTGDOWN,         VIRTKEY, SHIFT, NOINVERT
-    VK_DOWN,        IDC_SHIFTADOWN,         VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_ESCAPE,      IDC_SEARCHPAUSE,        VIRTKEY, NOINVERT
-    VK_F2,          IDC_ROWS,               VIRTKEY, NOINVERT
-    VK_F3,          IDC_PERIOD,             VIRTKEY, NOINVERT
-    VK_F4,          IDC_SYMMETRY,           VIRTKEY, NOINVERT
-    VK_F5,          IDC_TRANSLATE,          VIRTKEY, NOINVERT
-    VK_F6,          IDC_SEARCHSETTINGS,     VIRTKEY, NOINVERT
-    VK_F7,          IDC_OUTPUTSETTINGS,     VIRTKEY, NOINVERT
-    VK_LEFT,        IDC_PREVGEN,            VIRTKEY, NOINVERT
-    VK_LEFT,        IDC_SHIFTGLEFT,         VIRTKEY, SHIFT, NOINVERT
-    VK_LEFT,        IDC_SHIFTALEFT,         VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_NEXT,        IDC_NEXTGEN,            VIRTKEY, NOINVERT
-    VK_NEXT,        IDC_SHIFTAFUTURE,       VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_PRIOR,       IDC_PREVGEN,            VIRTKEY, NOINVERT
-    VK_PRIOR,       IDC_SHIFTAPAST,         VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_RIGHT,       IDC_NEXTGEN,            VIRTKEY, NOINVERT
-    VK_RIGHT,       IDC_SHIFTGRIGHT,        VIRTKEY, SHIFT, NOINVERT
-    VK_RIGHT,       IDC_SHIFTARIGHT,        VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    VK_SPACE,       IDC_SEARCHRESUME,       VIRTKEY, NOINVERT
-    VK_UP,          IDC_SHIFTGUP,           VIRTKEY, SHIFT, NOINVERT
-    VK_UP,          IDC_SHIFTAUP,           VIRTKEY, SHIFT, CONTROL, 
-                                                    NOINVERT
-    "Y",            IDC_SEARCHBACKUP2,      VIRTKEY, NOINVERT
-END
-
 VS_VERSION_INFO VERSIONINFO
     FILEVERSION     0,6,1,0
     PRODUCTVERSION  0,6,1,0
@@ -730,6 +608,70 @@ BEGIN
     EDITTEXT        IDC_PERIOD1,7,26,40,14,ES_AUTOHSCROLL
     DEFPUSHBUTTON   "OK",IDOK,129,7,50,14,WS_GROUP
     PUSHBUTTON      "Cancel",IDCANCEL,129,24,50,14
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+WLSACCEL ACCELERATORS DISCARDABLE 
+BEGIN
+    ",",            IDC_PREVGEN,            ASCII,  NOINVERT
+    ".",            IDC_NEXTGEN,            ASCII,  NOINVERT
+    "B",            IDC_SEARCHBACKUP,       VIRTKEY, NOINVERT
+    "C",            IDC_EDITCOPY,           VIRTKEY, CONTROL, NOINVERT
+    "D",            IDC_SAVEGAME,           VIRTKEY, NOINVERT
+    "E",            ID_FLIP_GEN_V,          VIRTKEY, CONTROL, NOINVERT
+    "E",            ID_FLIP_ALL_V,          VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    "G",            IDC_SEARCHSTART,        VIRTKEY, CONTROL, NOINVERT
+    "H",            ID_FLIP_GEN_H,          VIRTKEY, CONTROL, NOINVERT
+    "H",            ID_FLIP_ALL_H,          VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    "L",            IDC_OPENSTATE,          VIRTKEY, NOINVERT
+    "N",            IDC_NEXTGEN,            VIRTKEY, NOINVERT
+    "O",            IDC_OPENSTATE,          VIRTKEY, CONTROL, NOINVERT
+    "P",            IDC_PREVGEN,            VIRTKEY, NOINVERT
+    "P",            IDC_SEARCHPREPARE,      VIRTKEY, CONTROL, NOINVERT
+    "R",            IDC_SEARCHRESET,        VIRTKEY, CONTROL, NOINVERT
+    "S",            IDC_SAVEGAME,           VIRTKEY, CONTROL, NOINVERT
+    "T",            ID_TRANS_GEN,           VIRTKEY, CONTROL, NOINVERT
+    "T",            ID_TRANS_ALL,           VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    "Y",            IDC_SEARCHBACKUP2,      VIRTKEY, NOINVERT
+    VK_SPACE,       IDC_SEARCHRESUME,       VIRTKEY, NOINVERT
+    VK_BACK,        ID_HIDESEL,             VIRTKEY, NOINVERT
+    VK_ESCAPE,      IDC_SEARCHPAUSE,        VIRTKEY, NOINVERT
+    VK_F2,          IDC_ROWS,               VIRTKEY, NOINVERT
+    VK_F3,          IDC_PERIOD,             VIRTKEY, NOINVERT
+    VK_F4,          IDC_SYMMETRY,           VIRTKEY, NOINVERT
+    VK_F5,          IDC_TRANSLATE,          VIRTKEY, NOINVERT
+    VK_F6,          IDC_SEARCHSETTINGS,     VIRTKEY, NOINVERT
+    VK_F7,          IDC_OUTPUTSETTINGS,     VIRTKEY, NOINVERT
+    VK_DELETE,      IDC_CLEARGEN,           VIRTKEY, CONTROL, NOINVERT
+    VK_DELETE,      IDC_CLEAR,              VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_DOWN,        IDC_SHIFTGDOWN,         VIRTKEY, SHIFT, NOINVERT
+    VK_DOWN,        IDC_SHIFTADOWN,         VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_LEFT,        IDC_PREVGEN,            VIRTKEY, NOINVERT
+    VK_LEFT,        IDC_SHIFTGLEFT,         VIRTKEY, SHIFT, NOINVERT
+    VK_LEFT,        IDC_SHIFTALEFT,         VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_NEXT,        IDC_NEXTGEN,            VIRTKEY, NOINVERT
+    VK_NEXT,        IDC_SHIFTAFUTURE,       VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_PRIOR,       IDC_PREVGEN,            VIRTKEY, NOINVERT
+    VK_PRIOR,       IDC_SHIFTAPAST,         VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_RIGHT,       IDC_NEXTGEN,            VIRTKEY, NOINVERT
+    VK_RIGHT,       IDC_SHIFTGRIGHT,        VIRTKEY, SHIFT, NOINVERT
+    VK_RIGHT,       IDC_SHIFTARIGHT,        VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    VK_UP,          IDC_SHIFTGUP,           VIRTKEY, SHIFT, NOINVERT
+    VK_UP,          IDC_SHIFTAUP,           VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
 END
 
 /////////////////////////////////////////////////////////////////////////////
