@@ -2163,21 +2163,20 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		return 0;
 
 	case WM_INITMENU:
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHSTART,ctx->searchstate==WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESET,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHPAUSE,ctx->searchstate==WLS_SRCH_RUNNING?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESUME,ctx->searchstate==WLS_SRCH_PAUSED?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP2,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,ID_HIDESEL,ctx->selectstate==WLS_SEL_SELECTED?MF_ENABLED:MF_GRAYED);
 #ifdef JS
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHSTART,ctx->searchstate==WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESET,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHPAUSE,ctx->searchstate==WLS_SRCH_RUNNING?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESUME,ctx->searchstate==WLS_SRCH_PAUSED?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP2,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_SEARCHPREPARE,MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_COPYRESULT,MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_COPYCOMBINATION,MF_GRAYED);
+		EnableMenuItem((HMENU)wParam,IDC_CLEARCOMBINATION,MF_GRAYED);
 #else
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHSTART,ctx->searchstate==WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_SEARCHPREPARE,ctx->searchstate==WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESET,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHPAUSE,ctx->searchstate==WLS_SRCH_RUNNING?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESUME,ctx->searchstate==WLS_SRCH_PAUSED?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP2,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_COPYRESULT,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_COPYCOMBINATION,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_CLEARCOMBINATION,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);

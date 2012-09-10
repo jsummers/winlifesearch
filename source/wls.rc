@@ -23,98 +23,6 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 #ifdef JS
 
-/////////////////////////////////////////////////////////////////////////////
-//
-// Menu
-//
-
-WLSMENU MENU DISCARDABLE 
-BEGIN
-    POPUP "&File"
-    BEGIN
-        MENUITEM "&Open state...\tL",           IDC_OPENSTATE
-        MENUITEM "&Save state...\tD",           IDC_SAVEGAME
-        MENUITEM SEPARATOR
-        MENUITEM "E&xit",                       IDC_EXIT
-    END
-    POPUP "&Edit"
-    BEGIN
-        MENUITEM "&Copy\tCtrl+C",               IDC_EDITCOPY
-        MENUITEM SEPARATOR
-        POPUP "&Shift"
-        BEGIN
-            POPUP "&Generation"
-            BEGIN
-                MENUITEM "&Up\tShift+Up",               IDC_SHIFTGUP
-                MENUITEM "&Down\tShift+Down",           IDC_SHIFTGDOWN
-                MENUITEM "&Left\tShift+Left",           IDC_SHIFTGLEFT
-                MENUITEM "&Right\tShift+Right",         IDC_SHIFTGRIGHT
-            END
-            POPUP "&All generations"
-            BEGIN
-                MENUITEM "&Up\tCtrl+Shift+Up",          IDC_SHIFTAUP
-                MENUITEM "&Down\tCtrl+Shift+Down",      IDC_SHIFTADOWN
-                MENUITEM "&Left\tCtrl+Shift+Left",      IDC_SHIFTALEFT
-                MENUITEM "&Right\tCtrl+Shift+Right",    IDC_SHIFTARIGHT
-                MENUITEM "To &past\tCtrl+Shift+PgUp",   IDC_SHIFTAPAST
-                MENUITEM "To &future\tCtrl+Shift+PgDn", IDC_SHIFTAFUTURE
-            END
-        END
-        POPUP "&Flip"
-        BEGIN
-            POPUP "&Generation"
-            BEGIN
-                MENUITEM "&Horizontal\tCtrl+H",         ID_FLIP_GEN_H
-                MENUITEM "&Vertical\tCtrl+E",           ID_FLIP_GEN_V
-            END
-            POPUP "&All generations"
-            BEGIN
-                MENUITEM "&Horizontal\tCtrl+Shift+H",   ID_FLIP_ALL_H
-                MENUITEM "&Vertical\tCtrl+Shift+E",     ID_FLIP_ALL_V
-            END
-        END
-        POPUP "&Transpose"
-        BEGIN
-            MENUITEM "&Generation\tCtrl+T",         ID_TRANS_GEN
-            MENUITEM "&All generations\tCtrl+Shift+T", ID_TRANS_ALL
-        END
-        POPUP "Clea&r"
-        BEGIN
-            MENUITEM "&Generation\tCtrl+Del",       IDC_CLEARGEN
-            MENUITEM "&All generations\tCtrl+Shift+Del", IDC_CLEAR
-        END
-        MENUITEM SEPARATOR
-        MENUITEM "&Hide selection\tBackspace",  ID_HIDESEL
-    END
-    POPUP "View"
-    BEGIN
-        MENUITEM "&Next generation\tN",         IDC_NEXTGEN
-        MENUITEM "&Previous generation\tP",     IDC_PREVGEN
-    END
-    POPUP "&Options"
-    BEGIN
-        MENUITEM "&Rows and Columns...\tF2",    IDC_ROWS
-        MENUITEM "&Period...\tF3",              IDC_PERIOD
-        MENUITEM "S&ymmetry...\tF4",            IDC_SYMMETRY
-        MENUITEM "&Translation...\tF5",         IDC_TRANSLATE
-        MENUITEM "&Search settings...\tF6",     IDC_SEARCHSETTINGS
-        MENUITEM "&Output settings...\tF7",     IDC_OUTPUTSETTINGS
-    END
-    POPUP "&Search"
-    BEGIN
-        MENUITEM "&Start\tCtrl+G",              IDC_SEARCHSTART
-        MENUITEM "&Reset\tCtrl+R",              IDC_SEARCHRESET
-        MENUITEM "&Pause\tEsc",                 IDC_SEARCHPAUSE
-        MENUITEM "&Continue\tSpace",            IDC_SEARCHRESUME
-        MENUITEM "&Backup\tB",                  IDC_SEARCHBACKUP
-        MENUITEM "Backup 20\tY",                IDC_SEARCHBACKUP2
-    END
-    POPUP "&Help"
-    BEGIN
-        MENUITEM "&About...",                   IDC_ABOUT
-    END
-END
-
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -218,14 +126,14 @@ VS_VERSION_INFO VERSIONINFO
         {
             VALUE "Comments", ""
             VALUE "CompanyName", ""
-            VALUE "FileDescription", "WinLifeSearch"
+            VALUE "FileDescription", "WinLifeSearchJ"
             VALUE "FileVersion", "0, 4, 0, 0"
             VALUE "InternalName", "wlsj"
             VALUE "LegalCopyright", "(C) 2012 Jason Summers et. al."
             VALUE "LegalTrademarks", ""
             VALUE "OriginalFilename", "wlsj.exe"
             VALUE "PrivateBuild", ""
-            VALUE "ProductName", "WinLifeSearch"
+            VALUE "ProductName", "WinLifeSearchJ"
             VALUE "ProductVersion", "0, 4, 0, 0"
             VALUE "SpecialBuild", ""
         }
@@ -238,104 +146,6 @@ VS_VERSION_INFO VERSIONINFO
 
 
 #else // KS:
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Menu
-//
-
-WLSMENU MENU DISCARDABLE 
-BEGIN
-    POPUP "&File"
-    BEGIN
-        MENUITEM "&Open state...\tCtrl+O",      IDC_OPENSTATE
-        MENUITEM "&Save state...\tCtrl+S",      IDC_SAVEGAME
-        MENUITEM SEPARATOR
-        MENUITEM "E&xit\tAlt+F4",               IDC_EXIT
-    END
-    POPUP "&Edit"
-    BEGIN
-        MENUITEM "&Copy\tCtrl+C",               IDC_EDITCOPY
-        MENUITEM SEPARATOR
-        POPUP "&Shift"
-        BEGIN
-            POPUP "&Generation"
-            BEGIN
-                MENUITEM "&Up\tShift+Up",               IDC_SHIFTGUP
-                MENUITEM "&Down\tShift+Down",           IDC_SHIFTGDOWN
-                MENUITEM "&Left\tShift+Left",           IDC_SHIFTGLEFT
-                MENUITEM "&Right\tShift+Right",         IDC_SHIFTGRIGHT
-            END
-            POPUP "&All generations"
-            BEGIN
-                MENUITEM "&Up\tCtrl+Shift+Up",          IDC_SHIFTAUP
-                MENUITEM "&Down\tCtrl+Shift+Down",      IDC_SHIFTADOWN
-                MENUITEM "&Left\tCtrl+Shift+Left",      IDC_SHIFTALEFT
-                MENUITEM "&Right\tCtrl+Shift+Right",    IDC_SHIFTARIGHT
-                MENUITEM "To &past\tCtrl+Shift+PgUp",   IDC_SHIFTAPAST
-                MENUITEM "To &future\tCtrl+Shift+PgDn", IDC_SHIFTAFUTURE
-            END
-        END
-        POPUP "&Flip"
-        BEGIN
-            POPUP "&Generation"
-            BEGIN
-                MENUITEM "&Horizontal\tCtrl+H",         ID_FLIP_GEN_H
-                MENUITEM "&Vertical\tCtrl+E",           ID_FLIP_GEN_V
-            END
-            POPUP "&All generations"
-            BEGIN
-                MENUITEM "&Horizontal\tCtrl+Shift+H",   ID_FLIP_ALL_H
-                MENUITEM "&Vertical\tCtrl+Shift+E",     ID_FLIP_ALL_V
-            END
-        END
-        POPUP "&Transpose"
-        BEGIN
-            MENUITEM "&Generation\tCtrl+T",         ID_TRANS_GEN
-            MENUITEM "&All generations\tCtrl+Shift+T", ID_TRANS_ALL
-        END
-        POPUP "Clea&r"
-        BEGIN
-            MENUITEM "&Generation\tCtrl+Del",       IDC_CLEARGEN
-            MENUITEM "&All generations\tCtrl+Shift+Del", IDC_CLEAR
-        END
-        MENUITEM SEPARATOR
-        MENUITEM "&Hide selection\tBackspace",  ID_HIDESEL
-    END
-    POPUP "View"
-    BEGIN
-        MENUITEM "&Next generation\tPgDn",      IDC_NEXTGEN
-        MENUITEM "&Previous generation\tPgUp",  IDC_PREVGEN
-    END
-    POPUP "&Options"
-    BEGIN
-        MENUITEM "&Rows and Columns...\tF2",    IDC_ROWS
-        MENUITEM "&Period...\tF3",              IDC_PERIOD
-        MENUITEM "S&ymmetry...\tF4",            IDC_SYMMETRY
-        MENUITEM "&Translation...\tF5",         IDC_TRANSLATE
-        MENUITEM "&Search settings...\tF6",     IDC_SEARCHSETTINGS
-        MENUITEM "&Output settings...\tF7",     IDC_OUTPUTSETTINGS
-    END
-    POPUP "&Search"
-    BEGIN
-        MENUITEM "Pr&epare\tCtrl+P",            IDC_SEARCHPREPARE
-        MENUITEM "&Start\tCtrl+G",              IDC_SEARCHSTART
-        MENUITEM SEPARATOR
-        MENUITEM "&Pause\tEsc",                 IDC_SEARCHPAUSE
-        MENUITEM "&Continue\tSpace",            IDC_SEARCHRESUME
-        MENUITEM "&Backup\tB",                  IDC_SEARCHBACKUP
-        MENUITEM "Backup 20\tY",                IDC_SEARCHBACKUP2
-        MENUITEM "Clear combination",           IDC_CLEARCOMBINATION
-        MENUITEM "&Reset\tCtrl+R",              IDC_SEARCHRESET
-        MENUITEM SEPARATOR
-        MENUITEM "Copy result",                 IDC_COPYRESULT
-        MENUITEM "Copy combination",            IDC_COPYCOMBINATION
-    END
-    POPUP "&Help"
-    BEGIN
-        MENUITEM "&About...",                   IDC_ABOUT
-    END
-END
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -458,14 +268,14 @@ VS_VERSION_INFO VERSIONINFO
         {
             VALUE "Comments", ""
             VALUE "CompanyName", ""
-            VALUE "FileDescription", "WinLifeSearch"
+            VALUE "FileDescription", "WinLifeSearchK"
             VALUE "FileVersion", "0, 6, 1, 0"
             VALUE "InternalName", "wls"
             VALUE "LegalCopyright", "(C) 2012 Jason Summers et. al."
             VALUE "LegalTrademarks", ""
             VALUE "OriginalFilename", "wls.exe"
             VALUE "PrivateBuild", ""
-            VALUE "ProductName", "WinLifeSearch"
+            VALUE "ProductName", "WinLifeSearchK"
             VALUE "ProductVersion", "0, 6, 1, 0"
             VALUE "SpecialBuild", ""
         }
@@ -608,6 +418,104 @@ BEGIN
     EDITTEXT        IDC_PERIOD1,7,26,40,14,ES_AUTOHSCROLL
     DEFPUSHBUTTON   "OK",IDOK,129,7,50,14,WS_GROUP
     PUSHBUTTON      "Cancel",IDCANCEL,129,24,50,14
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+WLSMENU MENU DISCARDABLE 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&Open state...\tCtrl+O",      IDC_OPENSTATE
+        MENUITEM "&Save state...\tCtrl+S",      IDC_SAVEGAME
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       IDC_EXIT
+    END
+    POPUP "&Edit"
+    BEGIN
+        MENUITEM "&Copy\tCtrl+C",               IDC_EDITCOPY
+        MENUITEM SEPARATOR
+        POPUP "&Shift"
+        BEGIN
+            POPUP "&Generation"
+            BEGIN
+                MENUITEM "&Up\tShift+Up",               IDC_SHIFTGUP
+                MENUITEM "&Down\tShift+Down",           IDC_SHIFTGDOWN
+                MENUITEM "&Left\tShift+Left",           IDC_SHIFTGLEFT
+                MENUITEM "&Right\tShift+Right",         IDC_SHIFTGRIGHT
+            END
+            POPUP "&All generations"
+            BEGIN
+                MENUITEM "&Up\tCtrl+Shift+Up",          IDC_SHIFTAUP
+                MENUITEM "&Down\tCtrl+Shift+Down",      IDC_SHIFTADOWN
+                MENUITEM "&Left\tCtrl+Shift+Left",      IDC_SHIFTALEFT
+                MENUITEM "&Right\tCtrl+Shift+Right",    IDC_SHIFTARIGHT
+                MENUITEM "To &past\tCtrl+Shift+PgUp",   IDC_SHIFTAPAST
+                MENUITEM "To &future\tCtrl+Shift+PgDn", IDC_SHIFTAFUTURE
+            END
+        END
+        POPUP "&Flip"
+        BEGIN
+            POPUP "&Generation"
+            BEGIN
+                MENUITEM "&Horizontal\tCtrl+H",         ID_FLIP_GEN_H
+                MENUITEM "&Vertical\tCtrl+E",           ID_FLIP_GEN_V
+            END
+            POPUP "&All generations"
+            BEGIN
+                MENUITEM "&Horizontal\tCtrl+Shift+H",   ID_FLIP_ALL_H
+                MENUITEM "&Vertical\tCtrl+Shift+E",     ID_FLIP_ALL_V
+            END
+        END
+        POPUP "&Transpose"
+        BEGIN
+            MENUITEM "&Generation\tCtrl+T",         ID_TRANS_GEN
+            MENUITEM "&All generations\tCtrl+Shift+T", ID_TRANS_ALL
+        END
+        POPUP "Clea&r"
+        BEGIN
+            MENUITEM "&Generation\tCtrl+Del",       IDC_CLEARGEN
+            MENUITEM "&All generations\tCtrl+Shift+Del", IDC_CLEAR
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "&Hide selection\tBackspace",  ID_HIDESEL
+    END
+    POPUP "View"
+    BEGIN
+        MENUITEM "&Next generation\tPgDn",      IDC_NEXTGEN
+        MENUITEM "&Previous generation\tPgUp",  IDC_PREVGEN
+    END
+    POPUP "&Options"
+    BEGIN
+        MENUITEM "&Rows and Columns...\tF2",    IDC_ROWS
+        MENUITEM "&Period...\tF3",              IDC_PERIOD
+        MENUITEM "S&ymmetry...\tF4",            IDC_SYMMETRY
+        MENUITEM "&Translation...\tF5",         IDC_TRANSLATE
+        MENUITEM "&Search settings...\tF6",     IDC_SEARCHSETTINGS
+        MENUITEM "&Output settings...\tF7",     IDC_OUTPUTSETTINGS
+    END
+    POPUP "&Search"
+    BEGIN
+        MENUITEM "Pr&epare\tCtrl+P",            IDC_SEARCHPREPARE
+        MENUITEM "&Start\tCtrl+G",              IDC_SEARCHSTART
+        MENUITEM SEPARATOR
+        MENUITEM "&Pause\tEsc",                 IDC_SEARCHPAUSE
+        MENUITEM "&Continue\tSpace",            IDC_SEARCHRESUME
+        MENUITEM "&Backup\tB",                  IDC_SEARCHBACKUP
+        MENUITEM "Backup 20\tY",                IDC_SEARCHBACKUP2
+        MENUITEM "Clear combination",           IDC_CLEARCOMBINATION
+        MENUITEM "&Reset\tCtrl+R",              IDC_SEARCHRESET
+        MENUITEM SEPARATOR
+        MENUITEM "Copy result",                 IDC_COPYRESULT
+        MENUITEM "Copy combination",            IDC_COPYCOMBINATION
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&About...",                   IDC_ABOUT
+    END
 END
 
 /////////////////////////////////////////////////////////////////////////////
