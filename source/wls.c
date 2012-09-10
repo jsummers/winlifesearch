@@ -2524,11 +2524,11 @@ static INT_PTR CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 	switch (msg) {
 	case WM_INITDIALOG:
 #ifdef JS
-		SetDlgItemText(hWnd,IDC_ABOUTTEXT,WLS_APPNAME _T(" v0.4+\r\n\r\n")
+		SetDlgItemText(hWnd,IDC_ABOUTTEXT,WLS_APPNAME _T(" v") WLS_VERSION_STRING _T("\r\n\r\n")
 			_T("A Windows port of David Bell\x2019s LIFESRC v3.5\r\n\r\n")
 			_T("By Jason Summers"));
 #else
-		SetDlgItemText(hWnd,IDC_ABOUTTEXT,WLS_APPNAME _T(" v0.61+\r\n\r\n")
+		SetDlgItemText(hWnd,IDC_ABOUTTEXT,WLS_APPNAME _T(" v") WLS_VERSION_STRING _T("\r\n\r\n")
 			_T("A Windows port of David Bell\x2019s LIFESRC v3.5\r\n\r\n")
 			_T("By Jason Summers and Karel Suhajda"));
 #endif

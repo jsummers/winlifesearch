@@ -9,6 +9,8 @@
 
 #include <ctype.h>
 
+#define WLS_VERSION_STRING _T("0.70")
+
 /*
  * Maximum dimensions of the search
  */
