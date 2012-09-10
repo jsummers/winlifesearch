@@ -1110,7 +1110,7 @@ search(void)
 		if (needwrite || (g.viewfreq && (++g.viewcount >= g.viewfreq)))
 		{
 			showcount();
-			printgen(g.curgen);
+			printgen();
 			g.viewcount = 0;
 		}
 

@@ -202,7 +202,7 @@ getbackup(char *cp)
 
 		if (cell == NULL)
 		{
-			printgen(g.curgen);
+			printgen();
 			ttystatus(_T("Backed up over all possibilities\n"));
 
 			return;
@@ -217,14 +217,14 @@ getbackup(char *cp)
 
 		if (!go(cell, state, FALSE))
 		{
-			printgen(g.curgen);
+			printgen();
 			ttystatus(_T("Backed up over all possibilities\n"));
 
 			return;
 		}
 	}
 
-	printgen(g.curgen);
+	printgen();
 }
 
 /*

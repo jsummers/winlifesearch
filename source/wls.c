@@ -683,12 +683,12 @@ static void FixFrozenCells(void)
 		for(y=0;y<ROWMAX;y++) {
 			for(z=0;z<GENMAX;z++) {
 				if(z!=g.curgen) {
-					if(g.currfield[g.curgen][x][y]==4) {
-						g.currfield[z][x][y]=4;
+					if(g.currfield[g.curgen][x][y]==CV_FROZEN) {
+						g.currfield[z][x][y]=CV_FROZEN;
 					}
 					else {  // current not frozen
-						if(g.currfield[z][x][y]==4)
-							g.currfield[z][x][y]=2;
+						if(g.currfield[z][x][y]==CV_FROZEN)
+							g.currfield[z][x][y]=CV_CLEAR;
 					}
 				}
 			}
@@ -1127,43 +1127,6 @@ void showcount(void)
 	SetWindowText(ctx->hwndFrame,buf);
 }
 
-#ifdef JS
-
-void printgen(int gen)
-{
-	int i,j,g1;
-	CELL *cell;
-
-	g.curgen=gen;
-
-	// copy dbell's format back into mine
-	for(g1=0;g1<g.genmax;g1++)
-		for(i=0;i<g.colmax;i++)
-			for(j=0;j<g.rowmax;j++) {
-				cell=findcell(j+1,i+1,g1);
-				switch(cell->state) {
-				case OFF:
-					g.currfield[g1][i][j]=0;
-					break;
-				case ON:
-					g.currfield[g1][i][j]=1;
-					break;
-				case UNK:
-					g.currfield[g1][i][j]=2;
-					break;
-				}
-			}
-
-	wlsRepaintCells(gctx,FALSE);
-}
-
-#else
-
-// possible values for type:
-// 0 - nothing happens
-// 1 - store the generation as a solution
-// 2 - copy solution
-
 void printgen(void)
 {
 	int i,j,g1;
@@ -1172,29 +1135,30 @@ void printgen(void)
 
 	// copy dbell's format back into mine
 	for(g1=0;g1<g.genmax;g1++) {
-		for(i=0;i<g.colmax;i++){
+		for(i=0;i<g.colmax;i++) {
 			for(j=0;j<g.rowmax;j++) {
-
 				cell=findcell(j+1,i+1,g1);
-
-				switch (cell->state) {
-				case ON:
-					g.currfield[g1][i][j] = 1;
-					break;
+				switch(cell->state) {
 				case OFF:
-					g.currfield[g1][i][j] = 0;
+					g.currfield[g1][i][j] = CV_FORCEDOFF;
+					break;
+				case ON:
+					g.currfield[g1][i][j] = CV_FORCEDON;
 					break;
 				case UNK:
+#ifdef JS
+					g.currfield[g1][i][j] = CV_CLEAR;
+#else
 					g.currfield[g1][i][j] = g.origfield[g1][i][j];
+#endif
 				}
 			}
 		}
 	}
 
-	wlsRepaintCells(gctx,FALSE);
+	wlsRepaintCells(ctx,FALSE);
 }
 
-#endif
 
 #ifndef JS
 
@@ -1252,10 +1216,10 @@ static void show_combine(struct wcontext *ctx)
 					cell=findcell(j+1,i+1,g1);
 					switch(cell->combined) {
 					case ON:
-						g.currfield[g1][i][j] = 1;
+						g.currfield[g1][i][j] = CV_FORCEDON;
 						break;
 					case OFF:
-						g.currfield[g1][i][j] = 0;
+						g.currfield[g1][i][j] = CV_FORCEDOFF;
 						break;
 					case UNK:
 						g.currfield[g1][i][j] = g.origfield[g1][i][j];
@@ -1269,8 +1233,6 @@ static void show_combine(struct wcontext *ctx)
 }
 
 #endif
-
-static void pause_search(struct wcontext *ctx);  // forward decl
 
 #ifdef JS
 
@@ -1319,7 +1281,8 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			g.curstatus = OK;
 
 			if (!g.quiet) {
-				printgen(0);
+				g.curgen=0;
+				printgen();
 				wlsStatusf(ctx,_T("Object %d found."), ++g.foundcount);
 			}
 
@@ -1599,7 +1562,7 @@ static void prepare_and_start_search(struct wcontext *ctx, TCHAR *statefile)
 	if(statefile) {
 		if(!loadstate(ctx->hwndFrame, statefile)) return;
 
-		printgen(g.curgen);
+		printgen();
 		draw_gen_counter(ctx);
 		ctx->searchstate=WLS_SRCH_PAUSED;
 /*
@@ -1732,24 +1695,27 @@ static void start_search(struct wcontext *ctx)
 
 #endif
 
+// Low-level function that ends the search thread(s), and does no UI.
+static void wlsStopSearchThreads(struct wcontext *ctx)
+{
+	if(ctx->searchstate!=WLS_SRCH_RUNNING || !ctx->hthread) {
+		return;
+	}
+	abortthread=1;
+	WaitForSingleObject(ctx->hthread,INFINITE);
+	CloseHandle(ctx->hthread);
+	ctx->hthread = NULL;
+	ctx->searchstate=WLS_SRCH_PAUSED;
+}
+
 static void pause_search(struct wcontext *ctx)
 {
-	DWORD exitcode;
-
 	if(ctx->searchstate!=WLS_SRCH_RUNNING) {
 		wlsErrorf(ctx,_T("No search is running"));
 		return;
 	}
 
-	abortthread=1;
-	do {
-		GetExitCodeThread(ctx->hthread, &exitcode);
-		if(exitcode==STILL_ACTIVE) {
-			Sleep(200);
-		}
-	} while(exitcode==STILL_ACTIVE);
-	CloseHandle(ctx->hthread);
-	ctx->searchstate=WLS_SRCH_PAUSED;
+	wlsStopSearchThreads(ctx);
 
 	// Tell Windows we're okay with the computer going to sleep.
 	SetThreadExecutionState(ES_CONTINUOUS);
@@ -1826,7 +1792,7 @@ static void clear_gen(int g1)
 	int i,j;
 	for(i=0;i<COLMAX;i++)
 		for(j=0;j<ROWMAX;j++)
-			g.currfield[g1][i][j]=2;
+			g.currfield[g1][i][j] = CV_CLEAR;
 }
 
 static void clear_all(struct wcontext *ctx)
@@ -2074,7 +2040,7 @@ static void copytoclipboard(struct wcontext *ctx)
 
 	for(j=0;j<g.rowmax;j++) {
 		for(i=0;i<g.colmax;i++) {
-			if(g.currfield[g.curgen][i][j]==1)
+			if(g.currfield[g.curgen][i][j]==CV_FORCEDON)
 				s[offset+(g.colmax+2)*j+i]='*';
 			else
 				s[offset+(g.colmax+2)*j+i]='.';
@@ -3142,6 +3108,7 @@ static BOOL InitApp(struct wcontext *ctx, int nCmdShow)
 
 static void UninitApp(struct wcontext *ctx)
 {
+	wlsStopSearchThreads(ctx);
 	if(ctx->statusfont) DeleteObject((HGDIOBJ)ctx->statusfont);
 }
 

@@ -370,12 +370,7 @@ BOOL initcells(void);
 void initsearchorder(void);
 #endif
 
-#ifdef JS
-void printgen(int);
-#else
 void printgen(void);
-#endif
-
 void writegen(HWND hwndParent, TCHAR *file1, BOOL append);
 #ifdef JS
 void dumpstate(HWND hwndParent, TCHAR *file1);
