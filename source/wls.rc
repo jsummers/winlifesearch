@@ -34,9 +34,6 @@ STYLE DS_SETFONT | DS_FIXEDSYS | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSM
 CAPTION "Output settings"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    LTEXT           "Update screen every",IDC_STATIC,7,7,67,8
-    EDITTEXT        IDC_VIEWFREQ,91,7,50,14,ES_AUTOHSCROLL | WS_GROUP
-    LTEXT           "calculations",IDC_STATIC,146,7,38,8
     LTEXT           "Dump to file:",IDC_STATIC,7,31,40,8
     EDITTEXT        IDC_DUMPFILE,54,28,51,14,ES_AUTOHSCROLL | WS_GROUP
     LTEXT           "every",IDC_STATIC,113,30,18,8
@@ -166,9 +163,6 @@ BEGIN
     EDITTEXT        IDC_OUTPUTFILE,106,40,56,14,ES_AUTOHSCROLL | WS_GROUP
     CONTROL         "All generations",IDC_OUTPUTALLGEN,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP | WS_GROUP,170,42,62,10
-    LTEXT           "Update screen every",IDC_STATIC,7,59,67,8
-    EDITTEXT        IDC_VIEWFREQ,106,56,56,14,ES_AUTOHSCROLL | WS_GROUP
-    LTEXT           "calculations",IDC_STATIC,170,59,38,8
     LTEXT           "Dump to file:",IDC_STATIC,7,75,40,8
     EDITTEXT        IDC_DUMPFILE,106,72,56,14,ES_AUTOHSCROLL | WS_GROUP
     LTEXT           "every",IDC_STATIC,170,75,18,8
@@ -411,6 +405,17 @@ BEGIN
     LTEXT           "4,6,8... (diagonal)",IDC_STATIC,160,165,56,8
 END
 
+DLGPREFERENCES DIALOGEX 0, 0, 308, 181
+STYLE DS_SETFONT | DS_FIXEDSYS | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Preferences"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    LTEXT           "Update screen every",IDC_STATIC,7,9,80,8
+    EDITTEXT        IDC_VIEWFREQ,91,7,50,14,ES_AUTOHSCROLL | ES_NUMBER | WS_GROUP
+    LTEXT           "calculations",IDC_STATIC,146,9,50,8
+    DEFPUSHBUTTON   "OK",IDOK,251,7,50,14,WS_GROUP
+    PUSHBUTTON      "Cancel",IDCANCEL,251,24,50,14
+END
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -487,6 +492,7 @@ BEGIN
         MENUITEM "&Translation...\tF5",         IDC_TRANSLATE
         MENUITEM "&Search settings...\tF6",     IDC_SEARCHSETTINGS
         MENUITEM "&Output settings...\tF7",     IDC_OUTPUTSETTINGS
+        MENUITEM "P&references...\tF8",         IDC_PREFERENCES
     END
     POPUP "&Search"
     BEGIN
@@ -505,7 +511,7 @@ BEGIN
     END
     POPUP "&Help"
     BEGIN
-        MENUITEM "&About...",                   IDC_ABOUT
+        MENUITEM "&About",                      IDC_ABOUT
     END
 END
 
@@ -547,6 +553,7 @@ BEGIN
     VK_F5,          IDC_TRANSLATE,          VIRTKEY, NOINVERT
     VK_F6,          IDC_SEARCHSETTINGS,     VIRTKEY, NOINVERT
     VK_F7,          IDC_OUTPUTSETTINGS,     VIRTKEY, NOINVERT
+    VK_F8,          IDC_PREFERENCES,        VIRTKEY, NOINVERT
     VK_DELETE,      IDC_CLEARGEN,           VIRTKEY, CONTROL, NOINVERT
     VK_DELETE,      IDC_CLEAR,              VIRTKEY, SHIFT, CONTROL, 
                                                     NOINVERT

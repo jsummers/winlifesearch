@@ -257,7 +257,7 @@ struct globals_struct {
 	int	cellcount;   /* number of live cells in generation 0 */
 	long dumpfreq;   /* how often to perform dumps */
 	long dumpcount;  /* counter for dumps */
-	long viewfreq;   /* how often to view results */
+	int viewfreq;   /* how often to view results */
 	long viewcount;  /* counter for viewing */
 	TCHAR dumpfile[80];   /* dump file name */
 	TCHAR outputfile[80]; /* file to output results to */

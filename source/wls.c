@@ -50,6 +50,7 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 static INT_PTR CALLBACK DlgProcPeriodRowsCols(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK DlgProcPreferences(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 typedef struct {
 	HPEN celloutline,cell_off,axes,arrow1,arrow2,unchecked;
@@ -2159,6 +2160,9 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		case IDC_SEARCHSETTINGS:
 			DialogBox(ctx->hInst,_T("DLGSEARCHSETTINGS"),hWnd,DlgProcSearch);
 			return 0;
+		case IDC_PREFERENCES:
+			DialogBox(ctx->hInst,_T("DLGPREFERENCES"),hWnd,DlgProcPreferences);
+			return 0;
 
 		case IDC_SEARCHSTART:
 #ifdef JS
@@ -2844,6 +2848,100 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 	return 0;		// Didn't process a message
 }
 
+#define WLS_REGISTRY_KEY _T("SOFTWARE\\WinLifeSearch")
+
+static void wlsWriteIntPref(struct wcontext *ctx, HKEY hkey, const TCHAR *valname, int val)
+{
+	DWORD tmp;
+
+	tmp = (DWORD)val;
+	RegSetValueEx(hkey,valname,0,REG_DWORD,(const BYTE *)&tmp,sizeof(DWORD));
+}
+
+static void wlsSavePreferences(struct wcontext *ctx)
+{
+	LONG ret;
+	HKEY hkey=NULL;
+
+	ret=RegCreateKeyEx(HKEY_CURRENT_USER,WLS_REGISTRY_KEY,0,NULL,
+		REG_OPTION_NON_VOLATILE,KEY_WRITE,NULL,&hkey,NULL);
+
+	if(ret!=ERROR_SUCCESS) {
+		wlsErrorf(ctx,_T("Failed to save user preferences"));
+		hkey=NULL;
+		goto done;
+	}
+
+	wlsWriteIntPref(ctx,hkey,_T("viewfreq"),g.viewfreq);
+
+done:
+	if(hkey) RegCloseKey(hkey);
+}
+
+// If the registry value could not be read, returns FALSE and does not
+// modify *pval.
+static BOOL wlsReadIntPref(struct wcontext *ctx, HKEY hkey, const TCHAR *valname, int *pval)
+{
+	DWORD tmp;
+	LONG ret;
+	DWORD datatype;
+	DWORD datasize;
+
+	datasize = sizeof(DWORD);
+	ret = RegQueryValueEx(hkey,valname,NULL,&datatype,(BYTE*)&tmp,&datasize);
+	if(ret!=ERROR_SUCCESS || datatype!=REG_DWORD || datasize!=sizeof(DWORD)) {
+		return FALSE;
+	}
+	*pval = (int)tmp;
+	return TRUE;
+}
+
+static void wlsLoadPreferences(struct wcontext *ctx)
+{
+	LONG ret;
+	HKEY hkey=NULL;
+
+
+	ret=RegOpenKeyEx(HKEY_CURRENT_USER,WLS_REGISTRY_KEY,0,KEY_QUERY_VALUE,&hkey);
+	if(ret!=ERROR_SUCCESS) goto done;
+
+	wlsReadIntPref(ctx,hkey,_T("viewfreq"),&g.viewfreq);
+
+done:
+	if(hkey) RegCloseKey(hkey);
+}
+
+static INT_PTR CALLBACK DlgProcPreferences(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	WORD id;
+	struct wcontext *ctx = gctx;
+
+	switch(msg) {
+
+	case WM_INITDIALOG:
+		SetDlgItemInt(hWnd,IDC_VIEWFREQ,g.viewfreq,FALSE);
+		return 1;
+
+	case WM_COMMAND:
+		id=LOWORD(wParam);
+
+		switch(id) {
+
+		case IDOK:
+			g.viewfreq=GetDlgItemInt(hWnd,IDC_VIEWFREQ,NULL,FALSE);
+			wlsSavePreferences(ctx);
+			EndDialog(hWnd, TRUE);
+			return 1;
+
+		case IDCANCEL:
+			EndDialog(hWnd, TRUE);
+			return 1;
+
+		}
+	}
+	return 0;
+}
+
 //////////////////////////////////////////////////////////////////
 
 static void InitGameSettings(struct wcontext *ctx)
@@ -2907,11 +3005,7 @@ static void InitGameSettings(struct wcontext *ctx)
 #ifdef JS
 	g.fastsym=1;
 #endif
-#ifdef JS
-	g.viewfreq=1000000;
-#else
-	g.viewfreq=100000;
-#endif
+	g.viewfreq=400000;
 	StringCchCopy(g.outputfile,80,_T("output.txt"));
 	g.saveoutput=0;
 #ifndef JS
@@ -2925,6 +3019,8 @@ static void InitGameSettings(struct wcontext *ctx)
 	StringCchCopy(g.dumpfile,80,_T("dump.wdf"));
 #endif
 	StringCchCopy(g.rulestring,WLS_RULESTRING_LEN,_T("B3/S23"));
+
+	wlsLoadPreferences(ctx);
 
 	RecalcCenter(ctx);
 }
