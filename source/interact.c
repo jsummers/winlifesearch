@@ -202,7 +202,7 @@ getbackup(char *cp)
 
 		if (cell == NULL)
 		{
-			printgen();
+			wlsShowCurrentField();
 			ttystatus(_T("Backed up over all possibilities\n"));
 
 			return;
@@ -217,14 +217,14 @@ getbackup(char *cp)
 
 		if (!go(cell, state, FALSE))
 		{
-			printgen();
+			wlsShowCurrentField();
 			ttystatus(_T("Backed up over all possibilities\n"));
 
 			return;
 		}
 	}
 
-	printgen();
+	wlsShowCurrentField();
 }
 
 /*
@@ -233,7 +233,7 @@ getbackup(char *cp)
  * If no file is specified, it is asked for.
  * Filename of "." means write to stdout.
  */
-void writegen(HWND hwndParent, TCHAR *file1, BOOL append)
+void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
 /*	char *	file;		 file name (or NULL) */
 /*	BOOL	append;		 TRUE to append instead of create */
 {
@@ -1167,7 +1167,7 @@ getbackup(char *cp)
 
 		if (cell == NULL)
 		{
-			printgen();
+			wlsShowCurrentField();
 			ttystatus(_T("Backed up over all possibilities\n"));
 
 			return;
@@ -1182,14 +1182,14 @@ getbackup(char *cp)
 
 		if (!go(cell, state, FALSE))
 		{
-			printgen();
+			wlsShowCurrentField();
 			ttystatus(_T("Backed up over all possibilities\n"));
 
 			return;
 		}
 	}
 
-	printgen();
+	wlsShowCurrentField();
 }
 
 /*
@@ -1198,7 +1198,7 @@ getbackup(char *cp)
  * If no file is specified, it is asked for.
  * Filename of "." means write to stdout.
  */
-void writegen(HWND hwndParent, TCHAR *file1, BOOL append)
+void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
 /*	char *	file;		 file name (or NULL) */
 /*	BOOL	append;		 TRUE to append instead of create */
 {

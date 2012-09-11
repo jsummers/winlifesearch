@@ -6,14 +6,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <ctype.h>
 
 #define WLS_VERSION_STRING _T("0.70")
 
-/*
- * Maximum dimensions of the search
- */
 #define	ROWMAX		80	/* maximum rows for search rectangle */
 #define	COLMAX		132	/* maximum columns for search rectangle */
 #ifdef JS
@@ -103,8 +99,7 @@ typedef	unsigned int   STATUS;
 /*
  * Information about a row.
  */
-typedef	struct
-{
+typedef	struct {
 	int	oncount;	/* number of cells which are set on */
 } ROWINFO;
 
@@ -112,8 +107,7 @@ typedef	struct
 /*
  * Information about a column.
  */
-typedef struct
-{
+typedef struct {
 	int	setcount;	/* number of cells which are set */
 	int	oncount;	/* number of cells which are set on */
 	int	sumpos;		/* sum of row positions for on cells */
@@ -125,8 +119,7 @@ typedef struct
  */
 typedef	struct cell CELL;
 
-struct cell
-{
+struct cell {
 	// state is the most used field so let's put it first
 
 	STATE	state;		/* current state */
@@ -372,8 +365,8 @@ BOOL initcells(void);
 void initsearchorder(void);
 #endif
 
-void printgen(void);
-void writegen(HWND hwndParent, TCHAR *file1, BOOL append);
+void wlsShowCurrentField(void);
+void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append);
 #ifdef JS
 void dumpstate(HWND hwndParent, TCHAR *file1);
 #else
@@ -415,4 +408,4 @@ void record_malloc(int func,void *m);
 #ifndef JS
 BOOL set_initial_cells(void);
 #endif
-void showcount(void);
+void wlsUpdateProgressCounter(void);

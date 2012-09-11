@@ -83,7 +83,7 @@ struct wcontext {
 	int centerx,centery,centerxodd,centeryodd;
 	POINT scrollpos;
 	HFONT statusfont;
-	__int64 showcount_tot;
+	__int64 progress_counter_tot;
 	int ignore_lbuttonup;
 	int thread_stop_reason;
 };
@@ -1103,27 +1103,27 @@ static void draw_gen_counter(struct wcontext *ctx)
 	SetWindowText(ctx->hwndGen,buf);
 }
 
-// g.viewcount is the number of calculations since showcount() was last
+// g.viewcount is the number of calculations since wlsUpdateProgressCounter() was last
 // called.
-// To reset the counter, set g.viewcount to -1 before calling showcount().
-void showcount(void)
+// To reset the counter, set g.viewcount to -1 before calling wlsUpdateProgressCounter().
+void wlsUpdateProgressCounter(void)
 {
 	TCHAR buf[80];
 	struct wcontext *ctx = gctx;
 
 	if (g.viewcount<0) {
-		ctx->showcount_tot=0;
+		ctx->progress_counter_tot=0;
 	}
 	else {
-		ctx->showcount_tot += g.viewcount;
+		ctx->progress_counter_tot += g.viewcount;
 	}
 	g.viewcount = 0;
 
-	StringCbPrintf(buf,sizeof(buf),WLS_APPNAME _T(" [%I64d]"),ctx->showcount_tot);
+	StringCbPrintf(buf,sizeof(buf),WLS_APPNAME _T(" [%I64d]"),ctx->progress_counter_tot);
 	SetWindowText(ctx->hwndFrame,buf);
 }
 
-void printgen(void)
+void wlsShowCurrentField(void)
 {
 	int i,j,g1;
 	CELL *cell;
@@ -1275,11 +1275,11 @@ static DWORD WINAPI search_thread(LPVOID foo)
 
 			if (!g.quiet) {
 				g.curgen=0;
-				printgen();
+				wlsShowCurrentField();
 				wlsStatusf(ctx,_T("Object %d found."), ++g.foundcount);
 			}
 
-			writegen(ctx->hwndFrame, g.outputfile, TRUE);
+			wlsWriteCurrentFieldToFile(ctx->hwndFrame, g.outputfile, TRUE);
 			ctx->thread_stop_reason = 0;
 			goto done;
 		}
@@ -1343,7 +1343,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			g.curstatus = OK;
 			++g.foundcount;
 			do_combine();
-			writegen(NULL, g.outputfile, TRUE);
+			wlsWriteCurrentFieldToFile(NULL, g.outputfile, TRUE);
 			wlsStatusf(ctx,_T("Combine: %d cells remaining from %d solutions"), g.combinedcells, g.foundcount);
 			continue;
 		}
@@ -1354,12 +1354,12 @@ static DWORD WINAPI search_thread(LPVOID foo)
 		if (g.curstatus == FOUND) {
 			g.curstatus = OK;
 
-			showcount();
-			printgen();
+			wlsUpdateProgressCounter();
+			wlsShowCurrentField();
 			++g.foundcount;
 			wlsStatusf(ctx,_T("Object %d found.\n"), g.foundcount);
 
-			writegen(NULL, g.outputfile, TRUE);
+			wlsWriteCurrentFieldToFile(NULL, g.outputfile, TRUE);
 			if (!g.stoponfound) continue;
 			ctx->thread_stop_reason = 0;
 			goto done;
@@ -1378,8 +1378,8 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			}
 		}
 		else {
-			showcount();
-			printgen();
+			wlsUpdateProgressCounter();
+			wlsShowCurrentField();
 			reset = (g.foundcount == 0);
 			wlsMessagef(ctx,_T("Search completed:  %d object%s found"),
 				g.foundcount, (g.foundcount == 1) ? _T("") : _T("s"));
@@ -1508,7 +1508,7 @@ static void prepare_and_start_search(struct wcontext *ctx, TCHAR *statefile)
 	}
 
 	g.viewcount = -1;
-	showcount();
+	wlsUpdateProgressCounter();
 
 	// save a copy or the starting position
 	for(k=0;k<GENMAX;k++) {
@@ -1550,7 +1550,7 @@ static void prepare_and_start_search(struct wcontext *ctx, TCHAR *statefile)
 	if(statefile) {
 		if(!loadstate(ctx->hwndFrame, statefile)) return;
 
-		printgen();
+		wlsShowCurrentField();
 		draw_gen_counter(ctx);
 		ctx->searchstate=WLS_SRCH_PAUSED;
 /*
@@ -1632,7 +1632,7 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 	g.smartchoice = UNK; // KAS
 
 	g.viewcount = -1; // KAS
-	showcount(); // KAS
+	wlsUpdateProgressCounter(); // KAS
 
 	g.foundcount=0;
 	g.writecount=0;
@@ -1666,7 +1666,7 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 	}
 	ctx->searchstate=WLS_SRCH_PAUSED;  // pretend the search is "paused"
 
-	printgen();
+	wlsShowCurrentField();
 
 	return TRUE;
 }
@@ -1706,7 +1706,7 @@ static void pause_search(struct wcontext *ctx)
 	SetThreadExecutionState(ES_CONTINUOUS);
 
 #ifndef JS
-	printgen();
+	wlsShowCurrentField();
 #endif
 
 	SetWindowText(ctx->hwndFrame,WLS_APPNAME _T(" - Paused"));

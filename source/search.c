@@ -1109,8 +1109,8 @@ search(void)
 		 */
 		if (needwrite || (g.viewfreq && (++g.viewcount >= g.viewfreq)))
 		{
-			showcount();
-			printgen();
+			wlsUpdateProgressCounter();
+			wlsShowCurrentField();
 			g.viewcount = 0;
 		}
 
@@ -1120,7 +1120,7 @@ search(void)
 		 * message will stay visible for a while.
 		 */
 		if (needwrite)
-			writegen(NULL, g.outputfile, TRUE);
+			wlsWriteCurrentFieldToFile(NULL, g.outputfile, TRUE);
 
 		/*
 		 * Check for commands.
@@ -3261,8 +3261,8 @@ search(void)
 
 		if (!go(cell, state, free))
 		{
-			showcount();
-			printgen();
+			wlsUpdateProgressCounter();
+			wlsShowCurrentField();
 
 			return NOTEXIST;
 		}
@@ -3297,8 +3297,8 @@ search(void)
 
 		if (needwrite || (g.viewfreq && (++g.viewcount >= g.viewfreq)))
 		{
-			showcount();
-			printgen();
+			wlsUpdateProgressCounter();
+			wlsShowCurrentField();
 		}
 
 		// Write the progress to the output file if needed.
@@ -3307,7 +3307,7 @@ search(void)
 
 		if (needwrite)
 		{
-			writegen(NULL, g.outputfile, TRUE);
+			wlsWriteCurrentFieldToFile(NULL, g.outputfile, TRUE);
 		}
 
 
@@ -3319,8 +3319,8 @@ search(void)
 			return FOUND;
 
 		if (g.stoponstep) {
-			showcount();
-			printgen();
+			wlsUpdateProgressCounter();
+			wlsShowCurrentField();
 			abortthread = 1;
 			return OK;
 		}
