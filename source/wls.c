@@ -47,8 +47,7 @@ static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 static INT_PTR CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static INT_PTR CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-static INT_PTR CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK DlgProcPeriodRowsCols(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -2145,11 +2144,8 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		case IDC_ABOUT:
 			DialogBox(ctx->hInst,_T("DLGABOUT"),hWnd,DlgProcAbout);
 			return 0;
-		case IDC_ROWS:
-			DialogBox(ctx->hInst,_T("DLGROWS"),hWnd,DlgProcRows);
-			return 0;
-		case IDC_PERIOD:
-			DialogBox(ctx->hInst,_T("DLGPERIOD"),hWnd,DlgProcPeriod);
+		case IDC_PERIODROWSCOLS:
+			DialogBox(ctx->hInst,_T("DLGPERIODROWSCOLS"),hWnd,DlgProcPeriodRowsCols);
 			return 0;
 		case IDC_SYMMETRY:
 			DialogBox(ctx->hInst,_T("DLGSYMMETRY"),hWnd,DlgProcSymmetry);
@@ -2527,15 +2523,19 @@ static INT_PTR CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 	return 0;		// Didn't process a message
 }
 
-static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK DlgProcPeriodRowsCols(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
+	TCHAR buf[80];
 	struct wcontext *ctx = gctx;
 
 	id=LOWORD(wParam);
 
 	switch (msg) {
 	case WM_INITDIALOG:
+		StringCbPrintf(buf,sizeof(buf),_T("Period (1\x2013%d)"),GENMAX);
+		SetDlgItemText(hWnd,IDC_PERIODTEXT,buf);
+		SetDlgItemInt(hWnd,IDC_PERIOD,g.genmax,FALSE);
 		SetDlgItemInt(hWnd,IDC_COLUMNS,g.colmax,FALSE);
 		SetDlgItemInt(hWnd,IDC_ROWS,g.rowmax,FALSE);
 		return 1;   // didn't call SetFocus
@@ -2543,6 +2543,11 @@ static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 	case WM_COMMAND:
 		switch(id) {
 		case IDOK:
+			g.genmax=GetDlgItemInt(hWnd,IDC_PERIOD,NULL,FALSE);
+			if(g.genmax>GENMAX) g.genmax=GENMAX;
+			if(g.genmax<1) g.genmax=1;
+			if(g.curgen>=g.genmax) g.curgen=g.genmax-1;
+
 			g.colmax=GetDlgItemInt(hWnd,IDC_COLUMNS,NULL,FALSE);
 			g.rowmax=GetDlgItemInt(hWnd,IDC_ROWS,NULL,FALSE);
 			if(g.colmax<1) g.colmax=1;
@@ -2574,42 +2579,11 @@ static INT_PTR CALLBACK DlgProcRows(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 				}
 			}
 
+			draw_gen_counter(ctx);
 			set_main_scrollbars(ctx, 1, 1);
-			// fall through
-		case IDCANCEL:
 			EndDialog(hWnd, TRUE);
 			return 1;
-		}
-	}
-	return 0;		// Didn't process a message
-}
-
-static INT_PTR CALLBACK DlgProcPeriod(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	WORD id;
-	TCHAR buf[80];
-	struct wcontext *ctx = gctx;
-
-	id=LOWORD(wParam);
-
-	switch (msg) {
-	case WM_INITDIALOG:
-		StringCbPrintf(buf,sizeof(buf),_T("Enter a period from 1 to %d"),GENMAX);
-		SetDlgItemText(hWnd,IDC_PERIODTEXT,buf);
-		SetDlgItemInt(hWnd,IDC_PERIOD1,g.genmax,FALSE);
-		return 1;
-
-	case WM_COMMAND:
-		switch(id) {
-		case IDOK:
-			g.genmax=GetDlgItemInt(hWnd,IDC_PERIOD1,NULL,FALSE);
-			if(g.genmax>GENMAX) g.genmax=GENMAX;
-			if(g.genmax<1) g.genmax=1;
-			if(g.curgen>=g.genmax) g.curgen=g.genmax-1;
-
-			draw_gen_counter(ctx);
-			wlsRepaintCells(ctx,FALSE);
-			// fall through
+			
 		case IDCANCEL:
 			EndDialog(hWnd, TRUE);
 			return 1;

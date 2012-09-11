@@ -43,8 +43,9 @@
 #define IDC_TRANS5                      1023
 #define IDC_TRANS6                      1024
 #define IDC_TRANS7                      1025
-#define IDC_PERIOD1                     1029
+#define IDC_PERIOD                      1029
 #define IDC_PERIODTEXT                  1030
+#define IDC_ROWS                        1031
 #define IDC_USEROW                      1033
 #define IDC_RULESTRING                  1034
 #define IDC_DUMPFILE                    1035
@@ -83,9 +84,8 @@
 #define IDC_EXIT                        40002
 #define IDC_SYMMETRY                    40003
 #define IDC_TRANSLATE                   40004
-#define IDC_PERIOD                      40006
+#define IDC_PERIODROWSCOLS              40006
 #define IDC_SEARCHSETTINGS              40007
-#define IDC_ROWS                        40008
 #define IDC_OUTPUTSETTINGS              40009
 #define IDC_OPENSTATE                   40013
 #define IDC_SAVEGAME                    40014
