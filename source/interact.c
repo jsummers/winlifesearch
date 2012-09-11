@@ -94,7 +94,7 @@ static	long	getnum (char **, int);
 static	int *	param_table[] =
 {
 	&g.curstatus,
-	&g.rowmax, &g.colmax, &g.genmax, &g.rowtrans, &g.coltrans,
+	&g.nrows, &g.ncols, &g.period, &g.rowtrans, &g.coltrans,
 	&g.rowsym, &g.colsym, &g.pointsym, &g.fwdsym, &g.bwdsym,
 	&g.fliprows, &g.flipcols, &g.flipquads,
 	&g.parent, &g.allobjects, &g.nearcols, &g.maxcount,
@@ -119,7 +119,7 @@ excludecone(int row, int col, int gen)
 	int	tcol;
 	int	dist;
 
-	for (tgen = g.genmax; tgen >= gen; tgen--)
+	for (tgen = g.period; tgen >= gen; tgen--)
 	{
 		dist = tgen - gen;
 
@@ -151,7 +151,7 @@ freezecell(int row, int col)
 
 	cell0 = findcell(row, col, 0);
 
-	for (gen = 0; gen < g.genmax; gen++)
+	for (gen = 0; gen < g.period; gen++)
 	{
 		cell = findcell(row, col, gen);
 
@@ -274,14 +274,14 @@ void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
 	/*
 	 * First find the minimum bounds on the object.
 	 */
-	minrow = g.rowmax;
-	mincol = g.colmax;
+	minrow = g.nrows;
+	mincol = g.ncols;
 	maxrow = 1;
 	maxcol = 1;
 
-	for (row = 1; row <= g.rowmax; row++)
+	for (row = 1; row <= g.nrows; row++)
 	{
-		for (col = 1; col <= g.colmax; col++)
+		for (col = 1; col <= g.ncols; col++)
 		{
 			cell = findcell(row, col, g.curgen);
 
@@ -407,10 +407,10 @@ void dumpstate(HWND hwndParent, TCHAR *file1)
 
 
 	/* write out the original configuration */
-	fprintf(fp, "%d %d %d\n", g.colmax,g.rowmax,g.genmax);
-	for(z=0;z<g.genmax;z++) {
-		for(y=0;y<g.rowmax;y++) {
-			for(x=0;x<g.colmax;x++) {
+	fprintf(fp, "%d %d %d\n", g.ncols,g.nrows,g.period);
+	for(z=0;z<g.period;z++) {
+		for(y=0;y<g.nrows;y++) {
+			for(x=0;x<g.ncols;x++) {
 				fprintf(fp,"%d ",g.origfield[z][x][y]);
 			}
 			fprintf(fp,"\n");
@@ -458,9 +458,9 @@ void dumpstate(HWND hwndParent, TCHAR *file1)
 	/*
 	 * Dump out those cells which are being excluded from the search.
 	 */
-	for (row = 1; row <= g.rowmax; row++)
-		for (col = 1; col < g.colmax; col++)
-			for (gen = 0; gen < g.genmax; gen++)
+	for (row = 1; row <= g.nrows; row++)
+		for (col = 1; col < g.ncols; col++)
+			for (gen = 0; gen < g.period; gen++)
 	{
 		cell = findcell(row, col, gen);
 
@@ -475,8 +475,8 @@ void dumpstate(HWND hwndParent, TCHAR *file1)
 	 * It isn't necessary to remember frozen cells in other
 	 * generations since they will be copied from generation 0.
 	 */
-	for (row = 1; row <= g.rowmax; row++)
-		for (col = 1; col < g.colmax; col++)
+	for (row = 1; row <= g.nrows; row++)
+		for (col = 1; col < g.ncols; col++)
 	{
 		cell = findcell(row, col, 0);
 
@@ -484,9 +484,9 @@ void dumpstate(HWND hwndParent, TCHAR *file1)
 			fprintf(fp, "F %d %d\n", row, col);
 	}
 
-	for(g1=0;g1<g.genmax;g1++)
-		for(row=0;row<g.rowmax;row++)
-			for(col=0;col<g.colmax;col++) {
+	for(g1=0;g1<g.period;g1++)
+		for(row=0;row<g.nrows;row++)
+			for(col=0;col<g.ncols;col++) {
 				fprintf(fp, "O %d %d %d %d\n",g1,row,col,g.origfield[g1][row][col]);
 			}
 
@@ -1097,7 +1097,7 @@ static	long	getnum(char **, int);
 static	int *param_table[] =
 {
 	&g.curstatus,
-	&g.rowmax, &g.colmax, &g.genmax,
+	&g.nrows, &g.ncols, &g.period,
 	&g.rowtrans, &g.coltrans,
 	&g.rowsym, &g.colsym, &g.pointsym, &g.fwdsym, &g.bwdsym,
 	&g.fliprows, &g.flipcols, &g.flipquads,
@@ -1128,7 +1128,7 @@ freezecell(int row, int col)
 
 	cell0 = findcell(row, col, 0);
 
-	for (gen = 0; gen < g.genmax; gen++)
+	for (gen = 0; gen < g.period; gen++)
 	{
 		cell = findcell(row, col, gen);
 
@@ -1239,16 +1239,16 @@ void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
 	/*
 	 * First find the minimum bounds on the object.
 	 */
-	minrow = g.rowmax;
-	mincol = g.colmax;
+	minrow = g.nrows;
+	mincol = g.ncols;
 	maxrow = -1;
 	maxcol = -1;
 
-	for (gen=0; gen < g.genmax; gen++)
+	for (gen=0; gen < g.period; gen++)
 	{
-		for (row = 1; row <= g.rowmax; row++)
+		for (row = 1; row <= g.nrows; row++)
 		{
-			for (col = 1; col <= g.colmax; col++)
+			for (col = 1; col <= g.ncols; col++)
 			{
 				cell = findcell(row, col, gen);
 
@@ -1287,7 +1287,7 @@ void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
 	 */
 	for (row = minrow; row <= maxrow; row++)
 	{
-		for (gen = 0; gen < (g.saveoutputallgen ? g.genmax : 1); gen++)
+		for (gen = 0; gen < (g.saveoutputallgen ? g.period : 1); gen++)
 		{
 			for (col = mincol; col <= maxcol; col++)
 			{
@@ -1315,7 +1315,7 @@ void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
 
 				fputc(ch, fp);
 			}
-			if (g.saveoutputallgen && (gen < g.genmax - 1)) fputs(" ... ", fp);
+			if (g.saveoutputallgen && (gen < g.period - 1)) fputs(" ... ", fp);
 		}
 
 		fputc('\n', fp);
@@ -1405,9 +1405,9 @@ void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo)
 
 	/* write out the original configuration */
 
-	for(gen=0;gen<g.genmax;gen++) {
-		for(row=0;row<g.rowmax;row++) {
-			for(col=0;col<g.colmax;col++) {
+	for(gen=0;gen<g.period;gen++) {
+		for(row=0;row<g.nrows;row++) {
+			for(col=0;col<g.ncols;col++) {
 				fprintf(fp,"%d ",g.origfield[gen][col][row]);
 			}
 			fprintf(fp,"\n");
@@ -1442,9 +1442,9 @@ void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo)
 
 	if (g.combining)
 	{
-		for(col=1;col<=g.colmax;col++) {
-			for(row=1;row<=g.rowmax;row++) {
-				for(gen=0;gen<g.genmax;gen++) {
+		for(col=1;col<=g.ncols;col++) {
+			for(row=1;row<=g.nrows;row++) {
+				for(gen=0;gen<g.period;gen++) {
 					cell = findcell(row, col, gen);
 					if (cell->combined != UNK)
 					{
@@ -1598,11 +1598,11 @@ BOOL loadstate(HWND hwndParent)
 // Read the initial state
 //*********************************************
 
-	for(gen=0;gen<g.genmax;gen++) {
-		for(row=0;row<g.rowmax;row++) {
+	for(gen=0;gen<g.period;gen++) {
+		for(row=0;row<g.nrows;row++) {
 			fgets(buf, LINESIZE, fp);
 			cp=strtok(buf," ");
-			for(col=0;col<g.colmax;col++) {
+			for(col=0;col<g.ncols;col++) {
 				if(cp) {
 					g.currfield[gen][col][row]=atoi(cp);
 					cp=strtok(NULL," ");

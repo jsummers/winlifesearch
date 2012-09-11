@@ -177,9 +177,9 @@ struct globals_struct {
  * preferably at the end so as to minimize dump file incompatibilities.
  */
 	STATUS curstatus; /* current status of search */
-	int rowmax; /* maximum number of rows */
-	int colmax; /* maximum number of columns */
-	int genmax; /* maximum number of generations */
+	int nrows; /* number of rows available to the current search */
+	int ncols; /* number of columns available to the current search */
+	int period; /* number of generations in the current search */
 	int	rowtrans;   /* translation of rows */
 	int	coltrans;   /* translation of columns */
 	BOOL rowsym;    /* enable row symmetry starting at column */

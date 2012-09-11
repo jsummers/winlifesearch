@@ -229,42 +229,42 @@ static POINT *GetSymmetricCells(int x, int y, POINT *pt, int *num)
 	n=1;
 
 	if(s & 0x02) {
-		assert(g.colmax==g.rowmax);
-		pt[n].x=g.rowmax-1-y; // forward diag
-		pt[n].y=g.colmax-1-x;
+		assert(g.ncols==g.nrows);
+		pt[n].x=g.nrows-1-y; // forward diag
+		pt[n].y=g.ncols-1-x;
 		n++;
 	}
 	if(s & 0x04) {
-		assert(g.colmax==g.rowmax);
+		assert(g.ncols==g.nrows);
 		pt[n].x=y;               // rotate90
-		pt[n].y=g.colmax-1-x;
+		pt[n].y=g.ncols-1-x;
 		n++;
 	}
 	if(s & 0x08) {
-		pt[n].x=g.colmax-1-x;  // mirrorx
+		pt[n].x=g.ncols-1-x;  // mirrorx
 		pt[n].y=y;
 		n++;
 	}
 	if(s & 0x10) {
-		pt[n].x=g.colmax-1-x;  // rotate180
-		pt[n].y=g.rowmax-1-y;
+		pt[n].x=g.ncols-1-x;  // rotate180
+		pt[n].y=g.nrows-1-y;
 		n++;
 	}
 	if(s & 0x20) {
-		assert(g.colmax==g.rowmax);
+		assert(g.ncols==g.nrows);
 		pt[n].x=y;                // back diag
 		pt[n].y=x;
 		n++;
 	}
 	if(s & 0x40) {
-		assert(g.colmax==g.rowmax);
-		pt[n].x=g.rowmax-1-y; // rotate270
+		assert(g.ncols==g.nrows);
+		pt[n].x=g.nrows-1-y; // rotate270
 		pt[n].y=x;
 		n++;
 	}
 	if(s & 0x80) {
 		pt[n].x=x;               // mirrory
-		pt[n].y=g.rowmax-1-y;
+		pt[n].y=g.nrows-1-y;
 		n++;
 	}
 
@@ -275,10 +275,10 @@ static POINT *GetSymmetricCells(int x, int y, POINT *pt, int *num)
 
 static void RecalcCenter(struct wcontext *ctx)
 {
-	ctx->centerx= g.colmax/2;
-	ctx->centery= g.rowmax/2;
-	ctx->centerxodd= g.colmax%2;
-	ctx->centeryodd= g.rowmax%2;
+	ctx->centerx= g.ncols/2;
+	ctx->centery= g.nrows/2;
+	ctx->centerxodd= g.ncols%2;
+	ctx->centeryodd= g.nrows%2;
 }
 
 static int fix_scrollpos(struct wcontext *ctx)
@@ -291,7 +291,7 @@ static int fix_scrollpos(struct wcontext *ctx)
 
 	// If the entire field doesn't fit in the window, there should be no
 	// unused space at the right/bottom of the field.
-	n = g.colmax*ctx->cellwidth; // width of field
+	n = g.ncols*ctx->cellwidth; // width of field
 	// max scrollpos should be n - r.right
 	if(n>r.right) {
 		if(ctx->scrollpos.x>n-r.right) {
@@ -305,7 +305,7 @@ static int fix_scrollpos(struct wcontext *ctx)
 		changed=1;
 	}
 
-	n = g.rowmax*ctx->cellheight;
+	n = g.nrows*ctx->cellheight;
 	if(n>r.bottom) {
 		if(ctx->scrollpos.y>n-r.bottom) {
 			ctx->scrollpos.y = n-r.bottom;
@@ -344,13 +344,13 @@ static void set_main_scrollbars(struct wcontext *ctx, int redraw, int checkscrol
 	si.cbSize=sizeof(SCROLLINFO);
 	si.fMask=SIF_ALL;
 	si.nMin=0;
-	si.nMax=g.colmax*ctx->cellwidth;
+	si.nMax=g.ncols*ctx->cellwidth;
 	si.nPage=r.right;
 	si.nPos=ctx->scrollpos.x;
 	si.nTrackPos=0;
 	SetScrollInfo(ctx->hwndMain,SB_HORZ,&si,TRUE);
 
-	si.nMax=g.rowmax*ctx->cellheight;
+	si.nMax=g.nrows*ctx->cellheight;
 	si.nPage=r.bottom;
 	si.nPos=ctx->scrollpos.y;
 	SetScrollInfo(ctx->hwndMain,SB_VERT,&si,TRUE);
@@ -378,37 +378,37 @@ static void DrawGuides(struct wcontext *ctx, HDC hDC)
 	// horizontal line
 	if(g.symmetry==2 || g.symmetry==6 || g.symmetry==9) {
 		MoveToEx(hDC,0,centerpy,NULL);
-		LineTo(hDC,g.colmax*ctx->cellwidth,centerpy);
+		LineTo(hDC,g.ncols*ctx->cellwidth,centerpy);
 	}
 
 	// vertical line
 	if(g.symmetry==1 || g.symmetry==6 || g.symmetry==9) {
 		MoveToEx(hDC,centerpx,0,NULL);
-		LineTo(hDC,centerpx,g.rowmax*ctx->cellheight);
+		LineTo(hDC,centerpx,g.nrows*ctx->cellheight);
 	}
 
 	// diag - forward
 	if(g.symmetry==3 || g.symmetry==5 || g.symmetry>=7) {
-		MoveToEx(hDC,0,g.rowmax*ctx->cellheight,NULL);
-		LineTo(hDC,g.colmax*ctx->cellwidth,0);
+		MoveToEx(hDC,0,g.nrows*ctx->cellheight,NULL);
+		LineTo(hDC,g.ncols*ctx->cellwidth,0);
 	}
 
 	// diag - backward
 	if(g.symmetry==4 || g.symmetry>=7) {
 		MoveToEx(hDC,0,0,NULL);
-		LineTo(hDC,g.colmax*ctx->cellwidth,g.rowmax*ctx->cellheight);
+		LineTo(hDC,g.ncols*ctx->cellwidth,g.nrows*ctx->cellheight);
 	}
 	if(g.symmetry==5 || g.symmetry==8) {
-		MoveToEx(hDC,0,g.rowmax*ctx->cellheight,NULL);
-		LineTo(hDC,0,(g.rowmax-2)*ctx->cellheight);
-		MoveToEx(hDC,g.colmax*ctx->cellwidth,0,NULL);
-		LineTo(hDC,g.colmax*ctx->cellwidth,2*ctx->cellheight);
+		MoveToEx(hDC,0,g.nrows*ctx->cellheight,NULL);
+		LineTo(hDC,0,(g.nrows-2)*ctx->cellheight);
+		MoveToEx(hDC,g.ncols*ctx->cellwidth,0,NULL);
+		LineTo(hDC,g.ncols*ctx->cellwidth,2*ctx->cellheight);
 	}
 	if(g.symmetry==8) {
 		MoveToEx(hDC,0,0,NULL);
 		LineTo(hDC,2*ctx->cellwidth,0);
-		MoveToEx(hDC,g.colmax*ctx->cellwidth,g.rowmax*ctx->cellheight,NULL);
-		LineTo(hDC,(g.colmax-2)*ctx->cellwidth,g.rowmax*ctx->cellheight);
+		MoveToEx(hDC,g.ncols*ctx->cellwidth,g.nrows*ctx->cellheight,NULL);
+		LineTo(hDC,(g.ncols-2)*ctx->cellwidth,g.nrows*ctx->cellheight);
 	}
 
 	if(g.trans_rotate || g.trans_flip || g.trans_x || g.trans_y) {
@@ -496,7 +496,7 @@ static void DrawCell(struct wcontext *ctx, HDC hDC,int x,int y)
 
 	// If all generations are the same, draw the cell in a different style.
 	tmp=g.currfield[0][x][y];
-	for(i=1;i<g.genmax;i++) {
+	for(i=1;i<g.period;i++) {
 		if(g.currfield[i][x][y]!=tmp) allsame=0;
 	}
 
@@ -649,8 +649,8 @@ static void DrawWindow(struct wcontext *ctx, HDC hDC)
 {
 	int i,j;
 
-	for(i=0;i<g.colmax;i++) {
-		for(j=0;j<g.rowmax;j++) {
+	for(i=0;i<g.ncols;i++) {
+		for(j=0;j<g.nrows;j++) {
 			DrawCell(ctx,hDC,i,j);
 		}
 	}
@@ -721,8 +721,8 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 	x=xp/ctx->cellwidth;   // + scroll offset
 	y=yp/ctx->cellheight;  // + scroll offset
 
-	if(x<0 || x>=g.colmax) return 1;
-	if(y<0 || y>=g.rowmax) return 1;
+	if(x<0 || x>=g.ncols) return 1;
+	if(y<0 || y>=g.nrows) return 1;
 
 
 	lastval= g.currfield[g.curgen][x][y];
@@ -959,9 +959,9 @@ static int set_initial_cells(void)
 	int i,j,g1;
 	struct wcontext *ctx = gctx;
 
-	for(g1=0;g1<g.genmax;g1++) {
-		for(i=0;i<g.colmax;i++) {
-			for(j=0;j<g.rowmax;j++) {
+	for(g1=0;g1<g.period;g1++) {
+		for(i=0;i<g.ncols;i++) {
+			for(j=0;j<g.nrows;j++) {
 				switch(g.origfield[g1][i][j]) {
 				case CV_FORCEDOFF:
 					if(!proceed(findcell(j+1,i+1,g1),OFF,FALSE)) {
@@ -1003,9 +1003,9 @@ BOOL set_initial_cells(void)
 	g.newset = g.settable;
 	g.nextset = g.settable;
 
-	for(g1=0;g1<g.genmax;g1++) {
-		for(i=0;i<g.colmax;i++) {
-			for(j=0;j<g.rowmax;j++) {
+	for(g1=0;g1<g.period;g1++) {
+		for(i=0;i<g.ncols;i++) {
+			for(j=0;j<g.nrows;j++) {
 
 				g.origfield[g1][i][j] = g.currfield[g1][i][j];
 
@@ -1040,9 +1040,9 @@ BOOL set_initial_cells(void)
 	setpos = g.newset;
 	do {
 		change = FALSE;
-		for(g1=0;g1<g.genmax;g1++) {
-			for(i=0;i<g.colmax;i++) {
-				for(j=0;j<g.rowmax;j++) {
+		for(g1=0;g1<g.period;g1++) {
+			for(i=0;i<g.ncols;i++) {
+				for(j=0;j<g.nrows;j++) {
 					cell = findcell(j+1,i+1,g1);
 					if (cell->active && (cell->state == UNK)) {
 						if (proceed(cell, OFF, TRUE)) {
@@ -1099,7 +1099,7 @@ static void draw_gen_counter(struct wcontext *ctx)
 	si.cbSize=sizeof(SCROLLINFO);
 	si.fMask=SIF_ALL;
 	si.nMin=0;
-	si.nMax=g.genmax-1;
+	si.nMax=g.period-1;
 	si.nPage=1;
 	si.nPos=g.curgen;
 	si.nTrackPos=0;
@@ -1137,9 +1137,9 @@ void wlsShowCurrentField(void)
 	struct wcontext *ctx = gctx;
 
 	// copy dbell's format back into mine
-	for(g1=0;g1<g.genmax;g1++) {
-		for(i=0;i<g.colmax;i++) {
-			for(j=0;j<g.rowmax;j++) {
+	for(g1=0;g1<g.period;g1++) {
+		for(i=0;i<g.ncols;i++) {
+			for(j=0;j<g.nrows;j++) {
 				cell=findcell(j+1,i+1,g1);
 				switch(cell->state) {
 				case OFF:
@@ -1171,9 +1171,9 @@ static void do_combine(void)
 	CELL *cell;
 
 	if (g.combining) {
-		for(g1=0;g1<g.genmax;g1++) {
-			for(i=0;i<g.colmax;i++) {
-				for(j=0;j<g.rowmax;j++) {
+		for(g1=0;g1<g.period;g1++) {
+			for(i=0;i<g.ncols;i++) {
+				for(j=0;j<g.nrows;j++) {
 					cell=findcell(j+1,i+1,g1);
 					if ((cell->combined != UNK) && (cell->combined != cell->state)) {
 						--g.combinedcells;
@@ -1186,9 +1186,9 @@ static void do_combine(void)
 	else {
 		g.combining = TRUE;
 		g.combinedcells = 0;
-		for(g1=0;g1<g.genmax;g1++) {
-			for(i=0;i<g.colmax;i++) {
-				for(j=0;j<g.rowmax;j++) {
+		for(g1=0;g1<g.period;g1++) {
+			for(i=0;i<g.ncols;i++) {
+				for(j=0;j<g.nrows;j++) {
 					cell=findcell(j+1,i+1,g1);
 					if ((g.origfield[g1][i][j] > 1) && ((cell->state == ON) || (cell->state == OFF))) {
 						++g.combinedcells;
@@ -1211,9 +1211,9 @@ static void show_combine(struct wcontext *ctx)
 	CELL *cell;
 
 	if (g.combinedcells > 0) {
-		for(g1=0;g1<g.genmax;g1++) {
-			for(i=0;i<g.colmax;i++) {
-				for(j=0;j<g.rowmax;j++) {
+		for(g1=0;g1<g.period;g1++) {
+			for(i=0;i<g.ncols;i++) {
+				for(j=0;j<g.nrows;j++) {
 					cell=findcell(j+1,i+1,g1);
 					switch(cell->combined) {
 					case ON:
@@ -1777,10 +1777,10 @@ static void open_state(struct wcontext *ctx)
 
 static void gen_changeby(struct wcontext *ctx, int delta)
 {
-	if(g.genmax<2) return;
+	if(g.period<2) return;
 	g.curgen+=delta;
-	if(g.curgen>=g.genmax) g.curgen=0;
-	if(g.curgen<0) g.curgen=g.genmax-1;
+	if(g.curgen>=g.period) g.curgen=0;
+	if(g.curgen<0) g.curgen=g.period-1;
 
 	draw_gen_counter(ctx);
 	wlsRepaintCells(ctx,FALSE);
@@ -1824,9 +1824,9 @@ static void flip_h(struct wcontext *ctx, int fromgen, int togen)
 	}
 	else {
 		fromcol = 0;
-		tocol = g.colmax - 1;
+		tocol = g.ncols - 1;
 		fromrow = 0;
-		torow = g.rowmax - 1;
+		torow = g.nrows - 1;
 	}
 
 	for (g1 = fromgen; g1 <= togen; ++g1) {
@@ -1854,9 +1854,9 @@ static void flip_v(struct wcontext *ctx, int fromgen, int togen)
 	}
 	else {
 		fromcol = 0;
-		tocol = g.colmax - 1;
+		tocol = g.ncols - 1;
 		fromrow = 0;
-		torow = g.rowmax - 1;
+		torow = g.nrows - 1;
 	}
 
 	for (g1 = fromgen; g1 <= togen; ++g1) {
@@ -1884,9 +1884,9 @@ static void transpose(struct wcontext *ctx, int fromgen, int togen)
 	}
 	else {
 		fromcol = 0;
-		tocol = g.colmax - 1;
+		tocol = g.ncols - 1;
 		fromrow = 0;
-		torow = g.rowmax - 1;
+		torow = g.nrows - 1;
 	}
 
 	if ((fromcol - tocol) != (fromrow - torow)) {
@@ -1919,9 +1919,9 @@ static void shift_gen(struct wcontext *ctx, int fromgen, int togen, int gend, in
 	}
 	else {
 		fromcol = 0;
-		tocol = g.colmax - 1;
+		tocol = g.ncols - 1;
 		fromrow = 0;
-		torow = g.rowmax - 1;
+		torow = g.nrows - 1;
 	}
 
 	for(g1=fromgen; g1<=togen; g1++) {
@@ -1954,9 +1954,9 @@ static void copy_result(struct wcontext *ctx)
 
 	if (ctx->searchstate != WLS_SRCH_PAUSED) pause_search(ctx);
 
-	for(g1=0;g1<g.genmax;g1++) {
-		for(i=0;i<g.colmax;i++) {
-			for(j=0;j<g.rowmax;j++) {
+	for(g1=0;g1<g.period;g1++) {
+		for(i=0;i<g.ncols;i++) {
+			for(j=0;j<g.nrows;j++) {
 				g.origfield[g1][i][j] = g.currfield[g1][i][j];
 			}
 		}
@@ -1975,9 +1975,9 @@ static void copy_combination(struct wcontext *ctx)
 
 	show_combine(ctx);
 
-	for(g1=0;g1<g.genmax;g1++) {
-		for(i=0;i<g.colmax;i++) {
-			for(j=0;j<g.rowmax;j++) {
+	for(g1=0;g1<g.period;g1++) {
+		for(i=0;i<g.ncols;i++) {
+			for(j=0;j<g.nrows;j++) {
 				g.origfield[g1][i][j] = g.currfield[g1][i][j];
 			}
 		}
@@ -2027,7 +2027,7 @@ static void copytoclipboard(struct wcontext *ctx)
 
 	offset=lstrlen(buf);
 
-	size=(offset+(g.colmax+2)*g.rowmax+1)*sizeof(TCHAR);
+	size=(offset+(g.ncols+2)*g.nrows+1)*sizeof(TCHAR);
 	hClip=GlobalAlloc(GMEM_MOVEABLE|GMEM_DDESHARE,size);
 
 	lpClip=GlobalLock(hClip);
@@ -2035,17 +2035,17 @@ static void copytoclipboard(struct wcontext *ctx)
 
 	StringCbCopy(s,size,buf);
 
-	for(j=0;j<g.rowmax;j++) {
-		for(i=0;i<g.colmax;i++) {
+	for(j=0;j<g.nrows;j++) {
+		for(i=0;i<g.ncols;i++) {
 			if(g.currfield[g.curgen][i][j]==CV_FORCEDON)
-				s[offset+(g.colmax+2)*j+i]='*';
+				s[offset+(g.ncols+2)*j+i]='*';
 			else
-				s[offset+(g.colmax+2)*j+i]='.';
+				s[offset+(g.ncols+2)*j+i]='.';
 		}
-		s[offset+(g.colmax+2)*j+g.colmax]='\r';
-		s[offset+(g.colmax+2)*j+g.colmax+1]='\n';
+		s[offset+(g.ncols+2)*j+g.ncols]='\r';
+		s[offset+(g.ncols+2)*j+g.ncols+1]='\n';
 	}
-	s[offset+(g.colmax+2)*g.rowmax]='\0';
+	s[offset+(g.ncols+2)*g.nrows]='\0';
 
 	OpenClipboard(NULL);
 	EmptyClipboard();
@@ -2305,11 +2305,11 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTAPAST:
-			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, 0, g.genmax-1, -1, 0, 0);
+			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, 0, g.period-1, -1, 0, 0);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTAFUTURE:
-			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, 0, g.genmax-1, 1, 0, 0);
+			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, 0, g.period-1, 1, 0, 0);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_FLIP_GEN_H:
@@ -2497,12 +2497,12 @@ static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			case SB_PAGELEFT: g.curgen--; break;
 			case SB_PAGERIGHT: g.curgen++; break;
 			case SB_LEFT: g.curgen=0; break;
-			case SB_RIGHT: g.curgen=g.genmax-1; break;
+			case SB_RIGHT: g.curgen=g.period-1; break;
 			case SB_THUMBPOSITION: g.curgen=HIWORD(wParam); break;
 			case SB_THUMBTRACK: g.curgen=HIWORD(wParam); break;
 			}
-			if(g.curgen<0) g.curgen=g.genmax-1;  // wrap around
-			if(g.curgen>=g.genmax) g.curgen=0;
+			if(g.curgen<0) g.curgen=g.period-1;  // wrap around
+			if(g.curgen>=g.period) g.curgen=0;
 			if(g.curgen!=ori_gen) {
 				draw_gen_counter(ctx);
 				wlsRepaintCells(ctx,FALSE);
@@ -2555,29 +2555,29 @@ static INT_PTR CALLBACK DlgProcPeriodRowsCols(HWND hWnd, UINT msg, WPARAM wParam
 	case WM_INITDIALOG:
 		StringCbPrintf(buf,sizeof(buf),_T("Period (1\x2013%d)"),GENMAX);
 		SetDlgItemText(hWnd,IDC_PERIODTEXT,buf);
-		SetDlgItemInt(hWnd,IDC_PERIOD,g.genmax,FALSE);
-		SetDlgItemInt(hWnd,IDC_COLUMNS,g.colmax,FALSE);
-		SetDlgItemInt(hWnd,IDC_ROWS,g.rowmax,FALSE);
+		SetDlgItemInt(hWnd,IDC_PERIOD,g.period,FALSE);
+		SetDlgItemInt(hWnd,IDC_COLUMNS,g.ncols,FALSE);
+		SetDlgItemInt(hWnd,IDC_ROWS,g.nrows,FALSE);
 		return 1;   // didn't call SetFocus
 
 	case WM_COMMAND:
 		switch(id) {
 		case IDOK:
-			g.genmax=GetDlgItemInt(hWnd,IDC_PERIOD,NULL,FALSE);
-			if(g.genmax>GENMAX) g.genmax=GENMAX;
-			if(g.genmax<1) g.genmax=1;
-			if(g.curgen>=g.genmax) g.curgen=g.genmax-1;
+			g.period=GetDlgItemInt(hWnd,IDC_PERIOD,NULL,FALSE);
+			if(g.period>GENMAX) g.period=GENMAX;
+			if(g.period<1) g.period=1;
+			if(g.curgen>=g.period) g.curgen=g.period-1;
 
-			g.colmax=GetDlgItemInt(hWnd,IDC_COLUMNS,NULL,FALSE);
-			g.rowmax=GetDlgItemInt(hWnd,IDC_ROWS,NULL,FALSE);
-			if(g.colmax<1) g.colmax=1;
-			if(g.rowmax<1) g.rowmax=1;
-			if(g.colmax>COLMAX) g.colmax=COLMAX;
-			if(g.rowmax>ROWMAX) g.rowmax=ROWMAX;
+			g.ncols=GetDlgItemInt(hWnd,IDC_COLUMNS,NULL,FALSE);
+			g.nrows=GetDlgItemInt(hWnd,IDC_ROWS,NULL,FALSE);
+			if(g.ncols<1) g.ncols=1;
+			if(g.nrows<1) g.nrows=1;
+			if(g.ncols>COLMAX) g.ncols=COLMAX;
+			if(g.nrows>ROWMAX) g.nrows=ROWMAX;
 			RecalcCenter(ctx);
 
 			// put these in a separate Validate function
-			if(g.colmax!=g.rowmax) {
+			if(g.ncols!=g.nrows) {
 				if(symmap[g.symmetry] & 0x66) {
 					MessageBox(hWnd,_T("Current symmetry requires that rows and ")
 						_T("columns be equal. Your symmetry setting has been altered."),
@@ -2590,7 +2590,7 @@ static INT_PTR CALLBACK DlgProcPeriodRowsCols(HWND hWnd, UINT msg, WPARAM wParam
 				}
 			}
 
-			if(g.colmax != g.rowmax) {
+			if(g.ncols != g.nrows) {
 				if(g.trans_rotate==1 || g.trans_rotate==3) {
 					MessageBox(hWnd,_T("Current rotation setting requires that rows and ")
 						_T("columns be equal. Your translation setting has been altered."),
@@ -2754,7 +2754,7 @@ static INT_PTR CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 
 	switch (msg) {
 	case WM_INITDIALOG:
-		if(g.colmax!=g.rowmax) {
+		if(g.ncols!=g.nrows) {
 			EnableWindow(GetDlgItem(hWnd,IDC_SYM3),FALSE);
 			EnableWindow(GetDlgItem(hWnd,IDC_SYM4),FALSE);
 			EnableWindow(GetDlgItem(hWnd,IDC_SYM7),FALSE);
@@ -2814,7 +2814,7 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 		SetDlgItemInt(hWnd,IDC_TRANSX,g.trans_x,TRUE);
 		SetDlgItemInt(hWnd,IDC_TRANSY,g.trans_y,TRUE);
 
-		if(g.colmax != g.rowmax) {
+		if(g.ncols != g.nrows) {
 			EnableWindow(GetDlgItem(hWnd,IDC_TRANS1),FALSE);
 			EnableWindow(GetDlgItem(hWnd,IDC_TRANS3),FALSE);
 			EnableWindow(GetDlgItem(hWnd,IDC_TRANS5),FALSE);
@@ -3100,21 +3100,21 @@ static void InitGameSettings(struct wcontext *ctx)
 
 	if(ctx->user_default_period==0)
 		ctx->user_default_period = WLS_SYSTEM_DEFAULT_PERIOD;
-	g.genmax = ctx->user_default_period;
-	if(g.genmax<1) g.genmax = 1;
-	if(g.genmax>GENMAX) g.genmax = GENMAX;
+	g.period = ctx->user_default_period;
+	if(g.period<1) g.period = 1;
+	if(g.period>GENMAX) g.period = GENMAX;
 
 	if(ctx->user_default_columns==0)
 		ctx->user_default_columns = WLS_SYSTEM_DEFAULT_COLUMNS;
-	g.colmax = ctx->user_default_columns;
-	if(g.colmax<1) g.colmax = 1;
-	if(g.colmax>COLMAX) g.colmax = COLMAX;
+	g.ncols = ctx->user_default_columns;
+	if(g.ncols<1) g.ncols = 1;
+	if(g.ncols>COLMAX) g.ncols = COLMAX;
 
 	if(ctx->user_default_rows==0)
 		ctx->user_default_rows = WLS_SYSTEM_DEFAULT_ROWS;
-	g.rowmax = ctx->user_default_rows;
-	if(g.rowmax<1) g.rowmax = 1;
-	if(g.rowmax>ROWMAX) g.rowmax = ROWMAX;
+	g.nrows = ctx->user_default_rows;
+	if(g.nrows<1) g.nrows = 1;
+	if(g.nrows>ROWMAX) g.nrows = ROWMAX;
 
 	RecalcCenter(ctx);
 }

@@ -107,9 +107,9 @@ initcells(void)
 	g.dummycolinfo.oncount=0;
 
 
-	if ((g.rowmax <= 0) || (g.rowmax > ROWMAX) ||
-		(g.colmax <= 0) || (g.colmax > COLMAX) ||
-		(g.genmax <= 0) || (g.genmax > GENMAX) ||
+	if ((g.nrows <= 0) || (g.nrows > ROWMAX) ||
+		(g.ncols <= 0) || (g.ncols > COLMAX) ||
+		(g.period <= 0) || (g.period > GENMAX) ||
 		(g.rowtrans < -TRANSMAX) || (g.rowtrans > TRANSMAX) ||
 		(g.coltrans < -TRANSMAX) || (g.coltrans > TRANSMAX))
 	{
@@ -129,14 +129,14 @@ initcells(void)
 	/*
 	 * Link the cells together.
 	 */
-	for (col = 0; col <= g.colmax+1; col++)
+	for (col = 0; col <= g.ncols+1; col++)
 	{
-		for (row = 0; row <= g.rowmax+1; row++)
+		for (row = 0; row <= g.nrows+1; row++)
 		{
-			for (gen = 0; gen < g.genmax; gen++)
+			for (gen = 0; gen < g.period; gen++)
 			{
 				edge = ((row == 0) || (col == 0) ||
-					(row > g.rowmax) || (col > g.colmax));
+					(row > g.nrows) || (col > g.ncols));
 
 				cell = findcell(row, col, gen);
 				cell->gen = gen;
@@ -163,10 +163,10 @@ initcells(void)
 				 * wrapping around at the ends.
 				 */
 				cell->past = findcell(row, col,
-					(gen+g.genmax-1) % g.genmax);
+					(gen+g.period-1) % g.period);
 
 				cell->future = findcell(row, col,
-					(gen+1) % g.genmax);
+					(gen+1) % g.period);
 
 				/*
 				 * If this is not an edge cell, and
@@ -192,9 +192,9 @@ initcells(void)
 	 */
 	if (g.rowtrans || g.coltrans || g.fliprows || g.flipcols || g.flipquads)
 	{
-		for (row = 0; row <= g.rowmax+1; row++)
+		for (row = 0; row <= g.nrows+1; row++)
 		{
-			for (col = 0; col <= g.colmax+1; col++)
+			for (col = 0; col <= g.ncols+1; col++)
 			{
 /*				cell = findcell(row, col, genmax - 1);
 				cell2 = mapcell(cell);
@@ -213,9 +213,9 @@ initcells(void)
 	/*
 	 * Initialize the row and column info addresses for generation 0.
 	 */
-	for (row = 1; row <= g.rowmax; row++)
+	for (row = 1; row <= g.nrows; row++)
 	{
-		for (col = 1; col <= g.colmax; col++)
+		for (col = 1; col <= g.ncols; col++)
 		{
 			cell = findcell(row, col, 0);
 			cell->rowinfo = &g.rowinfo[row];
@@ -298,7 +298,7 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 	 */
 	if (g.ordermiddle)
 	{
-		midcol = (g.colmax + 1) / 2;
+		midcol = (g.ncols + 1) / 2;
 
 		dif1 = c1->col - midcol;
 
@@ -336,7 +336,7 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 	 * opposite of the desired order because the initial setting
 	 * for new cells is OFF.
 	 */
-	midrow = (g.rowmax + 1) / 2;
+	midrow = (g.nrows + 1) / 2;
 
 	dif1 = c1->row - midrow;
 
@@ -387,12 +387,12 @@ initsearchorder(void)
 	 */
 	count = 0;
 
-	for (gen = 0; gen < g.genmax; gen++)
-		for (col = 1; col <= g.colmax; col++)
-			for (row = 1; row <= g.rowmax; row++)	{
+	for (gen = 0; gen < g.period; gen++)
+		for (col = 1; col <= g.ncols; col++)
+			for (row = 1; row <= g.nrows; row++)	{
 
-				nrow=g.rowmax+1-row;
-				ncol=g.colmax+1-col;
+				nrow=g.nrows+1-row;
+				ncol=g.ncols+1-col;
 
 				switch(g.symmetry) {
 				case 1:
@@ -497,7 +497,7 @@ setcell(cell, state, free)
 	if (cell->gen == 0)
 	{
 		if (g.usecol && (g.colinfo[g.usecol].oncount == 0)
-			&& (g.colinfo[g.usecol].setcount == g.rowmax) && g.inited)
+			&& (g.colinfo[g.usecol].setcount == g.nrows) && g.inited)
 		{
 			return FALSE;
 		}
@@ -551,7 +551,7 @@ setcell(cell, state, free)
 	cell->free = free;
 	cell->colinfo->setcount++;
 
-	if ((cell->gen == 0) && (cell->colinfo->setcount == g.rowmax))
+	if ((cell->gen == 0) && (cell->colinfo->setcount == g.nrows))
 		g.fullcolumns++;
 
 	return TRUE;
@@ -860,7 +860,7 @@ backup(void)
 			adjustnear(cell, -1);
 		}
 
-		if ((cell->gen == 0) && (cell->colinfo->setcount == g.rowmax))
+		if ((cell->gen == 0) && (cell->colinfo->setcount == g.nrows))
 			g.fullcolumns--;
 
 		cell->colinfo->setcount--;
@@ -972,7 +972,7 @@ getaverageunknown(void)
 				g.colinfo[testcol].oncount;
 		}
 		else
-			wantrow = (g.rowmax + 1) / 2;
+			wantrow = (g.nrows + 1) / 2;
 
 		for (; cell && (cell->col == curcol); cell = cell->search)
 		{
@@ -1207,19 +1207,19 @@ checkwidth(cell)
 	minrow = cell->row;
 	maxrow = cell->row;
 	srcminrow = 1;
-	srcmaxrow = g.rowmax;
+	srcmaxrow = g.nrows;
 	full = TRUE;
 
 	if ((g.rowsym && (cell->col >= g.rowsym)) ||
 		(g.fliprows && (cell->col >= g.fliprows)))
 	{
 		full = FALSE;
-		srcmaxrow = (g.rowmax + 1) / 2;
+		srcmaxrow = (g.nrows + 1) / 2;
 
 		if (cell->row > srcmaxrow)
 		{
-			srcminrow = (g.rowmax / 2) + 1;
-			srcmaxrow = g.rowmax;
+			srcminrow = (g.nrows / 2) + 1;
+			srcmaxrow = g.nrows;
 		}
 	}
 
@@ -1270,14 +1270,14 @@ subperiods(void)
 	CELL *	cellg0;
 	CELL *	cellgn;
 
-	for (gen = 1; gen < g.genmax; gen++)
+	for (gen = 1; gen < g.period; gen++)
 	{
-		if (g.genmax % gen)
+		if (g.period % gen)
 			continue;
 
-		for (row = 1; row <= g.rowmax; row++)
+		for (row = 1; row <= g.nrows; row++)
 		{
-			for (col = 1; col <= g.colmax; col++)
+			for (col = 1; col <= g.ncols; col++)
 			{
 				cellg0 = findcell(row, col, 0);
 				cellgn = findcell(row, col, gen);
@@ -1315,16 +1315,16 @@ mapcell(cell)
 	forward = (cell->gen != 0);
 
 	if (g.fliprows && (col >= g.fliprows))
-		row = g.rowmax + 1 - row;
+		row = g.nrows + 1 - row;
 
 	if (g.flipcols && (row >= g.flipcols))
-		col = g.colmax + 1 - col;
+		col = g.ncols + 1 - col;
 
 	if (g.flipquads)
 	{				/* NEED TO GO BACKWARDS */
 		tmp = col;
 		col = row;
-		row = g.colmax + 1 - tmp;
+		row = g.ncols + 1 - tmp;
 	}
 
 	if (forward)
@@ -1341,7 +1341,7 @@ mapcell(cell)
 	if (forward)
 		return findcell(row, col, 0);
 	else
-		return findcell(row, col, g.genmax - 1);
+		return findcell(row, col, g.period - 1);
 }
 
 
@@ -1450,15 +1450,15 @@ static CELL *symcell(CELL *cell)
 
 	row = cell->row;
 	col = cell->col;
-	nrow = g.rowmax + 1 - row;
-	ncol = g.colmax + 1 - col;
+	nrow = g.nrows + 1 - row;
+	ncol = g.ncols + 1 - col;
 
 	if(g.symmetry==1)  // col sym
 		return findcell(row,ncol,cell->gen);
 
 	if(g.symmetry==2) { // row sym
 		if(g.fastsym) {
-			if(g.rowmax%2) {    // odd sym
+			if(g.nrows%2) {    // odd sym
 
 				if(abs(nrow-row)==2) {
 					return findcell(nrow,col,cell->gen);
@@ -1639,11 +1639,11 @@ findcell(row, col, gen)
 	/*
 	 * If the cell is a normal cell, then we know where it is.
 	 */
-	if ((row >= 0) && (row <= g.rowmax + 1) &&
-		(col >= 0) && (col <= g.colmax + 1) &&
-		(gen >= 0) && (gen < g.genmax))
+	if ((row >= 0) && (row <= g.nrows + 1) &&
+		(col >= 0) && (col <= g.ncols + 1) &&
+		(gen >= 0) && (gen < g.period))
 	{
-		return g.celltable[(col * (g.rowmax + 2) + row) * g.genmax + gen];
+		return g.celltable[(col * (g.nrows + 2) + row) * g.period + gen];
 	}
 
 	/*
@@ -2043,9 +2043,9 @@ initcells(void)
 	g.dummycolinfo.oncount=0;
 
 
-	if ((g.rowmax <= 0) || (g.rowmax > ROWMAX) ||
-		(g.colmax <= 0) || (g.colmax > COLMAX) ||
-		(g.genmax <= 0) || (g.genmax > GENMAX) ||
+	if ((g.nrows <= 0) || (g.nrows > ROWMAX) ||
+		(g.ncols <= 0) || (g.ncols > COLMAX) ||
+		(g.period <= 0) || (g.period > GENMAX) ||
 		(g.rowtrans < -TRANSMAX) || (g.rowtrans > TRANSMAX) ||
 		(g.coltrans < -TRANSMAX) || (g.coltrans > TRANSMAX))
 	{
@@ -2059,14 +2059,14 @@ initcells(void)
 	/*
 	 * Link the cells together.
 	 */
-	for (col = 0; col <= g.colmax+1; col++)
+	for (col = 0; col <= g.ncols+1; col++)
 	{
-		for (row = 0; row <= g.rowmax+1; row++)
+		for (row = 0; row <= g.nrows+1; row++)
 		{
-			for (gen = 0; gen < g.genmax; gen++)
+			for (gen = 0; gen < g.period; gen++)
 			{
 				edge = ((row == 0) || (col == 0) ||
-					(row > g.rowmax) || (col > g.colmax));
+					(row > g.nrows) || (col > g.ncols));
 
 				cell = findcell(row, col, gen);
 				cell->gen = gen;
@@ -2096,10 +2096,10 @@ initcells(void)
 				 * wrapping around at the ends.
 				 */
 				cell->past = findcell(row, col,
-					(gen+g.genmax-1) % g.genmax);
+					(gen+g.period-1) % g.period);
 
 				cell->future = findcell(row, col,
-					(gen+1) % g.genmax);
+					(gen+1) % g.period);
 
 				/*
 				 * If this is not an edge cell, and
@@ -2121,9 +2121,9 @@ initcells(void)
 	 * and select one cell from each loop as active
 	 */
 
-	for (col = 1; col <= g.colmax; col++) {
-		for (row = 1; row <= g.rowmax; row++) {
-			for (gen = 0; gen < g.genmax; gen++) {
+	for (col = 1; col <= g.ncols; col++) {
+		for (row = 1; row <= g.nrows; row++) {
+			for (gen = 0; gen < g.period; gen++) {
 				cell = findcell(row, col, gen);
 
 				if (cell->active) {
@@ -2145,9 +2145,9 @@ initcells(void)
 	 */
 	if (g.rowtrans || g.coltrans || g.fliprows || g.flipcols || g.flipquads)
 	{
-		for (row = 0; row <= g.rowmax+1; row++)
+		for (row = 0; row <= g.nrows+1; row++)
 		{
-			for (col = 0; col <= g.colmax+1; col++)
+			for (col = 0; col <= g.ncols+1; col++)
 			{
 				cell = findcell(row, col, 0);
 				cell2 = mapcell(cell);
@@ -2160,9 +2160,9 @@ initcells(void)
 	/*
 	 * Initialize the row and column info addresses for generation 0.
 	 */
-	for (row = 1; row <= g.rowmax; row++)
+	for (row = 1; row <= g.nrows; row++)
 	{
-		for (col = 1; col <= g.colmax; col++)
+		for (col = 1; col <= g.ncols; col++)
 		{
 			cell = findcell(row, col, 0);
 			cell->rowinfo = &g.rowinfo[row];
@@ -2252,7 +2252,7 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 	 */
 	if (g.ordermiddle)
 	{
-		midcol = (g.colmax + 1) / 2;
+		midcol = (g.ncols + 1) / 2;
 
 		dif1 = abs(c1->col - midcol);
 
@@ -2275,7 +2275,7 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 	 * opposite of the desired order because the initial setting
 	 * for new cells is OFF.
 	 */
-	midrow = (g.rowmax + 1) / 2;
+	midrow = (g.nrows + 1) / 2;
 
 	dif1 = abs(c1->row - midrow);
 
@@ -2308,9 +2308,9 @@ initsearchorder(void)
 	 */
 	count = 0;
 
-	for (gen = 0; gen < g.genmax; gen++) {
-		for (col = 1; col <= g.colmax; col++) {
-			for (row = 1; row <= g.rowmax; row++)	{
+	for (gen = 0; gen < g.period; gen++) {
+		for (col = 1; col <= g.ncols; col++) {
+			for (row = 1; row <= g.nrows; row++)	{
 				cell = findcell(row, col, gen);
 				// cells must be already loaded!!!
 				if ((cell->active) && (cell->state == UNK) && (!cell->unchecked))
@@ -2368,7 +2368,7 @@ rescell(CELL *cell)
 				cell->colinfo->sumpos -= cell->row;
 				if (g.nearcols) adjustnear(cell, -1);
 				--g.g0oncellcount;
-				if (cell->colinfo->setcount == g.rowmax) --g.fullcolumns;
+				if (cell->colinfo->setcount == g.nrows) --g.fullcolumns;
 				--cell->colinfo->setcount;
 			}
 
@@ -2390,7 +2390,7 @@ rescell(CELL *cell)
 			cell->state = UNK;
 			cell->free = TRUE;
 			if (cell->gen == 0) {
-				if (cell->colinfo->setcount == g.rowmax) --g.fullcolumns;
+				if (cell->colinfo->setcount == g.nrows) --g.fullcolumns;
 				--cell->colinfo->setcount;
 
 			}
@@ -2449,7 +2449,7 @@ setcell(CELL *cell, STATE state, BOOL free)
 			if (cell->gen == 0) {
 				if ((g.usecol != 0)
 					&& (g.colinfo[g.usecol].oncount == 0)
-					&& (g.colinfo[g.usecol].setcount == g.rowmax) && g.inited)
+					&& (g.colinfo[g.usecol].setcount == g.nrows) && g.inited)
 				{
 					return FALSE;
 				}
@@ -2482,7 +2482,7 @@ setcell(CELL *cell, STATE state, BOOL free)
 
 				cell->colinfo->setcount++;
 
-				if (cell->colinfo->setcount == g.rowmax) g.fullcolumns++;
+				if (cell->colinfo->setcount == g.nrows) g.fullcolumns++;
 
 				cell->colinfo->sumpos += cell->row;
 
@@ -2526,14 +2526,14 @@ setcell(CELL *cell, STATE state, BOOL free)
 			if (cell->gen == 0) {
 				if ((g.usecol != 0)
 					&& (g.colinfo[g.usecol].oncount == 0)
-					&& (g.colinfo[g.usecol].setcount == g.rowmax) && g.inited)
+					&& (g.colinfo[g.usecol].setcount == g.nrows) && g.inited)
 				{
 					return FALSE;
 				}
 
 				cell->colinfo->setcount++;
 
-				if (cell->colinfo->setcount == g.rowmax) g.fullcolumns++;
+				if (cell->colinfo->setcount == g.nrows) g.fullcolumns++;
 			}
 
 			cell->state = OFF;
@@ -2902,7 +2902,7 @@ getaverageunknown(void)
 				g.colinfo[testcol].oncount;
 		}
 		else
-			wantrow = (g.rowmax + 1) / 2;
+			wantrow = (g.nrows + 1) / 2;
 
 		for (; (cell != NULL) && (cell->col == curcol); cell = cell->search)
 		{
@@ -3396,19 +3396,19 @@ checkwidth(cell)
 	minrow = cell->row;
 	maxrow = cell->row;
 	srcminrow = 1;
-	srcmaxrow = g.rowmax;
+	srcmaxrow = g.nrows;
 	full = TRUE;
 
 	if ((g.rowsym && (cell->col >= g.rowsym)) ||
 		(g.fliprows && (cell->col >= g.fliprows)))
 	{
 		full = FALSE;
-		srcmaxrow = (g.rowmax + 1) / 2;
+		srcmaxrow = (g.nrows + 1) / 2;
 
 		if (cell->row > srcmaxrow)
 		{
-			srcminrow = (g.rowmax / 2) + 1;
-			srcmaxrow = g.rowmax;
+			srcminrow = (g.nrows / 2) + 1;
+			srcmaxrow = g.nrows;
 		}
 	}
 
@@ -3459,14 +3459,14 @@ subperiods(void)
 	CELL *	cellg0;
 	CELL *	cellgn;
 
-	for (gen = 1; gen < g.genmax; gen++)
+	for (gen = 1; gen < g.period; gen++)
 	{
-		if (g.genmax % gen)
+		if (g.period % gen)
 			continue;
 
-		for (row = 1; row <= g.rowmax; row++)
+		for (row = 1; row <= g.nrows; row++)
 		{
-			for (col = 1; col <= g.colmax; col++)
+			for (col = 1; col <= g.ncols; col++)
 			{
 				cellg0 = findcell(row, col, 0);
 				cellgn = findcell(row, col, gen);
@@ -3504,16 +3504,16 @@ mapcell(cell)
 	forward = (cell->gen != 0);
 
 	if (g.fliprows && (col >= g.fliprows))
-		row = g.rowmax + 1 - row;
+		row = g.nrows + 1 - row;
 
 	if (g.flipcols && (row >= g.flipcols))
-		col = g.colmax + 1 - col;
+		col = g.ncols + 1 - col;
 
 	if (g.flipquads)
 	{				/* NEED TO GO BACKWARDS */
 		tmp = col;
 		col = row;
-		row = g.colmax + 1 - tmp;
+		row = g.ncols + 1 - tmp;
 	}
 
 	if (forward)
@@ -3530,7 +3530,7 @@ mapcell(cell)
 	if (forward)
 		return findcell(row, col, 0);
 	else
-		return findcell(row, col, g.genmax - 1);
+		return findcell(row, col, g.period - 1);
 }
 
 
@@ -3615,8 +3615,8 @@ static CELL *symcell(CELL *cell)
 
 	row = cell->row;
 	col = cell->col;
-	nrow = g.rowmax + 1 - row;
-	ncol = g.colmax + 1 - col;
+	nrow = g.nrows + 1 - row;
+	ncol = g.ncols + 1 - col;
 
 	if(g.symmetry==1)  // col sym
 		return findcell(row,ncol,cell->gen);
@@ -3763,11 +3763,11 @@ findcell(row, col, gen)
 	/*
 	 * If the cell is a normal cell, then we know where it is.
 	 */
-	if ((row >= 0) && (row <= g.rowmax + 1) &&
-		(col >= 0) && (col <= g.colmax + 1) &&
-		(gen >= 0) && (gen < g.genmax))
+	if ((row >= 0) && (row <= g.nrows + 1) &&
+		(col >= 0) && (col <= g.ncols + 1) &&
+		(gen >= 0) && (gen < g.period))
 	{
-		return g.celltable[(col * (g.rowmax + 2) + row) * g.genmax + gen];
+		return g.celltable[(col * (g.nrows + 2) + row) * g.period + gen];
 	}
 
 	/*
