@@ -86,6 +86,9 @@ struct wcontext {
 	__int64 progress_counter_tot;
 	int ignore_lbuttonup;
 	int thread_stop_reason;
+	int user_default_period;
+	int user_default_columns;
+	int user_default_rows;
 };
 
 struct globals_struct g;
@@ -2872,8 +2875,11 @@ static void wlsSavePreferences(struct wcontext *ctx)
 		goto done;
 	}
 
-	wlsWriteIntPref(ctx,hkey,_T("viewfreq"),g.viewfreq);
-	wlsWriteIntPref(ctx,hkey,_T("cellsize"),ctx->cellwidth);
+	wlsWriteIntPref(ctx,hkey,_T("ViewFreq"),g.viewfreq);
+	wlsWriteIntPref(ctx,hkey,_T("CellSize"),ctx->cellwidth);
+	wlsWriteIntPref(ctx,hkey,_T("DefaultPeriod"),ctx->user_default_period);
+	wlsWriteIntPref(ctx,hkey,_T("DefaultColumns"),ctx->user_default_columns);
+	wlsWriteIntPref(ctx,hkey,_T("DefaultRows"),ctx->user_default_rows);
 
 done:
 	if(hkey) RegCloseKey(hkey);
@@ -2907,12 +2913,40 @@ static void wlsLoadPreferences(struct wcontext *ctx)
 	ret=RegOpenKeyEx(HKEY_CURRENT_USER,WLS_REGISTRY_KEY,0,KEY_QUERY_VALUE,&hkey);
 	if(ret!=ERROR_SUCCESS) goto done;
 
-	wlsReadIntPref(ctx,hkey,_T("viewfreq"),&g.viewfreq);
-	b=wlsReadIntPref(ctx,hkey,_T("cellsize"),&ctx->cellwidth);
+	wlsReadIntPref(ctx,hkey,_T("ViewFreq"),&g.viewfreq);
+	b=wlsReadIntPref(ctx,hkey,_T("CellSize"),&ctx->cellwidth);
 	if(b) ctx->cellheight = ctx->cellwidth;
+	wlsReadIntPref(ctx,hkey,_T("DefaultPeriod"),&ctx->user_default_period);
+	wlsReadIntPref(ctx,hkey,_T("DefaultColumns"),&ctx->user_default_columns);
+	wlsReadIntPref(ctx,hkey,_T("DefaultRows"),&ctx->user_default_rows);
 
 done:
 	if(hkey) RegCloseKey(hkey);
+}
+
+static void Handle_Prefs_Init(struct wcontext *ctx, HWND hWnd)
+{
+	SetDlgItemInt(hWnd,IDC_VIEWFREQ,g.viewfreq,FALSE);
+	SetDlgItemInt(hWnd,IDC_CELLSIZE,ctx->cellwidth,FALSE);
+	SetDlgItemInt(hWnd,IDC_DEFAULTPERIOD,ctx->user_default_period,FALSE);
+	SetDlgItemInt(hWnd,IDC_DEFAULTCOLUMNS,ctx->user_default_columns,FALSE);
+	SetDlgItemInt(hWnd,IDC_DEFAULTROWS,ctx->user_default_rows,FALSE);
+}
+
+static void Handle_Prefs_OK(struct wcontext *ctx, HWND hWnd)
+{
+	g.viewfreq=GetDlgItemInt(hWnd,IDC_VIEWFREQ,NULL,FALSE);
+	if(g.viewfreq<20000) g.viewfreq=20000;
+	ctx->cellwidth=GetDlgItemInt(hWnd,IDC_CELLSIZE,NULL,FALSE);
+	if(ctx->cellwidth<8) ctx->cellwidth=8;
+	if(ctx->cellwidth>200) ctx->cellwidth=200;
+	ctx->cellheight=ctx->cellwidth;
+	ctx->user_default_period=GetDlgItemInt(hWnd,IDC_DEFAULTPERIOD,NULL,FALSE);
+	ctx->user_default_columns=GetDlgItemInt(hWnd,IDC_DEFAULTCOLUMNS,NULL,FALSE);
+	ctx->user_default_rows=GetDlgItemInt(hWnd,IDC_DEFAULTROWS,NULL,FALSE);
+
+	wlsSavePreferences(ctx);
+	wlsRepaintCells(ctx,1);
 }
 
 static INT_PTR CALLBACK DlgProcPreferences(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -2923,8 +2957,7 @@ static INT_PTR CALLBACK DlgProcPreferences(HWND hWnd, UINT msg, WPARAM wParam, L
 	switch(msg) {
 
 	case WM_INITDIALOG:
-		SetDlgItemInt(hWnd,IDC_VIEWFREQ,g.viewfreq,FALSE);
-		SetDlgItemInt(hWnd,IDC_CELLSIZE,ctx->cellwidth,FALSE);
+		Handle_Prefs_Init(ctx,hWnd);
 		return 1;
 
 	case WM_COMMAND:
@@ -2933,15 +2966,7 @@ static INT_PTR CALLBACK DlgProcPreferences(HWND hWnd, UINT msg, WPARAM wParam, L
 		switch(id) {
 
 		case IDOK:
-			g.viewfreq=GetDlgItemInt(hWnd,IDC_VIEWFREQ,NULL,FALSE);
-			if(g.viewfreq<20000) g.viewfreq=20000;
-			ctx->cellwidth=GetDlgItemInt(hWnd,IDC_CELLSIZE,NULL,FALSE);
-			if(ctx->cellwidth<8) ctx->cellwidth=8;
-			if(ctx->cellwidth>200) ctx->cellwidth=200;
-			ctx->cellheight=ctx->cellwidth;
-
-			wlsSavePreferences(ctx);
-			wlsRepaintCells(ctx,1);
+			Handle_Prefs_OK(ctx,hWnd);
 			EndDialog(hWnd, TRUE);
 			return 1;
 
@@ -2960,6 +2985,11 @@ static void InitGameSettings(struct wcontext *ctx)
 {
 	int i,j,k;
 
+	// The cellwidth and height are required to be the same, because only a
+	// single value is stored in the registry.
+	ctx->cellwidth = 16;
+	ctx->cellheight = ctx->cellwidth;
+
 	for(k=0;k<GENMAX;k++) {
 		for(i=0;i<COLMAX;i++) {
 			for(j=0;j<ROWMAX;j++) {
@@ -2976,11 +3006,7 @@ static void InitGameSettings(struct wcontext *ctx)
 	g.trans_x= 0;
 	g.trans_y= 0;
 
-	g.genmax=2;
-
 	g.curgen=0;
-	g.colmax=35;
-	g.rowmax=15;
 	g.parent=0;
 	g.allobjects=0;
 	g.nearcols=0;
@@ -3033,6 +3059,28 @@ static void InitGameSettings(struct wcontext *ctx)
 	StringCchCopy(g.rulestring,WLS_RULESTRING_LEN,_T("B3/S23"));
 
 	wlsLoadPreferences(ctx);
+
+#define WLS_SYSTEM_DEFAULT_PERIOD   2
+#define WLS_SYSTEM_DEFAULT_COLUMNS  35
+#define WLS_SYSTEM_DEFAULT_ROWS     15
+
+	if(ctx->user_default_period==0)
+		ctx->user_default_period = WLS_SYSTEM_DEFAULT_PERIOD;
+	g.genmax = ctx->user_default_period;
+	if(g.genmax<1) g.genmax = 1;
+	if(g.genmax>GENMAX) g.genmax = GENMAX;
+
+	if(ctx->user_default_columns==0)
+		ctx->user_default_columns = WLS_SYSTEM_DEFAULT_COLUMNS;
+	g.colmax = ctx->user_default_columns;
+	if(g.colmax<1) g.colmax = 1;
+	if(g.colmax>COLMAX) g.colmax = COLMAX;
+
+	if(ctx->user_default_rows==0)
+		ctx->user_default_rows = WLS_SYSTEM_DEFAULT_ROWS;
+	g.rowmax = ctx->user_default_rows;
+	if(g.rowmax<1) g.rowmax = 1;
+	if(g.rowmax>ROWMAX) g.rowmax = ROWMAX;
 
 	RecalcCenter(ctx);
 }
@@ -3103,13 +3151,6 @@ static void wlsCreateFonts(struct wcontext *ctx)
 static BOOL InitApp(struct wcontext *ctx, int nCmdShow)
 {
 	RECT r;
-
-	// The cellwidth and height are required to be the same, because only a
-	// single value is stored in the registry.
-	ctx->cellwidth = 16;
-	ctx->cellheight = ctx->cellwidth;
-
-	ctx->scrollpos.x=0; ctx->scrollpos.y=0;
 
 	InitGameSettings(ctx);
 
