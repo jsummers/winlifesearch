@@ -724,10 +724,7 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 	if(x<0 || x>=g.ncols) return 1;
 	if(y<0 || y>=g.nrows) return 1;
 
-
 	lastval= g.currfield[g.curgen][x][y];
-	//if(lastval==CV_FROZEN) allgens=1;       // previously frozen
-
 
 	switch(msg) {
 
@@ -1265,26 +1262,13 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			dumpstate(ctx->hwndFrame, g.dumpfile);
 		}
 
-		g.quitok = (g.curstatus == NOTEXIST);
-
 		g.curgen = 0;
 
-//		if (outputfile == NULL) {
-//			getcommands();
-//			continue;
-//		}
-
-		/*
-		 * Here if results are going to a file.
-		 */
 		if (g.curstatus == FOUND) {
 			g.curstatus = OK;
 
-			if (!g.quiet) {
-				g.curgen=0;
-				wlsShowCurrentField();
-				wlsStatusf(ctx,_T("Object %d found."), ++g.foundcount);
-			}
+			wlsShowCurrentField();
+			wlsStatusf(ctx,_T("Object %d found."), ++g.foundcount);
 
 			wlsWriteCurrentFieldToFile(ctx->hwndFrame, g.outputfile, TRUE);
 			ctx->thread_stop_reason = 0;
@@ -1295,7 +1279,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			wlsStatusf(ctx,_T(""));
 			wlsMessagef(ctx,_T("No objects found"));
 		}
-		else if (!g.quiet) {
+		else {
 			wlsMessagef(ctx,_T("Search completed: %d object%s found"),
 				g.foundcount, (g.foundcount == 1) ? _T("") : _T("s"));
 		}
@@ -1516,7 +1500,6 @@ static void resume_search(struct wcontext *ctx)
 static void prepare_and_start_search(struct wcontext *ctx, TCHAR *statefile)
 {
 	int i,j,k;
-//	CELL *cell;
 
 	if(ctx->searchstate!=WLS_SRCH_OFF) {
 		wlsErrorf(ctx,_T("A search is already running"));
@@ -1569,20 +1552,6 @@ static void prepare_and_start_search(struct wcontext *ctx, TCHAR *statefile)
 		wlsShowCurrentField();
 		draw_gen_counter(ctx);
 		ctx->searchstate=WLS_SRCH_PAUSED;
-/*
-		// set up the starting position
-		for(k=0;k<genmax;k++)
-			for(i=0;i<colmax;i++)
-				for(j=0;j<rowmax;j++) {
-//					origfield[k][i][j]=currfield[k][i][j];
-					cell=findcell(j+1,i+1,k);
-					if(cell->free) origfield[k][i][j]=2;
-					else if(cell->state==OFF) origfield[k][i][j]=0;
-					else origfield[k][i][j]=1;
-				}
-*/
-
-
 	}
 	else {
 		g.inited=FALSE;
@@ -2343,7 +2312,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		break;
 	}
 
-	return (DefWindowProc(hWnd, msg, wParam, lParam));
+	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
 static void Handle_Scroll(struct wcontext *ctx, UINT msg, WORD scrollboxpos, WORD id)
@@ -2423,7 +2392,7 @@ static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 		return 0;
 	}
 
-	return (DefWindowProc(hWnd, msg, wParam, lParam));
+	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
 static void Handle_ToolbarCreate(struct wcontext *ctx, HWND hWnd, LPARAM lParam)
@@ -2465,7 +2434,7 @@ static void Handle_ToolbarSize(struct wcontext *ctx, HWND hWnd, LPARAM lParam)
 
 	// Resize the status window accordingly
 	SetWindowPos(ctx->hwndStatus,NULL,0,0,newwidth-121,TOOLBARHEIGHT-2,
-		/*SWP_NOACTIVATE|*/SWP_NOMOVE/*|SWP_NOOWNERZORDER*/|SWP_NOZORDER);
+		SWP_NOACTIVATE|SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER);
 }
 
 static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -2512,7 +2481,7 @@ static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 		break;
 	}
 
-	return (DefWindowProc(hWnd, msg, wParam, lParam));
+	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
 static INT_PTR CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -2531,7 +2500,7 @@ static INT_PTR CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			_T("A Windows port of David Bell\x2019s LIFESRC v3.5\r\n\r\n")
 			_T("By Jason Summers and Karel Suhajda"));
 #endif
-		return 1;   // didn't call SetFocus
+		return 1;  // Didn't call SetFocus
 
 	case WM_COMMAND:
 		if (id == IDOK || id == IDCANCEL) {
@@ -2540,7 +2509,7 @@ static INT_PTR CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		}
 		break;
 	}
-	return 0;		// Didn't process a message
+	return 0;  // Didn't process a message
 }
 
 static INT_PTR CALLBACK DlgProcPeriodRowsCols(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -2558,7 +2527,7 @@ static INT_PTR CALLBACK DlgProcPeriodRowsCols(HWND hWnd, UINT msg, WPARAM wParam
 		SetDlgItemInt(hWnd,IDC_PERIOD,g.period,FALSE);
 		SetDlgItemInt(hWnd,IDC_COLUMNS,g.ncols,FALSE);
 		SetDlgItemInt(hWnd,IDC_ROWS,g.nrows,FALSE);
-		return 1;   // didn't call SetFocus
+		return 1;
 
 	case WM_COMMAND:
 		switch(id) {
@@ -2609,7 +2578,7 @@ static INT_PTR CALLBACK DlgProcPeriodRowsCols(HWND hWnd, UINT msg, WPARAM wParam
 			return 1;
 		}
 	}
-	return 0;		// Didn't process a message
+	return 0;
 }
 
 static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -2647,13 +2616,15 @@ static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 #endif
 			GetDlgItemText(hWnd,IDC_OUTPUTFILE,g.outputfile,79);
 			g.outputcols=GetDlgItemInt(hWnd,IDC_OUTPUTCOLS,NULL,FALSE);
-			// fall through
+			EndDialog(hWnd, TRUE);
+			return 1;
+
 		case IDCANCEL:
 			EndDialog(hWnd, TRUE);
 			return 1;
 		}
 	}
-	return 0;		// Didn't process a message
+	return 0;
 }
 
 static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -2731,8 +2702,9 @@ static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 #endif
 
 			GetDlgItemText(hWnd,IDC_RULESTRING,g.rulestring,WLS_RULESTRING_LEN);
+			EndDialog(hWnd, TRUE);
+			return 1;
 
-			// fall through
 		case IDCANCEL:
 			EndDialog(hWnd, TRUE);
 			return 1;
@@ -2741,7 +2713,7 @@ static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 			return 1;
 		}
 	}
-	return 0;		// Didn't process a message
+	return 0;
 }
 
 static INT_PTR CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -2774,7 +2746,7 @@ static INT_PTR CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 		default: item=IDC_SYM0;
 		}
 		CheckDlgButton(hWnd,item,BST_CHECKED);
-		return 1;   // didn't call SetFocus
+		return 1;
 
 	case WM_COMMAND:
 		switch(id) {
@@ -2791,14 +2763,16 @@ static INT_PTR CALLBACK DlgProcSymmetry(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			if(IsDlgButtonChecked(hWnd,IDC_SYM9)==BST_CHECKED) g.symmetry=9;
 
 			wlsRepaintCells(ctx,TRUE);
-			// fall through
+			EndDialog(hWnd, TRUE);
+			return 1;
+
 		case IDCANCEL:
 			EndDialog(hWnd, TRUE);
 			return 1;
 		}
 		break;
 	}
-	return 0;		// Didn't process a message
+	return 0;
 }
 
 static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -2832,7 +2806,7 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 		default: item=IDC_TRANS0;
 		}
 		CheckDlgButton(hWnd,item,BST_CHECKED);
-		return 1;   // didn't call SetFocus
+		return 1;
 
 	case WM_COMMAND:
 		switch(id) {
@@ -2854,14 +2828,16 @@ static INT_PTR CALLBACK DlgProcTranslate(HWND hWnd, UINT msg, WPARAM wParam, LPA
 			if(IsDlgButtonChecked(hWnd,IDC_TRANS7)==BST_CHECKED) { g.trans_flip=1; g.trans_rotate=3; }
 
 			wlsRepaintCells(ctx,TRUE);
-			// fall through
+			EndDialog(hWnd, TRUE);
+			return 1;
+
 		case IDCANCEL:
 			EndDialog(hWnd, TRUE);
 			return 1;
 		}
 		break;
 	}
-	return 0;		// Didn't process a message
+	return 0;
 }
 
 #define WLS_REGISTRY_KEY _T("SOFTWARE\\WinLifeSearch")

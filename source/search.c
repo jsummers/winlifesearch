@@ -893,8 +893,6 @@ go(cell, state, free)
 	STATE	state;
 	BOOL	free;
 {
-	g.quitok = FALSE;
-
 	for (;;)
 	{
 		if (proceed(cell, state, free)) return TRUE;

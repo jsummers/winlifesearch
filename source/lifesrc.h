@@ -235,10 +235,6 @@ struct globals_struct {
  * do not affect the status of a search in progress.
  * They are either settable on the command line or are computed.
  */
-#ifdef JS
-	BOOL quiet;      /* don't output */
-	BOOL quitok;     /* ok to quit without confirming */
-#endif
 	BOOL debug;      /* enable debugging output (if compiled so) */
 	BOOL inited;     /* initialization has been done */
 #ifdef JS

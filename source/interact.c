@@ -356,8 +356,6 @@ void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
 	if (fp != stdout) {
 		wlsStatusf(NULL,_T("\x201c%s\x201d written (%d)"),file,g.writecount);
 	}
-
-	g.quitok = TRUE;
 }
 
 
@@ -505,7 +503,6 @@ void dumpstate(HWND hwndParent, TCHAR *file1)
 	}
 
 	ttystatus(_T("State dumped to \x201c%s\x201d\n"), file);
-	g.quitok = TRUE;
 }
 
 
@@ -763,8 +760,6 @@ BOOL loadstate(HWND hwndParent, TCHAR *file1)
 	}
 
 	ttystatus(_T("State loaded from \x201c%s\x201d\n"), file);
-	g.quitok = TRUE;
-
 	return TRUE;
 }
 
