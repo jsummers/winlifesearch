@@ -2873,6 +2873,7 @@ static void wlsSavePreferences(struct wcontext *ctx)
 	}
 
 	wlsWriteIntPref(ctx,hkey,_T("viewfreq"),g.viewfreq);
+	wlsWriteIntPref(ctx,hkey,_T("cellsize"),ctx->cellwidth);
 
 done:
 	if(hkey) RegCloseKey(hkey);
@@ -2900,12 +2901,15 @@ static void wlsLoadPreferences(struct wcontext *ctx)
 {
 	LONG ret;
 	HKEY hkey=NULL;
+	BOOL b;
 
 
 	ret=RegOpenKeyEx(HKEY_CURRENT_USER,WLS_REGISTRY_KEY,0,KEY_QUERY_VALUE,&hkey);
 	if(ret!=ERROR_SUCCESS) goto done;
 
 	wlsReadIntPref(ctx,hkey,_T("viewfreq"),&g.viewfreq);
+	b=wlsReadIntPref(ctx,hkey,_T("cellsize"),&ctx->cellwidth);
+	if(b) ctx->cellheight = ctx->cellwidth;
 
 done:
 	if(hkey) RegCloseKey(hkey);
@@ -2920,6 +2924,7 @@ static INT_PTR CALLBACK DlgProcPreferences(HWND hWnd, UINT msg, WPARAM wParam, L
 
 	case WM_INITDIALOG:
 		SetDlgItemInt(hWnd,IDC_VIEWFREQ,g.viewfreq,FALSE);
+		SetDlgItemInt(hWnd,IDC_CELLSIZE,ctx->cellwidth,FALSE);
 		return 1;
 
 	case WM_COMMAND:
@@ -2929,7 +2934,14 @@ static INT_PTR CALLBACK DlgProcPreferences(HWND hWnd, UINT msg, WPARAM wParam, L
 
 		case IDOK:
 			g.viewfreq=GetDlgItemInt(hWnd,IDC_VIEWFREQ,NULL,FALSE);
+			if(g.viewfreq<20000) g.viewfreq=20000;
+			ctx->cellwidth=GetDlgItemInt(hWnd,IDC_CELLSIZE,NULL,FALSE);
+			if(ctx->cellwidth<8) ctx->cellwidth=8;
+			if(ctx->cellwidth>200) ctx->cellwidth=200;
+			ctx->cellheight=ctx->cellwidth;
+
 			wlsSavePreferences(ctx);
+			wlsRepaintCells(ctx,1);
 			EndDialog(hWnd, TRUE);
 			return 1;
 
@@ -3092,13 +3104,11 @@ static BOOL InitApp(struct wcontext *ctx, int nCmdShow)
 {
 	RECT r;
 
-#ifdef JS
-	ctx->cellwidth = 15;
-	ctx->cellheight = 15;
-#else
+	// The cellwidth and height are required to be the same, because only a
+	// single value is stored in the registry.
 	ctx->cellwidth = 16;
-	ctx->cellheight = 16;
-#endif
+	ctx->cellheight = ctx->cellwidth;
+
 	ctx->scrollpos.x=0; ctx->scrollpos.y=0;
 
 	InitGameSettings(ctx);

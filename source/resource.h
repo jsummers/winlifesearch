@@ -75,6 +75,7 @@
 #define IDC_SMARTWINDOWSTAT             1063
 #define IDC_SMARTTHRESHOLDSTAT          1064
 #define IDC_FASTSYM                     1065
+#define IDC_CELLSIZE                    1066
 #define IDC_COMBINE                     1070
 #define IDC_STOPONSTEP                  1071
 #define IDC_SMARTWINDOW                 1072
