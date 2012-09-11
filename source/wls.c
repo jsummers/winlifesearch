@@ -187,8 +187,9 @@ void record_malloc(int func, void *m)
 
 	switch(func) {
 	case 0:
-		for(i=0;i<g.memblks_used;i++)
+		for(i=0;i<g.memblks_used;i++) {
 			free(g.memblks[i]);
+		}
 		g.memblks_used=0;
 		break;
 	case 1:      // record this pointer
@@ -539,22 +540,20 @@ static void ChangeChecking(struct wcontext *ctx, HDC hDC, int x, int y, int allg
 	int s1, s2;
 	int g1, g2;
 
-	if (set)
-	{
+	if (set) {
 		s1 = 2;
 		s2 = 3;
-	} else {
+	}
+	else {
 		s1 = 3;
 		s2 = 2;
 	}
 
-	if (allgens)
-	{
+	if (allgens) {
 		g1 = 0;
 		g2 = GENMAX - 1;
 	}
-	else
-	{
+	else {
 		g1 = g.curgen;
 		g2 = g.curgen;
 	}
@@ -562,10 +561,8 @@ static void ChangeChecking(struct wcontext *ctx, HDC hDC, int x, int y, int allg
 	GetSymmetricCells(x,y,pts,&numpts);
 
 	for(i=0;i<numpts;i++) {
-		for(j=g1;j<=g2;j++)
-		{
-			if (g.currfield[j][pts[i].x][pts[i].y] == s1)
-			{
+		for(j=g1;j<=g2;j++) {
+			if (g.currfield[j][pts[i].x][pts[i].y] == s1) {
 				g.currfield[j][pts[i].x][pts[i].y] = s2;
 			}
 		}
@@ -913,24 +910,24 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 			if(newval>=0) {
 				for(i=ctx->selectrect.left;i<=ctx->selectrect.right;i++) {
 					for(j=ctx->selectrect.top;j<=ctx->selectrect.bottom;j++) {
-						if (newval < 10)
-						{
+						if (newval < 10) {
 							g.currfield[g.curgen][i][j]=newval;
 							Symmetricalize(ctx,hDC,i,j,allgens);
-						} else {
+						}
+						else {
 							ChangeChecking(ctx,hDC,i,j,allgens,newval == 10);
 						}
 					}
 				}
 			}
-		} else {
-			if(newval>=0)
-			{
-				if (newval < 10)
-				{
+		}
+		else {
+			if(newval>=0) {
+				if (newval < 10) {
 					g.currfield[g.curgen][x][y]=newval;
 					Symmetricalize(ctx,hDC,x,y,allgens);
-				} else {
+				}
+				else {
 					ChangeChecking(ctx,hDC,x,y,allgens,newval == 10);
 				}
 			}
@@ -955,8 +952,8 @@ static int set_initial_cells(void)
 	int i,j,g1;
 	struct wcontext *ctx = gctx;
 
-	for(g1=0;g1<g.genmax;g1++)
-		for(i=0;i<g.colmax;i++)
+	for(g1=0;g1<g.genmax;g1++) {
+		for(i=0;i<g.colmax;i++) {
 			for(j=0;j<g.rowmax;j++) {
 				switch(g.origfield[g1][i][j]) {
 				case CV_FORCEDOFF:
@@ -978,11 +975,10 @@ static int set_initial_cells(void)
 					freezecell(j+1, i+1);
 					break;
 				}
-
 			}
-
+		}
+	}
 	return 1;
-
 }
 
 #else
@@ -1027,7 +1023,6 @@ BOOL set_initial_cells(void)
 					freezecell(j+1, i+1);
 					break;
 				}
-
 			}
 		}
 	}
@@ -1043,33 +1038,33 @@ BOOL set_initial_cells(void)
 				for(j=0;j<g.rowmax;j++) {
 					cell = findcell(j+1,i+1,g1);
 					if (cell->active && (cell->state == UNK)) {
-						if (proceed(cell, OFF, TRUE))
-						{
+						if (proceed(cell, OFF, TRUE)) {
 							backup();
-							if (proceed(cell, ON, TRUE))
-							{
+							if (proceed(cell, ON, TRUE)) {
 								backup();
-							} else {
+							}
+							else {
 								// OFF possible, ON impossible
 								if (setpos != g.newset) backup();
-								if (proceed(cell, OFF, TRUE))
-								{
+								if (proceed(cell, OFF, TRUE)) {
 									change = TRUE;
-								} else {
+								}
+								else {
 									// we should never get here
 									// because it's already tested that the OFF state is possible
 									wlsMessagef(ctx,_T("Program inconsistency found"));
 									return FALSE;
 								}
 							}
-						} else {
+						}
+						else {
 							// can't set OFF state
 							// let's try ON state
 							if (setpos != g.newset) backup();
-							if (proceed(cell, ON, TRUE))
-							{
+							if (proceed(cell, ON, TRUE)) {
 								change = TRUE;
-							} else {
+							}
+							else {
 								// can't set neither ON nor OFF state
 								wlsMessagef(ctx,_T("Inconsistent UNK state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
 								return FALSE;
@@ -1118,7 +1113,8 @@ void showcount(void)
 
 	if (g.viewcount<0) {
 		ctx->showcount_tot=0;
-	} else {
+	}
+	else {
 		ctx->showcount_tot += g.viewcount;
 	}
 	g.viewcount = 0;
@@ -1167,32 +1163,31 @@ static void do_combine(void)
 	int i,j,g1;
 	CELL *cell;
 
-	if (g.combining)
-	{
+	if (g.combining) {
 		for(g1=0;g1<g.genmax;g1++) {
-			for(i=0;i<g.colmax;i++){
+			for(i=0;i<g.colmax;i++) {
 				for(j=0;j<g.rowmax;j++) {
 					cell=findcell(j+1,i+1,g1);
-					if ((cell->combined != UNK) && (cell->combined != cell->state))
-					{
+					if ((cell->combined != UNK) && (cell->combined != cell->state)) {
 						--g.combinedcells;
 						cell->combined = UNK;
 					}
 				}
 			}
 		}
-	} else {
+	}
+	else {
 		g.combining = TRUE;
 		g.combinedcells = 0;
 		for(g1=0;g1<g.genmax;g1++) {
-			for(i=0;i<g.colmax;i++){
+			for(i=0;i<g.colmax;i++) {
 				for(j=0;j<g.rowmax;j++) {
 					cell=findcell(j+1,i+1,g1);
-					if ((g.origfield[g1][i][j] > 1) && ((cell->state == ON) || (cell->state == OFF)))
-					{
+					if ((g.origfield[g1][i][j] > 1) && ((cell->state == ON) || (cell->state == OFF))) {
 						++g.combinedcells;
 						cell->combined = cell->state;
-					} else {
+					}
+					else {
 						cell->combined = UNK;
 					}
 				}
@@ -1208,10 +1203,9 @@ static void show_combine(struct wcontext *ctx)
 	int i,j,g1;
 	CELL *cell;
 
-	if (g.combinedcells > 0)
-	{
+	if (g.combinedcells > 0) {
 		for(g1=0;g1<g.genmax;g1++) {
-			for(i=0;i<g.colmax;i++){
+			for(i=0;i<g.colmax;i++) {
 				for(j=0;j<g.rowmax;j++) {
 					cell=findcell(j+1,i+1,g1);
 					switch(cell->combined) {
@@ -1240,8 +1234,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 {
 	struct wcontext *ctx = gctx;
 
-	while (TRUE)
-	{
+	while (TRUE) {
 		if (g.curstatus == OK)
 			g.curstatus = search();
 
@@ -1322,8 +1315,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 	/*
 	 * Initial commands are complete, now look for the object.
 	 */
-	while (TRUE)
-	{
+	while (TRUE) {
 		if (g.curstatus == OK)
 			g.curstatus = search();
 
@@ -1347,8 +1339,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			dumpstate(NULL, g.dumpfile, FALSE);
 		}
 
-		if ((g.curstatus == FOUND) && g.combine)
-		{
+		if ((g.curstatus == FOUND) && g.combine) {
 			g.curstatus = OK;
 			++g.foundcount;
 			do_combine();
@@ -1374,21 +1365,19 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			goto done;
 		}
 
-		if (g.combine)
-		{
+		if (g.combine) {
 			show_combine(ctx);
-			if (g.combining)
-			{
+			if (g.combining) {
 				reset = (g.combinedcells == 0);
 				wlsMessagef(ctx,_T("Search completed: %d cell%s found"),
 					g.combinedcells, (g.combinedcells == 1) ? _T("") : _T("s"));
 			}
-			else
-			{
+			else {
 				reset = 1;
 				wlsMessagef(ctx,_T("Search completed: no solution"));
 			}
-		} else {
+		}
+		else {
 			showcount();
 			printgen();
 			reset = (g.foundcount == 0);
@@ -1406,17 +1395,18 @@ static DWORD WINAPI search_thread(LPVOID foo)
 		goto done;
 	}
 done:
-	if (reset)
-	{
-		for(k=0;k<GENMAX;k++)
-			for(i=0;i<COLMAX;i++)
-				for(j=0;j<ROWMAX;j++)
+	if (reset) {
+		for(k=0;k<GENMAX;k++) {
+			for(i=0;i<COLMAX;i++) {
+				for(j=0;j<ROWMAX;j++) {
 					g.currfield[k][i][j]=g.origfield[k][i][j];
+				}
+			}
+		}
 		ctx->searchstate=WLS_SRCH_OFF;
 		wlsRepaintCells(ctx,FALSE);
 	}
-	else
-	{
+	else {
 		ctx->searchstate = WLS_SRCH_PAUSED;
 	}
 	_endthreadex(0);
@@ -1466,19 +1456,15 @@ static void resume_search(struct wcontext *ctx)
 	DWORD threadid;
 
 	SetWindowText(ctx->hwndFrame,WLS_APPNAME);
-	if (g.combine)
-	{
-		if (g.combining)
-		{
+	if (g.combine) {
+		if (g.combining) {
 			wlsStatusf(ctx,_T("Combine: %d cells remaining"), g.combinedcells);
 		}
-		else
-		{
+		else {
 			wlsStatusf(ctx,_T("Combining\x2026"));
 		}
 	}
-	else
-	{
+	else {
 		wlsStatusf(ctx,_T("Searching\x2026"));
 	}
 
@@ -1525,13 +1511,15 @@ static void prepare_and_start_search(struct wcontext *ctx, TCHAR *statefile)
 	showcount();
 
 	// save a copy or the starting position
-	for(k=0;k<GENMAX;k++)
-		for(i=0;i<COLMAX;i++)
-			for(j=0;j<ROWMAX;j++)
+	for(k=0;k<GENMAX;k++) {
+		for(i=0;i<COLMAX;i++) {
+			for(j=0;j<ROWMAX;j++) {
 				g.origfield[k][i][j]=g.currfield[k][i][j];
+			}
+		}
+	}
 
-	if (!setrules(g.rulestring))
-	{
+	if (!setrules(g.rulestring)) {
 		wlsErrorf(ctx,_T("Cannot set Life rules!"));
 		return; //exit(1);
 	}
@@ -1550,7 +1538,7 @@ static void prepare_and_start_search(struct wcontext *ctx, TCHAR *statefile)
 		g.colinfo[i].setcount=0;
 		g.colinfo[i].sumpos=0;
 	}
-	for(i=0;i<ROWMAX;i++) g.rowinfo[i].oncount=0;
+	for(i=0;i<ROWMAX;i++) { g.rowinfo[i].oncount=0; }
 	g.newset=NULL;
 	g.nextset=NULL;
 	g.baseset=NULL;
@@ -1612,8 +1600,7 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 		return FALSE;
 	}
 
-	if (!setrules(g.rulestring))
-	{
+	if (!setrules(g.rulestring)) {
 		wlsErrorf(ctx,_T("Cannot set Life rules!"));
 		return FALSE;
 	}
@@ -1633,7 +1620,7 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 		g.colinfo[i].sumpos=0;
 	}
 
-	for(i=0;i<ROWMAX;i++) g.rowinfo[i].oncount=0;
+	for(i=0;i<ROWMAX;i++) { g.rowinfo[i].oncount=0; }
 
 	g.newset=NULL;
 	g.nextset=NULL;
@@ -1656,8 +1643,7 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 	g.differentcombinedcells = 0;
 
 	if (load) {
-		if(!loadstate(ctx->hwndFrame))
-		{
+		if(!loadstate(ctx->hwndFrame)) {
 			wlsRepaintCells(ctx,TRUE);
 			return FALSE;
 		}
@@ -1665,13 +1651,13 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 		wlsRepaintCells(ctx,TRUE);
 
 		draw_gen_counter(ctx);
-	} else {
+	}
+	else {
 		if(!initcells()) {
 			return FALSE;
 		}
 
-		if(!set_initial_cells())
-		{
+		if(!set_initial_cells()) {
 			record_malloc(0,NULL); // release allocated memory
 			return FALSE;   // there was probably an inconsistency in the initial cells
 		}
@@ -1687,8 +1673,7 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 
 static void start_search(struct wcontext *ctx)
 {
-	if (prepare_search(ctx,FALSE))
-	{
+	if (prepare_search(ctx,FALSE)) {
 		resume_search(ctx);
 	}
 }
@@ -1749,10 +1734,13 @@ static void reset_search(struct wcontext *ctx)
 	record_malloc(0,NULL);    // free memory
 
 	// restore the original cells
-	for(k=0;k<GENMAX;k++)
-		for(i=0;i<COLMAX;i++)
-			for(j=0;j<ROWMAX;j++)
+	for(k=0;k<GENMAX;k++) {
+		for(i=0;i<COLMAX;i++) {
+			for(j=0;j<ROWMAX;j++) {
 				g.currfield[k][i][j]=g.origfield[k][i][j];
+			}
+		}
+	}
 
 here:
 	wlsRepaintCells(ctx,FALSE);
@@ -1790,16 +1778,19 @@ static void hide_selection(struct wcontext *ctx)
 static void clear_gen(int g1)
 {
 	int i,j;
-	for(i=0;i<COLMAX;i++)
-		for(j=0;j<ROWMAX;j++)
+	for(i=0;i<COLMAX;i++) {
+		for(j=0;j<ROWMAX;j++) {
 			g.currfield[g1][i][j] = CV_CLEAR;
+		}
+	}
 }
 
 static void clear_all(struct wcontext *ctx)
 {
 	int g1;
-	for(g1=0;g1<GENMAX;g1++)
+	for(g1=0;g1<GENMAX;g1++) {
 		clear_gen(g1);
+	}
 	hide_selection(ctx);
 }
 
@@ -1809,25 +1800,22 @@ static void flip_h(struct wcontext *ctx, int fromgen, int togen)
 	int fromrow, torow, fromcol, tocol;
 	int buffer;
 
-	if (ctx->selectstate == WLS_SEL_SELECTED)
-	{
+	if (ctx->selectstate == WLS_SEL_SELECTED) {
 		fromcol = ctx->selectrect.left;
 		tocol = ctx->selectrect.right;
 		fromrow = ctx->selectrect.top;
 		torow = ctx->selectrect.bottom;
-	} else {
+	}
+	else {
 		fromcol = 0;
 		tocol = g.colmax - 1;
 		fromrow = 0;
 		torow = g.rowmax - 1;
 	}
 
-	for (g1 = fromgen; g1 <= togen; ++g1)
-	{
-		for (r = fromrow; r <= torow; ++r)
-		{
-			for (c = (fromcol + tocol) / 2; c >= fromcol; --c)
-			{
+	for (g1 = fromgen; g1 <= togen; ++g1) {
+		for (r = fromrow; r <= torow; ++r) {
+			for (c = (fromcol + tocol) / 2; c >= fromcol; --c) {
 				buffer = g.currfield[g1][c][r];
 				g.currfield[g1][c][r] = g.currfield[g1][tocol + fromcol - c][r];
 				g.currfield[g1][tocol + fromcol - c][r] = buffer;
@@ -1842,25 +1830,22 @@ static void flip_v(struct wcontext *ctx, int fromgen, int togen)
 	int fromrow, torow, fromcol, tocol;
 	int buffer;
 
-	if (ctx->selectstate == WLS_SEL_SELECTED)
-	{
+	if (ctx->selectstate == WLS_SEL_SELECTED) {
 		fromcol = ctx->selectrect.left;
 		tocol = ctx->selectrect.right;
 		fromrow = ctx->selectrect.top;
 		torow = ctx->selectrect.bottom;
-	} else {
+	}
+	else {
 		fromcol = 0;
 		tocol = g.colmax - 1;
 		fromrow = 0;
 		torow = g.rowmax - 1;
 	}
 
-	for (g1 = fromgen; g1 <= togen; ++g1)
-	{
-		for (r = (fromrow + torow) / 2; r >= fromrow; --r)
-		{
-			for (c = fromcol; c <= tocol; ++c)
-			{
+	for (g1 = fromgen; g1 <= togen; ++g1) {
+		for (r = (fromrow + torow) / 2; r >= fromrow; --r) {
+			for (c = fromcol; c <= tocol; ++c) {
 				buffer = g.currfield[g1][c][r];
 				g.currfield[g1][c][r] = g.currfield[g1][c][torow + fromrow - r];
 				g.currfield[g1][c][torow + fromrow - r] = buffer;
@@ -1875,31 +1860,27 @@ static void transpose(struct wcontext *ctx, int fromgen, int togen)
 	int fromrow, torow, fromcol, tocol;
 	int buffer;
 
-	if (ctx->selectstate == WLS_SEL_SELECTED)
-	{
+	if (ctx->selectstate == WLS_SEL_SELECTED) {
 		fromcol = ctx->selectrect.left;
 		tocol = ctx->selectrect.right;
 		fromrow = ctx->selectrect.top;
 		torow = ctx->selectrect.bottom;
-	} else {
+	}
+	else {
 		fromcol = 0;
 		tocol = g.colmax - 1;
 		fromrow = 0;
 		torow = g.rowmax - 1;
 	}
 
-	if ((fromcol - tocol) != (fromrow - torow))
-	{
+	if ((fromcol - tocol) != (fromrow - torow)) {
 		wlsErrorf(ctx,_T("Can only transpose square regions"));
 		return;
 	}
 
-	for (g1 = fromgen; g1 <= togen; ++g1)
-	{
-		for (r = fromrow + 1; r <= torow; ++r)
-		{
-			for (c = fromcol; c < fromcol + (r - fromrow); ++c)
-			{
+	for (g1 = fromgen; g1 <= togen; ++g1) {
+		for (r = fromrow + 1; r <= torow; ++r) {
+			for (c = fromcol; c < fromcol + (r - fromrow); ++c) {
 				buffer = g.currfield[g1][c][r];
 				g.currfield[g1][c][r] = g.currfield[g1][fromcol - fromrow + r][fromrow - fromcol + c];
 				g.currfield[g1][fromcol - fromrow + r][fromrow - fromcol + c] = buffer;
@@ -1914,13 +1895,13 @@ static void shift_gen(struct wcontext *ctx, int fromgen, int togen, int gend, in
 	int fromrow, torow, fromcol, tocol;
 	int gx,rx,cx;
 
-	if (ctx->selectstate == WLS_SEL_SELECTED)
-	{
+	if (ctx->selectstate == WLS_SEL_SELECTED) {
 		fromcol = ctx->selectrect.left;
 		tocol = ctx->selectrect.right;
 		fromrow = ctx->selectrect.top;
 		torow = ctx->selectrect.bottom;
-	} else {
+	}
+	else {
 		fromcol = 0;
 		tocol = g.colmax - 1;
 		fromrow = 0;
@@ -1958,7 +1939,7 @@ static void copy_result(struct wcontext *ctx)
 	if (ctx->searchstate != WLS_SRCH_PAUSED) pause_search(ctx);
 
 	for(g1=0;g1<g.genmax;g1++) {
-		for(i=0;i<g.colmax;i++){
+		for(i=0;i<g.colmax;i++) {
 			for(j=0;j<g.rowmax;j++) {
 				g.origfield[g1][i][j] = g.currfield[g1][i][j];
 			}
@@ -1979,7 +1960,7 @@ static void copy_combination(struct wcontext *ctx)
 	show_combine(ctx);
 
 	for(g1=0;g1<g.genmax;g1++) {
-		for(i=0;i<g.colmax;i++){
+		for(i=0;i<g.colmax;i++) {
 			for(j=0;j<g.rowmax;j++) {
 				g.origfield[g1][i][j] = g.currfield[g1][i][j];
 			}
@@ -2019,11 +2000,11 @@ static void copytoclipboard(struct wcontext *ctx)
 		// unfortunately the rulestring is in the wrong format for life32
 		StringCbCopy(buf,sizeof(buf),_T("#P 0 0\r\n#R S"));
 		for(i=0;i<=8;i++) {
-			if(g.liverules[i]) {StringCbPrintf(buf2,sizeof(buf2),_T("%d"),i); StringCbCat(buf,sizeof(buf),buf2);}
+			if(g.liverules[i]) { StringCbPrintf(buf2,sizeof(buf2),_T("%d"),i); StringCbCat(buf,sizeof(buf),buf2); }
 		}
 		StringCbCat(buf,sizeof(buf),_T("/B"));
 		for(i=0;i<=8;i++) {
-			if(g.bornrules[i]) {StringCbPrintf(buf2,sizeof(buf2),_T("%d"),i); StringCbCat(buf,sizeof(buf),buf2);}
+			if(g.bornrules[i]) { StringCbPrintf(buf2,sizeof(buf2),_T("%d"),i); StringCbCat(buf,sizeof(buf),buf2); }
 		}
 		StringCbCat(buf,sizeof(buf),_T("\r\n"));
 	}
@@ -2234,9 +2215,11 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 					dumpstate(ctx->hwndFrame, NULL, FALSE);
 					reset_search(ctx);
 				}
-			} else if (ctx->searchstate==WLS_SRCH_PAUSED) {
+			}
+			else if (ctx->searchstate==WLS_SRCH_PAUSED) {
 				dumpstate(ctx->hwndFrame, NULL, FALSE);
-			} else if (ctx->searchstate==WLS_SRCH_RUNNING) {
+			}
+			else if (ctx->searchstate==WLS_SRCH_RUNNING) {
 				pause_search(ctx);
 				dumpstate(ctx->hwndFrame, NULL, FALSE);
 				resume_search(ctx);
@@ -2893,12 +2876,14 @@ static void InitGameSettings(struct wcontext *ctx)
 {
 	int i,j,k;
 
-	for(k=0;k<GENMAX;k++)
-		for(i=0;i<COLMAX;i++)
+	for(k=0;k<GENMAX;k++) {
+		for(i=0;i<COLMAX;i++) {
 			for(j=0;j<ROWMAX;j++) {
 				g.origfield[k][i][j]=CV_CLEAR;       // set all cells to "don't care"
 				g.currfield[k][i][j]=CV_CLEAR;
 			}
+		}
+	}
 
 	g.symmetry=0;
 
@@ -3132,7 +3117,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	InitApp(ctx,nCmdShow);
 
 
-	while(GetMessage(&msg,NULL,0,0)){
+	while(GetMessage(&msg,NULL,0,0)) {
 		if (!TranslateAccelerator(ctx->hwndFrame, hAccTable, &msg)) {
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
