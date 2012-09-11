@@ -84,6 +84,7 @@
 #define IDC_DEFAULTPERIOD               1077
 #define IDC_DEFAULTCOLUMNS              1078
 #define IDC_DEFAULTROWS                 1079
+#define IDC_SEARCHPRIORITY              1080
 #define IDC_ABOUT                       40001
 #define IDC_EXIT                        40002
 #define IDC_SYMMETRY                    40003

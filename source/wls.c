@@ -89,6 +89,10 @@ struct wcontext {
 	int user_default_period;
 	int user_default_columns;
 	int user_default_rows;
+#define WLS_PRIORITY_IDLE    10
+#define WLS_PRIORITY_LOW     20
+#define WLS_PRIORITY_NORMAL  30
+	int search_priority;
 };
 
 struct globals_struct g;
@@ -1418,6 +1422,15 @@ done:
 
 #endif
 
+static int wlsWLSPriorityToWindowsPriority(int wlsprio)
+{
+	switch(wlsprio) {
+	case WLS_PRIORITY_IDLE: return THREAD_PRIORITY_IDLE;
+	case WLS_PRIORITY_NORMAL: return THREAD_PRIORITY_NORMAL;
+	}
+	return THREAD_PRIORITY_BELOW_NORMAL;
+}
+
 #ifdef JS
 
 static void resume_search(struct wcontext *ctx)
@@ -1447,7 +1460,7 @@ static void resume_search(struct wcontext *ctx)
 		// Request that the computer not go to sleep while we're searching.
 		SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
 
-		SetThreadPriority(ctx->hthread,THREAD_PRIORITY_BELOW_NORMAL);
+		SetThreadPriority(ctx->hthread,wlsWLSPriorityToWindowsPriority(ctx->search_priority));
 	}
 
 }
@@ -1491,7 +1504,7 @@ static void resume_search(struct wcontext *ctx)
 		// Request that the computer not go to sleep while we're searching.
 		SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
 
-		SetThreadPriority(ctx->hthread,THREAD_PRIORITY_BELOW_NORMAL);
+		SetThreadPriority(ctx->hthread,wlsWLSPriorityToWindowsPriority(ctx->search_priority));
 	}
 
 }
@@ -2880,6 +2893,7 @@ static void wlsSavePreferences(struct wcontext *ctx)
 	wlsWriteIntPref(ctx,hkey,_T("DefaultPeriod"),ctx->user_default_period);
 	wlsWriteIntPref(ctx,hkey,_T("DefaultColumns"),ctx->user_default_columns);
 	wlsWriteIntPref(ctx,hkey,_T("DefaultRows"),ctx->user_default_rows);
+	wlsWriteIntPref(ctx,hkey,_T("SearchPriority"),ctx->search_priority);
 
 done:
 	if(hkey) RegCloseKey(hkey);
@@ -2909,7 +2923,6 @@ static void wlsLoadPreferences(struct wcontext *ctx)
 	HKEY hkey=NULL;
 	BOOL b;
 
-
 	ret=RegOpenKeyEx(HKEY_CURRENT_USER,WLS_REGISTRY_KEY,0,KEY_QUERY_VALUE,&hkey);
 	if(ret!=ERROR_SUCCESS) goto done;
 
@@ -2919,6 +2932,7 @@ static void wlsLoadPreferences(struct wcontext *ctx)
 	wlsReadIntPref(ctx,hkey,_T("DefaultPeriod"),&ctx->user_default_period);
 	wlsReadIntPref(ctx,hkey,_T("DefaultColumns"),&ctx->user_default_columns);
 	wlsReadIntPref(ctx,hkey,_T("DefaultRows"),&ctx->user_default_rows);
+	wlsReadIntPref(ctx,hkey,_T("SearchPriority"),&ctx->search_priority);
 
 done:
 	if(hkey) RegCloseKey(hkey);
@@ -2926,15 +2940,28 @@ done:
 
 static void Handle_Prefs_Init(struct wcontext *ctx, HWND hWnd)
 {
+	int sel;
+
 	SetDlgItemInt(hWnd,IDC_VIEWFREQ,g.viewfreq,FALSE);
 	SetDlgItemInt(hWnd,IDC_CELLSIZE,ctx->cellwidth,FALSE);
 	SetDlgItemInt(hWnd,IDC_DEFAULTPERIOD,ctx->user_default_period,FALSE);
 	SetDlgItemInt(hWnd,IDC_DEFAULTCOLUMNS,ctx->user_default_columns,FALSE);
 	SetDlgItemInt(hWnd,IDC_DEFAULTROWS,ctx->user_default_rows,FALSE);
+
+	// "Priority" drop-down list
+	SendDlgItemMessage(hWnd,IDC_SEARCHPRIORITY,CB_ADDSTRING,0,(LPARAM)_T("Idle"));
+	SendDlgItemMessage(hWnd,IDC_SEARCHPRIORITY,CB_ADDSTRING,0,(LPARAM)_T("Low"));
+	SendDlgItemMessage(hWnd,IDC_SEARCHPRIORITY,CB_ADDSTRING,0,(LPARAM)_T("Normal"));
+	sel=1; // Default to Low
+	if(ctx->search_priority==WLS_PRIORITY_IDLE) sel=0;
+	else if(ctx->search_priority==WLS_PRIORITY_NORMAL) sel=2;
+	SendDlgItemMessage(hWnd,IDC_SEARCHPRIORITY,CB_SETCURSEL,(WPARAM)sel,0);
 }
 
 static void Handle_Prefs_OK(struct wcontext *ctx, HWND hWnd)
 {
+	int sel;
+
 	g.viewfreq=GetDlgItemInt(hWnd,IDC_VIEWFREQ,NULL,FALSE);
 	if(g.viewfreq<20000) g.viewfreq=20000;
 	ctx->cellwidth=GetDlgItemInt(hWnd,IDC_CELLSIZE,NULL,FALSE);
@@ -2944,6 +2971,11 @@ static void Handle_Prefs_OK(struct wcontext *ctx, HWND hWnd)
 	ctx->user_default_period=GetDlgItemInt(hWnd,IDC_DEFAULTPERIOD,NULL,FALSE);
 	ctx->user_default_columns=GetDlgItemInt(hWnd,IDC_DEFAULTCOLUMNS,NULL,FALSE);
 	ctx->user_default_rows=GetDlgItemInt(hWnd,IDC_DEFAULTROWS,NULL,FALSE);
+
+	sel = (int)SendDlgItemMessage(hWnd,IDC_SEARCHPRIORITY,CB_GETCURSEL,0,0);
+	if(sel==0) ctx->search_priority = WLS_PRIORITY_IDLE;
+	else if(sel==2) ctx->search_priority = WLS_PRIORITY_NORMAL;
+	else ctx->search_priority = WLS_PRIORITY_LOW;
 
 	wlsSavePreferences(ctx);
 	wlsRepaintCells(ctx,1);
@@ -2989,6 +3021,8 @@ static void InitGameSettings(struct wcontext *ctx)
 	// single value is stored in the registry.
 	ctx->cellwidth = 16;
 	ctx->cellheight = ctx->cellwidth;
+
+	ctx->search_priority = WLS_PRIORITY_LOW;
 
 	for(k=0;k<GENMAX;k++) {
 		for(i=0;i<COLMAX;i++) {
