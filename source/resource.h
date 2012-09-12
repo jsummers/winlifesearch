@@ -85,6 +85,7 @@
 #define IDC_DEFAULTCOLUMNS              1078
 #define IDC_DEFAULTROWS                 1079
 #define IDC_SEARCHPRIORITY              1080
+#define IDC_WHEELGENDIR                 1081
 #define IDC_ABOUT                       40001
 #define IDC_EXIT                        40002
 #define IDC_SYMMETRY                    40003

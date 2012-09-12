@@ -93,6 +93,7 @@ struct wcontext {
 #define WLS_PRIORITY_LOW     20
 #define WLS_PRIORITY_NORMAL  30
 	int search_priority;
+	int wheel_gen_dir; // 1:up decreases gen  2:up increases gen
 };
 
 struct globals_struct g;
@@ -2030,11 +2031,11 @@ static void handle_MouseWheel(struct wcontext *ctx, HWND hWnd, WPARAM wParam)
 {
 	signed short delta = (signed short)(HIWORD(wParam));
 	while(delta >= 120) {
-		gen_changeby(ctx,-1);
+		gen_changeby(ctx, (ctx->wheel_gen_dir==2) ? 1 : -1);
 		delta -= 120;
 	}
 	while(delta <= -120) {
-		gen_changeby(ctx,1);
+		gen_changeby(ctx, (ctx->wheel_gen_dir==2) ? -1 : 1);
 		delta += 120;
 	}
 }
@@ -2870,6 +2871,7 @@ static void wlsSavePreferences(struct wcontext *ctx)
 	wlsWriteIntPref(ctx,hkey,_T("DefaultColumns"),ctx->user_default_columns);
 	wlsWriteIntPref(ctx,hkey,_T("DefaultRows"),ctx->user_default_rows);
 	wlsWriteIntPref(ctx,hkey,_T("SearchPriority"),ctx->search_priority);
+	wlsWriteIntPref(ctx,hkey,_T("MouseWheelAction"),ctx->wheel_gen_dir);
 
 done:
 	if(hkey) RegCloseKey(hkey);
@@ -2909,6 +2911,7 @@ static void wlsLoadPreferences(struct wcontext *ctx)
 	wlsReadIntPref(ctx,hkey,_T("DefaultColumns"),&ctx->user_default_columns);
 	wlsReadIntPref(ctx,hkey,_T("DefaultRows"),&ctx->user_default_rows);
 	wlsReadIntPref(ctx,hkey,_T("SearchPriority"),&ctx->search_priority);
+	wlsReadIntPref(ctx,hkey,_T("MouseWheelAction"),&ctx->wheel_gen_dir);
 
 done:
 	if(hkey) RegCloseKey(hkey);
@@ -2932,6 +2935,13 @@ static void Handle_Prefs_Init(struct wcontext *ctx, HWND hWnd)
 	if(ctx->search_priority==WLS_PRIORITY_IDLE) sel=0;
 	else if(ctx->search_priority==WLS_PRIORITY_NORMAL) sel=2;
 	SendDlgItemMessage(hWnd,IDC_SEARCHPRIORITY,CB_SETCURSEL,(WPARAM)sel,0);
+
+	// Mouse Wheel Action drop-down list
+	SendDlgItemMessage(hWnd,IDC_WHEELGENDIR,CB_ADDSTRING,0,(LPARAM)_T("Decrease gen"));
+	SendDlgItemMessage(hWnd,IDC_WHEELGENDIR,CB_ADDSTRING,0,(LPARAM)_T("Increase gen"));
+	sel=0;
+	if(ctx->wheel_gen_dir==2) sel=1;
+	SendDlgItemMessage(hWnd,IDC_WHEELGENDIR,CB_SETCURSEL,(WPARAM)sel,0);
 }
 
 static void Handle_Prefs_OK(struct wcontext *ctx, HWND hWnd)
@@ -2952,6 +2962,10 @@ static void Handle_Prefs_OK(struct wcontext *ctx, HWND hWnd)
 	if(sel==0) ctx->search_priority = WLS_PRIORITY_IDLE;
 	else if(sel==2) ctx->search_priority = WLS_PRIORITY_NORMAL;
 	else ctx->search_priority = WLS_PRIORITY_LOW;
+
+	sel = (int)SendDlgItemMessage(hWnd,IDC_WHEELGENDIR,CB_GETCURSEL,0,0);
+	if(sel==1) ctx->wheel_gen_dir = 2;
+	else ctx->wheel_gen_dir = 1;
 
 	wlsSavePreferences(ctx);
 	wlsRepaintCells(ctx,1);
@@ -2999,6 +3013,7 @@ static void InitGameSettings(struct wcontext *ctx)
 	ctx->cellheight = ctx->cellwidth;
 
 	ctx->search_priority = WLS_PRIORITY_LOW;
+	ctx->wheel_gen_dir = 1;
 
 	for(k=0;k<GENMAX;k++) {
 		for(i=0;i<COLMAX;i++) {
