@@ -1104,7 +1104,7 @@ static void draw_gen_counter(struct wcontext *ctx)
 
 	SetScrollInfo(ctx->hwndGenScroll,SB_CTL,&si,TRUE);
 
-	StringCbPrintf(buf,sizeof(buf),_T("%d"),g.curgen);
+	StringCbPrintf(buf,sizeof(buf),_T("p%d: %d"),g.period,g.curgen);
 	SetWindowText(ctx->hwndGen,buf);
 }
 
@@ -2401,22 +2401,22 @@ static void Handle_ToolbarCreate(struct wcontext *ctx, HWND hWnd, LPARAM lParam)
 	CREATESTRUCT *cs;
 
 	cs = (CREATESTRUCT*)lParam;
-
-	ctx->hwndGen=CreateWindow(_T("Static"),_T("0"),
-		WS_CHILD|WS_BORDER|SS_CENTER|SS_NOPREFIX,
-		1,1,40,TOOLBARHEIGHT-2,
+#define WLS_GENWINDOWWIDTH 54
+	ctx->hwndGen=CreateWindow(_T("Static"),_T(""),
+		WS_CHILD|WS_BORDER|SS_LEFTNOWORDWRAP|SS_NOPREFIX,
+		1,1,WLS_GENWINDOWWIDTH,TOOLBARHEIGHT-2,
 		hWnd,NULL,ctx->hInst,NULL);
 	SendMessage(ctx->hwndGen,WM_SETFONT,(WPARAM)ctx->statusfont,(LPARAM)FALSE);
 	ShowWindow(ctx->hwndGen,SW_SHOW);
 
 	ctx->hwndGenScroll=CreateWindow(_T("Scrollbar"),_T("wls_gen_scrollbar"),
 		WS_CHILD|WS_VISIBLE|SBS_HORZ,
-		41,1,80,TOOLBARHEIGHT-2,
+		WLS_GENWINDOWWIDTH+1,1,80,TOOLBARHEIGHT-2,
 		hWnd,NULL,ctx->hInst,NULL);
 
 	ctx->hwndStatus=CreateWindow(_T("Static"),_T(""),
 		WS_CHILD|WS_BORDER|SS_LEFTNOWORDWRAP|SS_NOPREFIX,
-		121,1,cs->cx-121,TOOLBARHEIGHT-2,
+		WLS_GENWINDOWWIDTH+81,1,cs->cx-(WLS_GENWINDOWWIDTH+81),TOOLBARHEIGHT-2,
 		hWnd,NULL,ctx->hInst,NULL);
 	SendMessage(ctx->hwndStatus,WM_SETFONT,(WPARAM)ctx->statusfont,(LPARAM)FALSE);
 	ShowWindow(ctx->hwndStatus,SW_SHOW);
@@ -2434,7 +2434,7 @@ static void Handle_ToolbarSize(struct wcontext *ctx, HWND hWnd, LPARAM lParam)
 	if(!ctx->hwndStatus) return;
 
 	// Resize the status window accordingly
-	SetWindowPos(ctx->hwndStatus,NULL,0,0,newwidth-121,TOOLBARHEIGHT-2,
+	SetWindowPos(ctx->hwndStatus,NULL,0,0,newwidth-(WLS_GENWINDOWWIDTH+81),TOOLBARHEIGHT-2,
 		SWP_NOACTIVATE|SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER);
 }
 
