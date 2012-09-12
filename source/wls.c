@@ -39,6 +39,8 @@
 #define WLS_APPNAME _T("WinLifeSearchK")
 #endif
 
+#define WLS_WM_THREADDONE (WM_APP+1)
+
 #define TOOLBARHEIGHT 24
 
 static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -94,6 +96,7 @@ struct wcontext {
 #define WLS_PRIORITY_NORMAL  30
 	int search_priority;
 	int wheel_gen_dir; // 1:up decreases gen  2:up increases gen
+	int app_exit_requested;
 };
 
 struct globals_struct g;
@@ -1292,6 +1295,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 	}
 done:
 	ctx->searchstate=WLS_SRCH_PAUSED;
+	PostMessage(ctx->hwndFrame,WLS_WM_THREADDONE,0,0);
 	_endthreadex(0);
 	return 0;
 }
@@ -1401,6 +1405,7 @@ done:
 	else {
 		ctx->searchstate = WLS_SRCH_PAUSED;
 	}
+	PostMessage(ctx->hwndFrame,WLS_WM_THREADDONE,0,0);
 	_endthreadex(0);
 	return 0;
 }
@@ -1667,29 +1672,33 @@ static void start_search(struct wcontext *ctx)
 #endif
 
 // Low-level function that ends the search thread(s), and does no UI.
-static void wlsStopSearchThreads(struct wcontext *ctx)
+static void wlsRequestStopSearchThreads(struct wcontext *ctx)
 {
 	if(ctx->searchstate!=WLS_SRCH_RUNNING || !ctx->hthread) {
 		return;
 	}
 	abortthread=1;
-	WaitForSingleObject(ctx->hthread,INFINITE);
-	CloseHandle(ctx->hthread);
-	ctx->hthread = NULL;
-	ctx->searchstate=WLS_SRCH_PAUSED;
 }
 
-static void pause_search(struct wcontext *ctx)
+static void wlsOnThreadDone(struct wcontext *ctx)
 {
-	if(ctx->searchstate!=WLS_SRCH_RUNNING) {
-		wlsErrorf(ctx,_T("No search is running"));
-		return;
+	if(ctx->hthread) {
+		CloseHandle(ctx->hthread);
+		ctx->hthread = NULL;
 	}
-
-	wlsStopSearchThreads(ctx);
+	ctx->searchstate=WLS_SRCH_PAUSED;
 
 	// Tell Windows we're okay with the computer going to sleep.
 	SetThreadExecutionState(ES_CONTINUOUS);
+
+	if(ctx->app_exit_requested) {
+		// Thread was stopped because the application wants to exit.
+		// It's our job to actually make that happen.
+		// Don't do any unnecessary UI; just destroy the main window and
+		// get out of here.
+		DestroyWindow(ctx->hwndFrame);
+		return;
+	}
 
 #ifndef JS
 	wlsShowCurrentField();
@@ -1699,6 +1708,37 @@ static void pause_search(struct wcontext *ctx)
 	if(ctx->thread_stop_reason==1) {
 		wlsStatusf(ctx,_T("Search paused."));
 	}
+}
+
+static void wlsRequestEndApp(struct wcontext *ctx)
+{
+	if(ctx->searchstate!=WLS_SRCH_RUNNING || !ctx->hthread) {
+		// If no other threads exist, exit immediately.
+		DestroyWindow(ctx->hwndFrame);
+		return;
+	}
+	// Another thread is still running.
+	// We can't destroy the main window first, because the other thread may need
+	// to send a message to it before it reaches a point where it can stop.
+	// We can't wait for it using WaitForSingleObject() in this thread, because
+	// that will deadlock if the other thread tries to send a message to us.
+	// So we will set a flag indicating that an application exit is desired, ask
+	// the thread to cancel, and that's all. When the thread ends, it will post
+	// a message to us. At that time we'll check for the global flag, and if it's
+	// set, exit for real.
+	wlsStatusf(ctx,_T("Stopping search thread\x2026"));
+	ctx->app_exit_requested = 1;
+	wlsRequestStopSearchThreads(ctx);
+}
+
+static void pause_search(struct wcontext *ctx)
+{
+	if(ctx->searchstate!=WLS_SRCH_RUNNING) {
+		wlsErrorf(ctx,_T("No search is running"));
+		return;
+	}
+
+	wlsRequestStopSearchThreads(ctx);
 }
 
 static void reset_search(struct wcontext *ctx)
@@ -2072,7 +2112,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		return 0;
 
 	case WM_CLOSE:
-		DestroyWindow(hWnd);
+		wlsRequestEndApp(ctx);
 		return 0;
 
 	case WM_DESTROY:
@@ -2123,10 +2163,14 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		ScreenToClient(hWnd,&pt);
 		return Handle_UIEvent(ctx,msg,(WORD)pt.x,(WORD)pt.y,wParam);
 
+	case WLS_WM_THREADDONE:
+		wlsOnThreadDone(ctx);
+		return 0;
+
 	case WM_COMMAND:
 		switch(id) {
 		case IDC_EXIT:
-			DestroyWindow(hWnd);
+			wlsRequestEndApp(ctx);
 			return 0;
 		case IDC_ABOUT:
 			DialogBox(ctx->hInst,_T("DLGABOUT"),hWnd,DlgProcAbout);
@@ -3239,7 +3283,6 @@ static BOOL InitApp(struct wcontext *ctx, int nCmdShow)
 
 static void UninitApp(struct wcontext *ctx)
 {
-	wlsStopSearchThreads(ctx);
 	if(ctx->statusfont) DeleteObject((HGDIOBJ)ctx->statusfont);
 }
 
