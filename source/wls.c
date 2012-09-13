@@ -87,7 +87,6 @@ struct wcontext {
 	HFONT statusfont;
 	__int64 progress_counter_tot;
 	int ignore_lbuttonup;
-	int thread_stop_reason;
 	int user_default_period;
 	int user_default_columns;
 	int user_default_rows;
@@ -98,16 +97,15 @@ struct wcontext {
 	int wheel_gen_dir; // 1:up decreases gen  2:up increases gen
 
 #define WLS_ACTION_APPEXIT           0x00000001
-#define WLS_ACTION_PAUSESEARCH       0x00000002
 #define WLS_ACTION_RESETSEARCH       0x00000004
-#define WLS_ACTION_BACKUP            0x00000008
-#define WLS_ACTION_BACKUP2           0x00000010
 #define WLS_ACTION_OPENSTATE         0x00000020
 #define WLS_ACTION_SAVEANDRESUME     0x00000040
-#define WLS_ACTION_COPYRESULT        0x00001000
-#define WLS_ACTION_COPYCOMBINATION   0x00002000
-#define WLS_ACTION_CLEARCOMBINATION  0x00008000
 	unsigned int deferred_action;
+#define WLS_THREADFLAG_ABORTED       0x00000001
+#define WLS_THREADFLAG_RESETREQ      0x00000002
+	unsigned int thread_stop_flags;
+
+	CRITICAL_SECTION critsec_tmpfield;
 };
 
 struct globals_struct g;
@@ -743,7 +741,7 @@ static void FixFrozenCells(void)
 }
 
 
-//returns 0 if processed
+// returns 0 if processed
 static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wParam)
 {
 	int x,y;
@@ -1171,7 +1169,7 @@ void wlsUpdateProgressCounter(void)
 	SetWindowText(ctx->hwndFrame,buf);
 }
 
-static void wlsShowCurrentField_internal(struct wcontext *ctx)
+static void wlsCopyLifesrcToTmpfield(struct wcontext *ctx)
 {
 	int i,j,g1;
 	CELL *cell;
@@ -1202,21 +1200,22 @@ static void wlsShowCurrentField_internal(struct wcontext *ctx)
 			}
 		}
 	}
+}
 
+void wlsUpdateAndShowTmpField(void)
+{
+	struct wcontext *ctx = gctx;
+	wlsCopyLifesrcToTmpfield(ctx);
 	wlsRepaintCells(ctx,FALSE);
 }
 
-void wlsShowCurrentField(void)
+void wlsUpdateAndShowTmpField_Sync(void)
 {
 	struct wcontext *ctx = gctx;
-	wlsShowCurrentField_internal(ctx);
-	wlsRepaintCells(ctx,FALSE);
-}
 
-void wlsShowCurrentField_Sync(void)
-{
-	struct wcontext *ctx = gctx;
-	wlsShowCurrentField_internal(ctx);
+	EnterCriticalSection(&ctx->critsec_tmpfield);
+	wlsCopyLifesrcToTmpfield(ctx);
+	LeaveCriticalSection(&ctx->critsec_tmpfield);
 	wlsRepaintCells_Sync(ctx,FALSE);
 }
 
@@ -1262,7 +1261,7 @@ static void do_combine(void)
 	g.differentcombinedcells = 0;
 }
 
-static void show_combine(struct wcontext *ctx)
+static void wlsCopyCombineToTmpfield(struct wcontext *ctx)
 {
 	int i,j,g1;
 	CELL *cell;
@@ -1273,11 +1272,11 @@ static void show_combine(struct wcontext *ctx)
 				for(j=0;j<g.nrows;j++) {
 					cell=findcell(j+1,i+1,g1);
 					switch(cell->combined) {
-					case ON:
-						wlsSetCellVal(&g.tmpfield,g1,i,j,CV_FORCEDON);
-						break;
 					case OFF:
 						wlsSetCellVal(&g.tmpfield,g1,i,j,CV_FORCEDOFF);
+						break;
+					case ON:
+						wlsSetCellVal(&g.tmpfield,g1,i,j,CV_FORCEDON);
 						break;
 					case UNK:
 						wlsSetCellVal(&g.tmpfield,g1,i,j,wlsCellVal(&g.field,g1,i,j));
@@ -1286,8 +1285,6 @@ static void show_combine(struct wcontext *ctx)
 			}
 		}
 	}
-
-	wlsRepaintCells(gctx,FALSE);
 }
 
 #endif
@@ -1298,12 +1295,14 @@ static DWORD WINAPI search_thread(LPVOID foo)
 {
 	struct wcontext *ctx = gctx;
 
+	ctx->thread_stop_flags = 0;
+
 	while (TRUE) {
 		if (g.curstatus == OK)
 			g.curstatus = search();
 
 		if(abortthread) {
-			ctx->thread_stop_reason = 1;
+			ctx->thread_stop_flags |= WLS_THREADFLAG_ABORTED;
 			goto done;
 		}
 
@@ -1327,11 +1326,10 @@ static DWORD WINAPI search_thread(LPVOID foo)
 		if (g.curstatus == FOUND) {
 			g.curstatus = OK;
 
-			wlsShowCurrentField_Sync();
+			wlsUpdateAndShowTmpField_Sync();
 			wlsStatusf(ctx,_T("Object %d found."), ++g.foundcount);
 
 			wlsWriteCurrentFieldToFile(ctx->hwndFrame, g.outputfile, TRUE);
-			ctx->thread_stop_reason = 0;
 			goto done;
 		}
 
@@ -1346,7 +1344,6 @@ static DWORD WINAPI search_thread(LPVOID foo)
 
 		wlsStatusf(ctx,_T("Search complete."));
 
-		ctx->thread_stop_reason = 0;
 		goto done;
 	}
 done:
@@ -1363,6 +1360,8 @@ static DWORD WINAPI search_thread(LPVOID foo)
 	BOOL reset = 0;
 	struct wcontext *ctx = gctx;
 
+	ctx->thread_stop_flags = 0;
+
 	/*
 	 * Initial commands are complete, now look for the object.
 	 */
@@ -1371,7 +1370,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			g.curstatus = search();
 
 		if(abortthread) {
-			ctx->thread_stop_reason = 1;
+			ctx->thread_stop_flags |= WLS_THREADFLAG_ABORTED;
 			goto done;
 		}
 
@@ -1406,18 +1405,18 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			g.curstatus = OK;
 
 			wlsUpdateProgressCounter();
-			wlsShowCurrentField_Sync();
+			wlsUpdateAndShowTmpField_Sync();
 			++g.foundcount;
 			wlsStatusf(ctx,_T("Object %d found.\n"), g.foundcount);
 
 			wlsWriteCurrentFieldToFile(NULL, g.outputfile, TRUE);
 			if (!g.stoponfound) continue;
-			ctx->thread_stop_reason = 0;
 			goto done;
 		}
 
 		if (g.combine) {
-			show_combine(ctx);
+			wlsCopyCombineToTmpfield(ctx);
+			wlsRepaintCells_Sync(ctx,FALSE);
 			if (g.combining) {
 				reset = (g.combinedcells == 0);
 				wlsMessagef(ctx,_T("Search completed: %d cell%s found"),
@@ -1430,7 +1429,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 		}
 		else {
 			wlsUpdateProgressCounter();
-			wlsShowCurrentField_Sync();
+			wlsUpdateAndShowTmpField_Sync();
 			reset = (g.foundcount == 0);
 			wlsMessagef(ctx,_T("Search completed:  %d object%s found"),
 				g.foundcount, (g.foundcount == 1) ? _T("") : _T("s"));
@@ -1442,17 +1441,14 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			wlsStatusf(ctx,_T("Search complete."));
 		}
 
-		ctx->thread_stop_reason = 0;
 		goto done;
 	}
 done:
 	if (reset) {
-		ctx->searchstate=WLS_SRCH_OFF;
-		wlsRepaintCells_Sync(ctx,FALSE); // TODO: Remove this?
+		// Request that the main thread perform a search-reset.
+		ctx->thread_stop_flags |= WLS_THREADFLAG_RESETREQ;
 	}
-	else {
-		ctx->searchstate = WLS_SRCH_PAUSED;
-	}
+	ctx->searchstate = WLS_SRCH_PAUSED;
 	PostMessage(ctx->hwndFrame,WLS_WM_THREADDONE,0,0);
 	_endthreadex(0);
 	return 0;
@@ -1596,7 +1592,7 @@ static void prepare_and_start_search(struct wcontext *ctx, TCHAR *statefile)
 	if(statefile) {
 		if(!loadstate(ctx->hwndFrame, statefile)) return;
 
-		wlsShowCurrentField();
+		wlsUpdateAndShowTmpField();
 		draw_gen_counter(ctx);
 		ctx->searchstate=WLS_SRCH_PAUSED;
 	}
@@ -1698,7 +1694,7 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 	}
 	ctx->searchstate=WLS_SRCH_PAUSED;  // pretend the search is "paused"
 
-	wlsShowCurrentField();
+	wlsUpdateAndShowTmpField();
 
 	return TRUE;
 }
@@ -1713,7 +1709,7 @@ static void start_search(struct wcontext *ctx)
 #endif
 
 // Low-level function that ends the search thread(s), and does no UI.
-static void wlsRequestStopSearchThreads(struct wcontext *ctx)
+static void wlsRequestPauseSearch(struct wcontext *ctx)
 {
 	if(ctx->searchstate!=WLS_SRCH_RUNNING || !ctx->hthread) {
 		return;
@@ -1722,6 +1718,7 @@ static void wlsRequestStopSearchThreads(struct wcontext *ctx)
 }
 
 static void wlsResetSearch(struct wcontext *ctx);
+static void open_state(struct wcontext *ctx);
 
 static void wlsOnThreadDone(struct wcontext *ctx)
 {
@@ -1742,17 +1739,26 @@ static void wlsOnThreadDone(struct wcontext *ctx)
 		DestroyWindow(ctx->hwndFrame);
 		return;
 	}
-	else if(ctx->deferred_action & WLS_ACTION_RESETSEARCH) {
+	else if(ctx->deferred_action & WLS_ACTION_SAVEANDRESUME) {
+#ifndef JS
+		dumpstate(ctx->hwndFrame, NULL, FALSE);
+		resume_search(ctx);
+#endif
+	}
+	else if(ctx->deferred_action & WLS_ACTION_OPENSTATE) {
+		wlsResetSearch(ctx);
+		open_state(ctx);
+	}
+	else if((ctx->deferred_action & WLS_ACTION_RESETSEARCH) ||
+		(ctx->thread_stop_flags & WLS_THREADFLAG_RESETREQ))
+	{
 		wlsResetSearch(ctx);
 	}
-
-//#ifndef JS
-//	wlsShowCurrentField();
-//#endif
-
-	SetWindowText(ctx->hwndFrame,WLS_APPNAME _T(" - Paused"));
-	if(ctx->thread_stop_reason==1) {
-		wlsStatusf(ctx,_T("Search paused."));
+	else {
+		//SetWindowText(ctx->hwndFrame,WLS_APPNAME _T(" - Paused"));
+		if(ctx->thread_stop_flags & WLS_THREADFLAG_ABORTED) {
+			wlsStatusf(ctx,_T("Search paused."));
+		}
 	}
 }
 
@@ -1774,17 +1780,7 @@ static void wlsRequestEndApp(struct wcontext *ctx)
 	// set, exit for real.
 	wlsStatusf(ctx,_T("Stopping search thread\x2026"));
 	ctx->deferred_action = WLS_ACTION_APPEXIT;
-	wlsRequestStopSearchThreads(ctx);
-}
-
-static void wlsRequestPauseSearch(struct wcontext *ctx)
-{
-	if(ctx->searchstate!=WLS_SRCH_RUNNING) {
-		wlsErrorf(ctx,_T("No search is running"));
-		return;
-	}
-
-	wlsRequestStopSearchThreads(ctx);
+	wlsRequestPauseSearch(ctx);
 }
 
 static void wlsResetSearch(struct wcontext *ctx)
@@ -1808,9 +1804,8 @@ static void wlsRequestResetSearch(struct wcontext *ctx)
 {
 	// stop the search thread if it is running
 	if(ctx->searchstate==WLS_SRCH_RUNNING) {
-		//pause_search(ctx);
 		ctx->deferred_action |= WLS_ACTION_RESETSEARCH;
-		wlsRequestStopSearchThreads(ctx);
+		wlsRequestPauseSearch(ctx);
 	}
 	else if(ctx->searchstate==WLS_SRCH_PAUSED) {
 		wlsResetSearch(ctx);
@@ -1824,9 +1819,9 @@ static void wlsRequestResetSearch(struct wcontext *ctx)
 static void open_state(struct wcontext *ctx)
 {
 	if(ctx->searchstate!=WLS_SRCH_OFF) {
-		ctx->deferred_action |= WLS_ACTION_RESETSEARCH | WLS_ACTION_OPENSTATE;
-		//reset_search(ctx);
-		wlsRequestStopSearchThreads(ctx);
+		ctx->deferred_action |= WLS_ACTION_OPENSTATE;
+		wlsRequestPauseSearch(ctx);
+		return;
 	}
 
 #ifdef JS
@@ -2012,48 +2007,32 @@ static void copy_result(struct wcontext *ctx)
 {
 	if (ctx->searchstate == WLS_SRCH_OFF) return;
 
-	if (ctx->searchstate != WLS_SRCH_PAUSED) {
-		//pause_search(ctx);
-		return; // shouldn't happen
-	}
-
+	EnterCriticalSection(&ctx->critsec_tmpfield);
 	wlsCopyField(&g.tmpfield,&g.field);
+	LeaveCriticalSection(&ctx->critsec_tmpfield);
 
-	if (ctx->searchstate != WLS_SRCH_OFF) {
-		//reset_search(ctx);
-		wlsRequestResetSearch(ctx);
-	}
+	wlsRequestResetSearch(ctx);
 }
 
 static void copy_combination(struct wcontext *ctx)
 {
 	if (ctx->searchstate == WLS_SRCH_OFF) return;
 
-	if (ctx->searchstate != WLS_SRCH_PAUSED) {
-		//pause_search(ctx);
-		return;
-	}
-
-	show_combine(ctx);
-
+	EnterCriticalSection(&ctx->critsec_tmpfield);
+	wlsCopyCombineToTmpfield(ctx);
 	wlsCopyField(&g.tmpfield,&g.field);
+	LeaveCriticalSection(&ctx->critsec_tmpfield);
 
-	if (ctx->searchstate != WLS_SRCH_OFF) {
-		//reset_search(ctx);
-		wlsRequestResetSearch(ctx);
-	}
+	wlsRequestResetSearch(ctx);
 }
 
 static void clear_combination(struct wcontext *ctx)
 {
 	if (ctx->searchstate == WLS_SRCH_OFF) return;
 
-	if (ctx->searchstate != WLS_SRCH_PAUSED) {
-		//pause_search(ctx);
-		return;
-	}
-
 	g.combining = 0;
+
+	wlsRequestPauseSearch(ctx);
 }
 
 #endif
@@ -2118,7 +2097,7 @@ static void copytoclipboard(struct wcontext *ctx, struct field_struct *field)
 	CloseClipboard();
 }
 
-static void handle_MouseWheel(struct wcontext *ctx, HWND hWnd, WPARAM wParam)
+static void Handle_MouseWheel(struct wcontext *ctx, HWND hWnd, WPARAM wParam)
 {
 	signed short delta = (signed short)(HIWORD(wParam));
 	while(delta >= 120) {
@@ -2131,6 +2110,42 @@ static void handle_MouseWheel(struct wcontext *ctx, HWND hWnd, WPARAM wParam)
 	}
 }
 
+static void Handle_Copy(struct wcontext *ctx)
+{
+	if(ctx->searchstate == WLS_SRCH_PAUSED) {
+		copytoclipboard(ctx,&g.tmpfield);
+	}
+	else if(ctx->searchstate == WLS_SRCH_RUNNING) {
+		EnterCriticalSection(&ctx->critsec_tmpfield);
+		copytoclipboard(ctx,&g.tmpfield);
+		LeaveCriticalSection(&ctx->critsec_tmpfield);
+	}
+	else {
+		copytoclipboard(ctx,&g.field);
+	}
+}
+
+static void Handle_Save(struct wcontext *ctx)
+{
+#ifdef JS
+	if(ctx->searchstate==WLS_SRCH_PAUSED)
+		dumpstate(ctx->hwndFrame, NULL);
+#else
+	if (ctx->searchstate==WLS_SRCH_OFF) {
+		if (prepare_search(ctx,FALSE)) {
+			dumpstate(ctx->hwndFrame, NULL, FALSE);
+			wlsResetSearch(ctx);
+		}
+	}
+	else if (ctx->searchstate==WLS_SRCH_PAUSED) {
+		dumpstate(ctx->hwndFrame, NULL, FALSE);
+	}
+	else if (ctx->searchstate==WLS_SRCH_RUNNING) {
+		ctx->deferred_action |= WLS_ACTION_SAVEANDRESUME;
+		wlsRequestPauseSearch(ctx);
+	}
+#endif
+}
 
 static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -2144,7 +2159,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 	switch(msg) {
 
 	case WM_MOUSEWHEEL:
-		handle_MouseWheel(ctx, hWnd, wParam);
+		Handle_MouseWheel(ctx, hWnd, wParam);
 		return 0;
 
 	case WM_CREATE:
@@ -2263,7 +2278,6 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			wlsRequestPauseSearch(ctx);
 			return 0;
 		case IDC_SEARCHRESET:
-			//reset_search(ctx);
 			wlsRequestResetSearch(ctx);
 			return 0;
 		case IDC_SEARCHRESUME:
@@ -2272,9 +2286,11 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 
 		case IDC_SEARCHBACKUP:
 			if (ctx->searchstate==WLS_SRCH_RUNNING) {
-				ctx->deferred_action |= WLS_ACTION_BACKUP;
-				wlsRequestStopSearchThreads(ctx);
-				//pause_search(ctx);
+				// If a search is running, just pause it.
+				// The user can just press 'b' again if he really wants
+				// to back up from wherever the search happened to get
+				// interrupted.
+				wlsRequestPauseSearch(ctx);
 			}
 			else if(ctx->searchstate==WLS_SRCH_PAUSED) {
 				getbackup("1 ");
@@ -2283,9 +2299,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 
 		case IDC_SEARCHBACKUP2:
 			if (ctx->searchstate==WLS_SRCH_RUNNING) {
-				ctx->deferred_action |= WLS_ACTION_BACKUP2;
-				wlsRequestStopSearchThreads(ctx);
-				//pause_search(ctx);
+				wlsRequestPauseSearch(ctx);
 			}
 			else if(ctx->searchstate==WLS_SRCH_PAUSED) {
 				getbackup("20 ");
@@ -2296,28 +2310,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			open_state(ctx);
 			return 0;
 		case IDC_SAVEGAME:
-#ifdef JS
-			if(ctx->searchstate==WLS_SRCH_PAUSED)
-				dumpstate(ctx->hwndFrame, NULL);
-#else
-			if (ctx->searchstate==WLS_SRCH_OFF) {
-				if (prepare_search(ctx,FALSE)) {
-					dumpstate(ctx->hwndFrame, NULL, FALSE);
-					//reset_search(ctx);
-					wlsResetSearch(ctx);
-				}
-			}
-			else if (ctx->searchstate==WLS_SRCH_PAUSED) {
-				dumpstate(ctx->hwndFrame, NULL, FALSE);
-			}
-			else if (ctx->searchstate==WLS_SRCH_RUNNING) {
-				ctx->deferred_action |= WLS_ACTION_SAVEANDRESUME;
-				//pause_search(ctx);
-				wlsRequestStopSearchThreads(ctx);
-				//dumpstate(ctx->hwndFrame, NULL, FALSE);
-				//resume_search(ctx);
-			}
-#endif
+			Handle_Save(ctx);
 			return 0;
 		case IDC_NEXTGEN:
 			gen_changeby(ctx,1);
@@ -2326,10 +2319,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			gen_changeby(ctx,-1);
 			return 0;
 		case IDC_EDITCOPY:
-			if(ctx->searchstate == WLS_SRCH_OFF)
-				copytoclipboard(ctx,&g.field);
-			else
-				copytoclipboard(ctx,&g.tmpfield);
+			Handle_Copy(ctx);
 			return 0;
 		case IDC_CLEARGEN:
 			if(ctx->searchstate == WLS_SRCH_OFF) clear_gen(g.curgen);
@@ -2482,10 +2472,15 @@ static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
 	switch(msg) {
 	case WM_PAINT:
-		if(ctx->searchstate==WLS_SRCH_OFF)
+		if(ctx->searchstate==WLS_SRCH_OFF) {
 			PaintWindow(ctx,hWnd,&g.field);
-		else
+		}
+		else {
+			// There is a race condition here if a search is running,
+			// because it may be in the middle of updating tmpfield.
+			// It should only cause cosmetic problems, though.
 			PaintWindow(ctx,hWnd,&g.tmpfield);
+		}
 		return 0;
 
 	case WM_HSCROLL:
@@ -3292,6 +3287,8 @@ static BOOL InitApp(struct wcontext *ctx, int nCmdShow)
 
 	InitGameSettings(ctx);
 
+	InitializeCriticalSection(&ctx->critsec_tmpfield);
+
 	wlsCreateFonts(ctx);
 
 	/* Create a main window for this application instance.	*/
@@ -3353,6 +3350,7 @@ static BOOL InitApp(struct wcontext *ctx, int nCmdShow)
 static void UninitApp(struct wcontext *ctx)
 {
 	if(ctx->statusfont) DeleteObject((HGDIOBJ)ctx->statusfont);
+	DeleteCriticalSection(&ctx->critsec_tmpfield);
 }
 
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine,

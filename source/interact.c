@@ -202,7 +202,7 @@ getbackup(char *cp)
 
 		if (cell == NULL)
 		{
-			wlsShowCurrentField();
+			wlsUpdateAndShowTmpField();
 			ttystatus(_T("Backed up over all possibilities\n"));
 
 			return;
@@ -217,14 +217,14 @@ getbackup(char *cp)
 
 		if (!go(cell, state, FALSE))
 		{
-			wlsShowCurrentField();
+			wlsUpdateAndShowTmpField();
 			ttystatus(_T("Backed up over all possibilities\n"));
 
 			return;
 		}
 	}
 
-	wlsShowCurrentField();
+	wlsUpdateAndShowTmpField();
 }
 
 /*
@@ -1162,7 +1162,7 @@ getbackup(char *cp)
 
 		if (cell == NULL)
 		{
-			wlsShowCurrentField();
+			wlsUpdateAndShowTmpField();
 			ttystatus(_T("Backed up over all possibilities\n"));
 
 			return;
@@ -1177,14 +1177,14 @@ getbackup(char *cp)
 
 		if (!go(cell, state, FALSE))
 		{
-			wlsShowCurrentField();
+			wlsUpdateAndShowTmpField();
 			ttystatus(_T("Backed up over all possibilities\n"));
 
 			return;
 		}
 	}
 
-	wlsShowCurrentField();
+	wlsUpdateAndShowTmpField();
 }
 
 /*

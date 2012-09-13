@@ -1108,7 +1108,7 @@ search(void)
 		if (needwrite || (g.viewfreq && (++g.viewcount >= g.viewfreq)))
 		{
 			wlsUpdateProgressCounter();
-			wlsShowCurrentField();
+			wlsUpdateAndShowTmpField_Sync();
 			g.viewcount = 0;
 		}
 
@@ -3260,7 +3260,7 @@ search(void)
 		if (!go(cell, state, free))
 		{
 			wlsUpdateProgressCounter();
-			wlsShowCurrentField();
+			wlsUpdateAndShowTmpField_Sync();
 
 			return NOTEXIST;
 		}
@@ -3296,7 +3296,7 @@ search(void)
 		if (needwrite || (g.viewfreq && (++g.viewcount >= g.viewfreq)))
 		{
 			wlsUpdateProgressCounter();
-			wlsShowCurrentField();
+			wlsUpdateAndShowTmpField_Sync();
 		}
 
 		// Write the progress to the output file if needed.
@@ -3318,7 +3318,7 @@ search(void)
 
 		if (g.stoponstep) {
 			wlsUpdateProgressCounter();
-			wlsShowCurrentField();
+			wlsUpdateAndShowTmpField_Sync();
 			abortthread = 1;
 			return OK;
 		}
