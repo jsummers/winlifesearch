@@ -228,7 +228,7 @@ static void wlsCopyField(struct field_struct *src, struct field_struct *dst)
 	for(gen=0;gen<g.period;gen++) {
 		for(i=0;i<g.ncols;i++) {
 			for(j=0;j<g.nrows;j++) {
-				dst->c[gen][i][j] = src->c[gen][i][j];
+				wlsSetCellVal(dst,gen,i,j,wlsCellVal(src,gen,i,j));
 			}
 		}
 	}
@@ -529,14 +529,17 @@ static void DrawCell(struct wcontext *ctx, HDC hDC,int x,int y, struct field_str
 	SelectObject(hDC,ctx->brushes.cell);
 
 	// If all generations are the same, draw the cell in a different style.
-	tmp=field->c[0][x][y];
+	tmp = wlsCellVal(field,0,x,y);
 	for(i=1;i<g.period;i++) {
-		if(field->c[i][x][y]!=tmp) allsame=0;
+		if(wlsCellVal(field,i,x,y)!=tmp) {
+			allsame=0;
+			break;
+		}
 	}
 
 	ClearCell(ctx,hDC,x,y,!allsame);
 
-	switch(field->c[g.curgen][x][y]) {
+	switch(wlsCellVal(field,g.curgen,x,y)) {
 	case 0:        // must be off
 		SelectObject(hDC,ctx->pens.cell_off);
 		SelectObject(hDC,GetStockObject(NULL_BRUSH));
@@ -603,8 +606,8 @@ static void ChangeChecking(struct wcontext *ctx, HDC hDC, int x, int y, int allg
 
 	for(i=0;i<numpts;i++) {
 		for(j=g1;j<=g2;j++) {
-			if (g.field.c[j][pts[i].x][pts[i].y] == s1) {
-				g.field.c[j][pts[i].x][pts[i].y] = s2;
+			if (wlsCellVal(&g.field,j,pts[i].x,pts[i].y) == s1) {
+				wlsSetCellVal(&g.field,j,pts[i].x,pts[i].y,s2);
 			}
 		}
 		DrawCell(ctx,hDC,pts[i].x,pts[i].y,&g.field);
@@ -618,15 +621,18 @@ static void Symmetricalize(struct wcontext *ctx, HDC hDC,int x,int y,int allgens
 {
 	POINT pts[8];
 	int numpts,i,j;
+	int cellval;
 
 	GetSymmetricCells(x,y,pts,&numpts);
 
+	cellval = wlsCellVal(&g.field,g.curgen,x,y);
+
 	for(i=0;i<numpts;i++) {
 		if(i>0)
-			g.field.c[g.curgen][pts[i].x][pts[i].y]=g.field.c[g.curgen][x][y];
+			wlsSetCellVal(&g.field,g.curgen,pts[i].x,pts[i].y,cellval);
 		if(allgens) {
 			for(j=0;j<GENMAX;j++) {
-				g.field.c[j][pts[i].x][pts[i].y]=g.field.c[g.curgen][x][y];
+				wlsSetCellVal(&g.field,j,pts[i].x,pts[i].y,cellval);
 			}
 		}
 		DrawCell(ctx,hDC,pts[i].x,pts[i].y, &g.field);
@@ -716,17 +722,19 @@ static void PaintWindow(struct wcontext *ctx, HWND hWnd, struct field_struct *fi
 static void FixFrozenCells(void)
 {
 	int x,y,z;
+	int cellval;
 
 	for(x=0;x<COLMAX;x++) {
 		for(y=0;y<ROWMAX;y++) {
+			cellval = wlsCellVal(&g.field,g.curgen,x,y);
 			for(z=0;z<GENMAX;z++) {
 				if(z!=g.curgen) {
-					if(g.field.c[g.curgen][x][y]==CV_FROZEN) {
-						g.field.c[z][x][y]=CV_FROZEN;
+					if(cellval==CV_FROZEN) {
+						wlsSetCellVal(&g.field,z,x,y,CV_FROZEN);
 					}
 					else {  // current not frozen
-						if(g.field.c[z][x][y]==CV_FROZEN)
-							g.field.c[z][x][y]=CV_CLEAR;
+						if(wlsCellVal(&g.field,z,x,y)==CV_FROZEN)
+							wlsSetCellVal(&g.field,z,x,y,CV_CLEAR);
 					}
 				}
 			}
@@ -743,8 +751,8 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 	HDC hDC;
 	int vkey;
 	int tmp;
-	int lastval;
 	int allgens=0;
+	int prevval;
 	int newval;
 
 	newval = -1;
@@ -758,7 +766,7 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 	if(x<0 || x>=g.ncols) return 1;
 	if(y<0 || y>=g.nrows) return 1;
 
-	lastval= g.field.c[g.curgen][x][y];
+	prevval = wlsCellVal(&g.field,g.curgen,x,y);
 
 	switch(msg) {
 
@@ -845,7 +853,7 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 			}
 
 			ctx->selectstate=WLS_SEL_OFF;
-			if(g.field.c[g.curgen][x][y]==CV_FORCEDON) newval=CV_CLEAR;
+			if(prevval==CV_FORCEDON) newval=CV_CLEAR;
 			else newval=CV_FORCEDON;
 			//Symmetricalize(hDC,x,y,allgens);
 		}
@@ -863,7 +871,7 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 			return 0;
 		}
 		if(wParam & MK_SHIFT) allgens=1;
-		if(g.field.c[g.curgen][x][y]==CV_FORCEDOFF) newval=CV_CLEAR;
+		if(prevval==CV_FORCEDOFF) newval=CV_CLEAR;
 		else newval=CV_FORCEDOFF;
 		break;
 
@@ -922,14 +930,14 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 		if(newval>=0) {
 			for(i=ctx->selectrect.left;i<=ctx->selectrect.right;i++) {
 				for(j=ctx->selectrect.top;j<=ctx->selectrect.bottom;j++) {
-					g.field.c[g.curgen][i][j]=newval;
+					wlsSetCellVal(&g.field,g.curgen,i,j,newval);
 					Symmetricalize(ctx, hDC,i,j,allgens);
 				}
 			}
 		}
 	}
 	else {
-		if(newval>=0) g.field.c[g.curgen][x][y]=newval;
+		if(newval>=0) wlsSetCellVal(&g.field,g.curgen,x,y,newval);
 		Symmetricalize(ctx, hDC,x,y,allgens);
 	}
 
@@ -949,7 +957,7 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 				for(i=ctx->selectrect.left;i<=ctx->selectrect.right;i++) {
 					for(j=ctx->selectrect.top;j<=ctx->selectrect.bottom;j++) {
 						if (newval < 10) {
-							g.field.c[g.curgen][i][j]=newval;
+							wlsSetCellVal(&g.field,g.curgen,i,j,newval);
 							Symmetricalize(ctx,hDC,i,j,allgens);
 						}
 						else {
@@ -962,7 +970,7 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 		else {
 			if(newval>=0) {
 				if (newval < 10) {
-					g.field.c[g.curgen][x][y]=newval;
+					wlsSetCellVal(&g.field,g.curgen,x,y,newval);
 					Symmetricalize(ctx,hDC,x,y,allgens);
 				}
 				else {
@@ -996,7 +1004,7 @@ static int set_initial_cells(void)
 	for(g1=0;g1<g.period;g1++) {
 		for(i=0;i<g.ncols;i++) {
 			for(j=0;j<g.nrows;j++) {
-				switch(g.field.c[g1][i][j]) {
+				switch(wlsCellVal(&g.field,g1,i,j)) {
 				case CV_FORCEDOFF:
 					if(!proceed(findcell(j+1,i+1,g1),OFF,FALSE)) {
 						wlsMessagef(ctx,_T("Inconsistent OFF state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
@@ -1042,7 +1050,7 @@ BOOL set_initial_cells(void)
 	for(g1=0;g1<g.period;g1++) {
 		for(i=0;i<g.ncols;i++) {
 			for(j=0;j<g.nrows;j++) {
-				switch(g.field.c[g1][i][j]) {
+				switch(wlsCellVal(&g.field,g1,i,j)) {
 				case CV_FORCEDOFF:
 					if(!proceed(findcell(j+1,i+1,g1),OFF,FALSE)) {
 						wlsMessagef(ctx,_T("Inconsistent OFF state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
@@ -1179,16 +1187,16 @@ static void wlsShowCurrentField_internal(struct wcontext *ctx)
 				cell=findcell(j+1,i+1,g1);
 				switch(cell->state) {
 				case OFF:
-					g.tmpfield.c[g1][i][j] = CV_FORCEDOFF;
+					wlsSetCellVal(&g.tmpfield,g1,i,j,CV_FORCEDOFF);
 					break;
 				case ON:
-					g.tmpfield.c[g1][i][j] = CV_FORCEDON;
+					wlsSetCellVal(&g.tmpfield,g1,i,j,CV_FORCEDON);
 					break;
 				case UNK:
 #ifdef JS
-					g.tmpfield.c[g1][i][j] = CV_CLEAR;
+					wlsSetCellVal(&g.tmpfield,g1,i,j,CV_CLEAR);
 #else
-					g.tmpfield.c[g1][i][j] = g.field.c[g1][i][j];
+					wlsSetCellVal(&g.tmpfield,g1,i,j,wlsCellVal(&g.field,g1,i,j));
 #endif
 				}
 			}
@@ -1239,7 +1247,7 @@ static void do_combine(void)
 			for(i=0;i<g.ncols;i++) {
 				for(j=0;j<g.nrows;j++) {
 					cell=findcell(j+1,i+1,g1);
-					if ((g.field.c[g1][i][j] > 1) && ((cell->state == ON) || (cell->state == OFF))) {
+					if ((wlsCellVal(&g.field,g1,i,j) > 1) && ((cell->state == ON) || (cell->state == OFF))) {
 						++g.combinedcells;
 						cell->combined = cell->state;
 					}
@@ -1266,13 +1274,13 @@ static void show_combine(struct wcontext *ctx)
 					cell=findcell(j+1,i+1,g1);
 					switch(cell->combined) {
 					case ON:
-						g.tmpfield.c[g1][i][j] = CV_FORCEDON;
+						wlsSetCellVal(&g.tmpfield,g1,i,j,CV_FORCEDON);
 						break;
 					case OFF:
-						g.tmpfield.c[g1][i][j] = CV_FORCEDOFF;
+						wlsSetCellVal(&g.tmpfield,g1,i,j,CV_FORCEDOFF);
 						break;
 					case UNK:
-						g.tmpfield.c[g1][i][j] = g.field.c[g1][i][j];
+						wlsSetCellVal(&g.tmpfield,g1,i,j,wlsCellVal(&g.field,g1,i,j));
 					}
 				}
 			}
@@ -1849,7 +1857,7 @@ static void clear_gen(int g1)
 	int i,j;
 	for(i=0;i<COLMAX;i++) {
 		for(j=0;j<ROWMAX;j++) {
-			g.field.c[g1][i][j] = CV_CLEAR;
+			wlsSetCellVal(&g.field,g1,i,j,CV_CLEAR);
 		}
 	}
 }
@@ -1885,9 +1893,9 @@ static void flip_h(struct wcontext *ctx, int fromgen, int togen)
 	for (g1 = fromgen; g1 <= togen; ++g1) {
 		for (r = fromrow; r <= torow; ++r) {
 			for (c = (fromcol + tocol) / 2; c >= fromcol; --c) {
-				buffer = g.field.c[g1][c][r];
-				g.field.c[g1][c][r] = g.field.c[g1][tocol + fromcol - c][r];
-				g.field.c[g1][tocol + fromcol - c][r] = buffer;
+				buffer = wlsCellVal(&g.field,g1,c,r);
+				wlsSetCellVal(&g.field,g1,c,r,wlsCellVal(&g.field,g1,tocol + fromcol - c,r));
+				wlsSetCellVal(&g.field,g1,tocol + fromcol - c,r,buffer);
 			}
 		}
 	}
@@ -1915,9 +1923,9 @@ static void flip_v(struct wcontext *ctx, int fromgen, int togen)
 	for (g1 = fromgen; g1 <= togen; ++g1) {
 		for (r = (fromrow + torow) / 2; r >= fromrow; --r) {
 			for (c = fromcol; c <= tocol; ++c) {
-				buffer = g.field.c[g1][c][r];
-				g.field.c[g1][c][r] = g.field.c[g1][c][torow + fromrow - r];
-				g.field.c[g1][c][torow + fromrow - r] = buffer;
+				buffer = wlsCellVal(&g.field,g1,c,r);
+				wlsSetCellVal(&g.field,g1,c,r,wlsCellVal(&g.field,g1,c,torow + fromrow - r));
+				wlsSetCellVal(&g.field,g1,c,torow + fromrow - r,buffer);
 			}
 		}
 	}
@@ -1950,9 +1958,9 @@ static void transpose(struct wcontext *ctx, int fromgen, int togen)
 	for (g1 = fromgen; g1 <= togen; ++g1) {
 		for (r = fromrow + 1; r <= torow; ++r) {
 			for (c = fromcol; c < fromcol + (r - fromrow); ++c) {
-				buffer = g.field.c[g1][c][r];
-				g.field.c[g1][c][r] = g.field.c[g1][fromcol - fromrow + r][fromrow - fromcol + c];
-				g.field.c[g1][fromcol - fromrow + r][fromrow - fromcol + c] = buffer;
+				buffer = wlsCellVal(&g.field,g1,c,r);
+				wlsSetCellVal(&g.field,g1,c,r,wlsCellVal(&g.field,g1,fromcol - fromrow + r,fromrow - fromcol + c));
+				wlsSetCellVal(&g.field,g1,fromcol - fromrow + r,fromrow - fromcol + c,buffer);
 			}
 		}
 	}
@@ -1977,11 +1985,11 @@ static void shift_gen(struct wcontext *ctx, int fromgen, int togen, int gend, in
 		torow = g.nrows - 1;
 	}
 
-	// Make a temporary copy of all cells.
+	// Make a temporary copy of the relevant cells.
 	for(g1=fromgen; g1<=togen; g1++) {
 		for(c=fromcol; c<=tocol; c++) {
 			for (r=fromrow; r<=torow; r++) {
-				g.tmpfield.c[g1][c][r] = g.field.c[g1][c][r];
+				wlsSetCellVal(&g.tmpfield,g1,c,r,wlsCellVal(&g.field,g1,c,r));
 			}
 		}
 	}
@@ -1992,7 +2000,7 @@ static void shift_gen(struct wcontext *ctx, int fromgen, int togen, int gend, in
 				gx = (g1 + gend - fromgen + togen - fromgen + 1) % (togen - fromgen + 1) + fromgen;
 				cx = (c + cold - fromcol + tocol - fromcol + 1) % (tocol - fromcol + 1) + fromcol;
 				rx = (r + rowd - fromrow + torow - fromrow + 1) % (torow - fromrow + 1) + fromrow;
-				g.field.c[gx][cx][rx] = g.tmpfield.c[g1][c][r];
+				wlsSetCellVal(&g.field,gx,cx,rx,wlsCellVal(&g.tmpfield,g1,c,r));
 			}
 		}
 	}
@@ -2090,7 +2098,7 @@ static void copytoclipboard(struct wcontext *ctx, struct field_struct *field)
 
 	for(j=0;j<g.nrows;j++) {
 		for(i=0;i<g.ncols;i++) {
-			if(field->c[g.curgen][i][j]==CV_FORCEDON)
+			if(wlsCellVal(field,g.curgen,i,j)==CV_FORCEDON)
 				s[offset+(g.ncols+2)*j+i]='*';
 			else
 				s[offset+(g.ncols+2)*j+i]='.';
@@ -3123,8 +3131,8 @@ static void InitGameSettings(struct wcontext *ctx)
 	for(k=0;k<GENMAX;k++) {
 		for(i=0;i<COLMAX;i++) {
 			for(j=0;j<ROWMAX;j++) {
-				g.field.c[k][i][j]=CV_CLEAR;       // set all cells to "don't care"
-				g.tmpfield.c[k][i][j]=CV_CLEAR;
+				wlsSetCellVal(&g.field,k,i,j,CV_CLEAR);       // set all cells to "don't care"
+				wlsSetCellVal(&g.tmpfield,k,i,j,CV_CLEAR);
 			}
 		}
 	}

@@ -178,6 +178,11 @@ struct field_struct {
 	int c[GENMAX][COLMAX][ROWMAX];
 };
 
+// These may be implemented as functions or as macros.
+// It's not okay to use wlsCellVal() as an lvalue.
+#define wlsCellVal(f,k,i,j) ((f)->c[k][i][j])
+#define wlsSetCellVal(f,k,i,j,v) ((f)->c[k][i][j])=(v)
+
 struct globals_struct {
 /*
  * Current parameter values for the program to be saved over runs.

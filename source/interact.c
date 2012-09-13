@@ -409,7 +409,7 @@ void dumpstate(HWND hwndParent, TCHAR *file1)
 	for(z=0;z<g.period;z++) {
 		for(y=0;y<g.nrows;y++) {
 			for(x=0;x<g.ncols;x++) {
-				fprintf(fp,"%d ",g.field.c[z][x][y]);
+				fprintf(fp,"%d ",wlsCellVal(&g.field,z,x,y));
 			}
 			fprintf(fp,"\n");
 		}
@@ -485,7 +485,7 @@ void dumpstate(HWND hwndParent, TCHAR *file1)
 	for(g1=0;g1<g.period;g1++)
 		for(row=0;row<g.nrows;row++)
 			for(col=0;col<g.ncols;col++) {
-				fprintf(fp, "O %d %d %d %d\n",g1,row,col,g.field.c[g1][row][col]);
+				fprintf(fp, "O %d %d %d %d\n",g1,row,col,wlsCellVal(&g.field,g1,row,col));
 			}
 
 
@@ -580,10 +580,10 @@ BOOL loadstate(HWND hwndParent, TCHAR *file1)
 			cp=strtok(buf," ");
 			for(x=0;x<x1;x++) {
 				if(cp) {
-					g.field.c[z][x][y]=atoi(cp);
+					wlsSetCellVal(&g.field,z,x,y,atoi(cp));
 					cp=strtok(NULL," ");
 				}
-				else g.field.c[z][x][y]=4;  // error
+				else wlsSetCellVal(&g.field,z,x,y,4);  // error
 			}
 		}
 	}
@@ -722,7 +722,7 @@ BOOL loadstate(HWND hwndParent, TCHAR *file1)
 		row = getnum(&cp, 0);
 		col = getnum(&cp, 0);
 		val=getnum(&cp,0);
-		g.field.c[g1][row][col]=val;
+		wlsSetCellVal(&g.field,g1,row,col,val);
 
 		buf[0] = '\0';
 		fgets(buf, LINESIZE, fp);
@@ -1403,7 +1403,7 @@ void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo)
 	for(gen=0;gen<g.period;gen++) {
 		for(row=0;row<g.nrows;row++) {
 			for(col=0;col<g.ncols;col++) {
-				fprintf(fp,"%d ",g.field.c[gen][col][row]);
+				fprintf(fp,"%d ",wlsCellVal(&g.field,gen,col,row));
 			}
 			fprintf(fp,"\n");
 		}
@@ -1599,10 +1599,10 @@ BOOL loadstate(HWND hwndParent)
 			cp=strtok(buf," ");
 			for(col=0;col<g.ncols;col++) {
 				if(cp) {
-					g.field.c[gen][col][row]=atoi(cp);
+					wlsSetCellVal(&g.field,gen,col,row,atoi(cp));
 					cp=strtok(NULL," ");
 				}
-				else g.field.c[gen][col][row]=4;  // error
+				else wlsSetCellVal(&g.field,gen,col,row,4);  // error
 			}
 		}
 	}
