@@ -97,8 +97,6 @@ struct wcontext {
 	int search_priority;
 	int wheel_gen_dir; // 1:up decreases gen  2:up increases gen
 
-	//int app_exit_requested;
-	//int reset_search_requested;
 #define WLS_ACTION_APPEXIT           0x00000001
 #define WLS_ACTION_PAUSESEARCH       0x00000002
 #define WLS_ACTION_RESETSEARCH       0x00000004
@@ -508,7 +506,7 @@ static void ClearCell(struct wcontext *ctx, HDC hDC,int x,int y, int thick_outli
 	}
 }
 
-static void DrawCell(struct wcontext *ctx, HDC hDC,int x,int y)
+static void DrawCell(struct wcontext *ctx, HDC hDC,int x,int y, struct field_struct *field)
 {
 	int allsame=1;
 	int tmp;
@@ -518,14 +516,14 @@ static void DrawCell(struct wcontext *ctx, HDC hDC,int x,int y)
 	SelectObject(hDC,ctx->brushes.cell);
 
 	// If all generations are the same, draw the cell in a different style.
-	tmp=g.currfield[0][x][y];
+	tmp=field->c[0][x][y];
 	for(i=1;i<g.period;i++) {
-		if(g.currfield[i][x][y]!=tmp) allsame=0;
+		if(field->c[i][x][y]!=tmp) allsame=0;
 	}
 
 	ClearCell(ctx,hDC,x,y,!allsame);
 
-	switch(g.currfield[g.curgen][x][y]) {
+	switch(field->c[g.curgen][x][y]) {
 	case 0:        // must be off
 		SelectObject(hDC,ctx->pens.cell_off);
 		SelectObject(hDC,GetStockObject(NULL_BRUSH));
@@ -592,11 +590,11 @@ static void ChangeChecking(struct wcontext *ctx, HDC hDC, int x, int y, int allg
 
 	for(i=0;i<numpts;i++) {
 		for(j=g1;j<=g2;j++) {
-			if (g.currfield[j][pts[i].x][pts[i].y] == s1) {
-				g.currfield[j][pts[i].x][pts[i].y] = s2;
+			if (g.field.c[j][pts[i].x][pts[i].y] == s1) {
+				g.field.c[j][pts[i].x][pts[i].y] = s2;
 			}
 		}
-		DrawCell(ctx,hDC,pts[i].x,pts[i].y);
+		DrawCell(ctx,hDC,pts[i].x,pts[i].y,&g.field);
 	}
 }
 #endif
@@ -612,13 +610,13 @@ static void Symmetricalize(struct wcontext *ctx, HDC hDC,int x,int y,int allgens
 
 	for(i=0;i<numpts;i++) {
 		if(i>0)
-			g.currfield[g.curgen][pts[i].x][pts[i].y]=g.currfield[g.curgen][x][y];
+			g.field.c[g.curgen][pts[i].x][pts[i].y]=g.field.c[g.curgen][x][y];
 		if(allgens) {
 			for(j=0;j<GENMAX;j++) {
-				g.currfield[j][pts[i].x][pts[i].y]=g.currfield[g.curgen][x][y];
+				g.field.c[j][pts[i].x][pts[i].y]=g.field.c[g.curgen][x][y];
 			}
 		}
-		DrawCell(ctx,hDC,pts[i].x,pts[i].y);
+		DrawCell(ctx,hDC,pts[i].x,pts[i].y, &g.field);
 	}
 }
 
@@ -668,13 +666,13 @@ static void SelectOff(struct wcontext *ctx, HDC hDC)
 	ctx->selectstate=WLS_SEL_OFF;
 }
 
-static void DrawWindow(struct wcontext *ctx, HDC hDC)
+static void DrawWindow(struct wcontext *ctx, HDC hDC, struct field_struct *field)
 {
 	int i,j;
 
 	for(i=0;i<g.ncols;i++) {
 		for(j=0;j<g.nrows;j++) {
-			DrawCell(ctx,hDC,i,j);
+			DrawCell(ctx,hDC,i,j,field);
 		}
 	}
 	DrawGuides(ctx,hDC);
@@ -684,7 +682,7 @@ static void DrawWindow(struct wcontext *ctx, HDC hDC)
 	}
 }
 
-static void PaintWindow(struct wcontext *ctx, HWND hWnd)
+static void PaintWindow(struct wcontext *ctx, HWND hWnd, struct field_struct *field)
 {
 	HDC hdc;
 	HPEN hOldPen;
@@ -695,7 +693,7 @@ static void PaintWindow(struct wcontext *ctx, HWND hWnd)
 	hOldPen= SelectObject(hdc, GetStockObject(BLACK_PEN));
 	hOldBrush=SelectObject(hdc,GetStockObject(LTGRAY_BRUSH));
 
-	DrawWindow(ctx,hdc);
+	DrawWindow(ctx,hdc,field);
 
 	SelectObject(hdc,hOldPen);
 	SelectObject(hdc,hOldBrush);
@@ -710,12 +708,12 @@ static void FixFrozenCells(void)
 		for(y=0;y<ROWMAX;y++) {
 			for(z=0;z<GENMAX;z++) {
 				if(z!=g.curgen) {
-					if(g.currfield[g.curgen][x][y]==CV_FROZEN) {
-						g.currfield[z][x][y]=CV_FROZEN;
+					if(g.field.c[g.curgen][x][y]==CV_FROZEN) {
+						g.field.c[z][x][y]=CV_FROZEN;
 					}
 					else {  // current not frozen
-						if(g.currfield[z][x][y]==CV_FROZEN)
-							g.currfield[z][x][y]=CV_CLEAR;
+						if(g.field.c[z][x][y]==CV_FROZEN)
+							g.field.c[z][x][y]=CV_CLEAR;
 					}
 				}
 			}
@@ -747,7 +745,7 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 	if(x<0 || x>=g.ncols) return 1;
 	if(y<0 || y>=g.nrows) return 1;
 
-	lastval= g.currfield[g.curgen][x][y];
+	lastval= g.field.c[g.curgen][x][y];
 
 	switch(msg) {
 
@@ -834,7 +832,7 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 			}
 
 			ctx->selectstate=WLS_SEL_OFF;
-			if(g.currfield[g.curgen][x][y]==CV_FORCEDON) newval=CV_CLEAR;
+			if(g.field.c[g.curgen][x][y]==CV_FORCEDON) newval=CV_CLEAR;
 			else newval=CV_FORCEDON;
 			//Symmetricalize(hDC,x,y,allgens);
 		}
@@ -852,7 +850,7 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 			return 0;
 		}
 		if(wParam & MK_SHIFT) allgens=1;
-		if(g.currfield[g.curgen][x][y]==CV_FORCEDOFF) newval=CV_CLEAR;
+		if(g.field.c[g.curgen][x][y]==CV_FORCEDOFF) newval=CV_CLEAR;
 		else newval=CV_FORCEDOFF;
 		break;
 
@@ -911,14 +909,14 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 		if(newval>=0) {
 			for(i=ctx->selectrect.left;i<=ctx->selectrect.right;i++) {
 				for(j=ctx->selectrect.top;j<=ctx->selectrect.bottom;j++) {
-					g.currfield[g.curgen][i][j]=newval;
+					g.field.c[g.curgen][i][j]=newval;
 					Symmetricalize(ctx, hDC,i,j,allgens);
 				}
 			}
 		}
 	}
 	else {
-		if(newval>=0) g.currfield[g.curgen][x][y]=newval;
+		if(newval>=0) g.field.c[g.curgen][x][y]=newval;
 		Symmetricalize(ctx, hDC,x,y,allgens);
 	}
 
@@ -938,7 +936,7 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 				for(i=ctx->selectrect.left;i<=ctx->selectrect.right;i++) {
 					for(j=ctx->selectrect.top;j<=ctx->selectrect.bottom;j++) {
 						if (newval < 10) {
-							g.currfield[g.curgen][i][j]=newval;
+							g.field.c[g.curgen][i][j]=newval;
 							Symmetricalize(ctx,hDC,i,j,allgens);
 						}
 						else {
@@ -951,7 +949,7 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 		else {
 			if(newval>=0) {
 				if (newval < 10) {
-					g.currfield[g.curgen][x][y]=newval;
+					g.field.c[g.curgen][x][y]=newval;
 					Symmetricalize(ctx,hDC,x,y,allgens);
 				}
 				else {
@@ -974,6 +972,7 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 #ifdef JS
 
 // copy my format to dbells format...
+// ... and copy the initial state to tmpfield
 static int set_initial_cells(void)
 {
 	int i,j,g1;
@@ -982,7 +981,10 @@ static int set_initial_cells(void)
 	for(g1=0;g1<g.period;g1++) {
 		for(i=0;i<g.ncols;i++) {
 			for(j=0;j<g.nrows;j++) {
-				switch(g.origfield[g1][i][j]) {
+
+				g.tmpfield.c[g1][i][j] = g.field.c[g1][i][j];
+
+				switch(g.field.c[g1][i][j]) {
 				case CV_FORCEDOFF:
 					if(!proceed(findcell(j+1,i+1,g1),OFF,FALSE)) {
 						wlsMessagef(ctx,_T("Inconsistent OFF state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
@@ -1011,7 +1013,7 @@ static int set_initial_cells(void)
 #else
 
 // copy my format to dbells format...
-// ... and make a backup of the current state (KAS)
+// ... and copy the initial state to tmpfield
 BOOL set_initial_cells(void)
 {
 	CELL *cell;
@@ -1027,9 +1029,9 @@ BOOL set_initial_cells(void)
 		for(i=0;i<g.ncols;i++) {
 			for(j=0;j<g.nrows;j++) {
 
-				g.origfield[g1][i][j] = g.currfield[g1][i][j];
+				g.tmpfield.c[g1][i][j] = g.field.c[g1][i][j];
 
-				switch(g.currfield[g1][i][j]) {
+				switch(g.field.c[g1][i][j]) {
 				case CV_FORCEDOFF:
 					if(!proceed(findcell(j+1,i+1,g1),OFF,FALSE)) {
 						wlsMessagef(ctx,_T("Inconsistent OFF state for cell (col %d,row %d,gen %d)"),i+1,j+1,g1);
@@ -1166,16 +1168,16 @@ static void wlsShowCurrentField_internal(struct wcontext *ctx)
 				cell=findcell(j+1,i+1,g1);
 				switch(cell->state) {
 				case OFF:
-					g.currfield[g1][i][j] = CV_FORCEDOFF;
+					g.tmpfield.c[g1][i][j] = CV_FORCEDOFF;
 					break;
 				case ON:
-					g.currfield[g1][i][j] = CV_FORCEDON;
+					g.tmpfield.c[g1][i][j] = CV_FORCEDON;
 					break;
 				case UNK:
 #ifdef JS
-					g.currfield[g1][i][j] = CV_CLEAR;
+					g.tmpfield.c[g1][i][j] = CV_CLEAR;
 #else
-					g.currfield[g1][i][j] = g.origfield[g1][i][j];
+					g.tmpfield.c[g1][i][j] = g.field.c[g1][i][j];
 #endif
 				}
 			}
@@ -1226,7 +1228,7 @@ static void do_combine(void)
 			for(i=0;i<g.ncols;i++) {
 				for(j=0;j<g.nrows;j++) {
 					cell=findcell(j+1,i+1,g1);
-					if ((g.origfield[g1][i][j] > 1) && ((cell->state == ON) || (cell->state == OFF))) {
+					if ((g.field.c[g1][i][j] > 1) && ((cell->state == ON) || (cell->state == OFF))) {
 						++g.combinedcells;
 						cell->combined = cell->state;
 					}
@@ -1253,13 +1255,13 @@ static void show_combine(struct wcontext *ctx)
 					cell=findcell(j+1,i+1,g1);
 					switch(cell->combined) {
 					case ON:
-						g.currfield[g1][i][j] = CV_FORCEDON;
+						g.tmpfield.c[g1][i][j] = CV_FORCEDON;
 						break;
 					case OFF:
-						g.currfield[g1][i][j] = CV_FORCEDOFF;
+						g.tmpfield.c[g1][i][j] = CV_FORCEDOFF;
 						break;
 					case UNK:
-						g.currfield[g1][i][j] = g.origfield[g1][i][j];
+						g.tmpfield.c[g1][i][j] = g.field.c[g1][i][j];
 					}
 				}
 			}
@@ -1340,7 +1342,6 @@ done:
 static DWORD WINAPI search_thread(LPVOID foo)
 {
 	BOOL reset = 0;
-	int i, j, k;
 	struct wcontext *ctx = gctx;
 
 	/*
@@ -1427,15 +1428,8 @@ static DWORD WINAPI search_thread(LPVOID foo)
 	}
 done:
 	if (reset) {
-		for(k=0;k<GENMAX;k++) {
-			for(i=0;i<COLMAX;i++) {
-				for(j=0;j<ROWMAX;j++) {
-					g.currfield[k][i][j]=g.origfield[k][i][j];
-				}
-			}
-		}
 		ctx->searchstate=WLS_SRCH_OFF;
-		wlsRepaintCells_Sync(ctx,FALSE);
+		wlsRepaintCells_Sync(ctx,FALSE); // TODO: Remove this?
 	}
 	else {
 		ctx->searchstate = WLS_SRCH_PAUSED;
@@ -1542,7 +1536,7 @@ static void resume_search(struct wcontext *ctx)
 
 static void prepare_and_start_search(struct wcontext *ctx, TCHAR *statefile)
 {
-	int i,j,k;
+	int i;
 
 	if(ctx->searchstate!=WLS_SRCH_OFF) {
 		wlsErrorf(ctx,_T("A search is already running"));
@@ -1551,15 +1545,6 @@ static void prepare_and_start_search(struct wcontext *ctx, TCHAR *statefile)
 
 	g.viewcount = -1;
 	wlsUpdateProgressCounter();
-
-	// save a copy or the starting position
-	for(k=0;k<GENMAX;k++) {
-		for(i=0;i<COLMAX;i++) {
-			for(j=0;j<ROWMAX;j++) {
-				g.origfield[k][i][j]=g.currfield[k][i][j];
-			}
-		}
-	}
 
 	if (!setrules(g.rulestring)) {
 		wlsErrorf(ctx,_T("Cannot set Life rules!"));
@@ -1785,8 +1770,6 @@ static void wlsRequestPauseSearch(struct wcontext *ctx)
 
 static void wlsResetSearch(struct wcontext *ctx)
 {
-	int i,j,k;
-
 	if(ctx->searchstate==WLS_SRCH_OFF) {
 		wlsErrorf(ctx,_T("No search in progress"));
 		goto here;
@@ -1795,15 +1778,6 @@ static void wlsResetSearch(struct wcontext *ctx)
 	ctx->searchstate=WLS_SRCH_OFF;
 
 	record_malloc(0,NULL);    // free memory
-
-	// restore the original cells
-	for(k=0;k<GENMAX;k++) {
-		for(i=0;i<COLMAX;i++) {
-			for(j=0;j<ROWMAX;j++) {
-				g.currfield[k][i][j]=g.origfield[k][i][j];
-			}
-		}
-	}
 
 here:
 	wlsRepaintCells(ctx,FALSE);
@@ -1864,7 +1838,7 @@ static void clear_gen(int g1)
 	int i,j;
 	for(i=0;i<COLMAX;i++) {
 		for(j=0;j<ROWMAX;j++) {
-			g.currfield[g1][i][j] = CV_CLEAR;
+			g.field.c[g1][i][j] = CV_CLEAR;
 		}
 	}
 }
@@ -1900,9 +1874,9 @@ static void flip_h(struct wcontext *ctx, int fromgen, int togen)
 	for (g1 = fromgen; g1 <= togen; ++g1) {
 		for (r = fromrow; r <= torow; ++r) {
 			for (c = (fromcol + tocol) / 2; c >= fromcol; --c) {
-				buffer = g.currfield[g1][c][r];
-				g.currfield[g1][c][r] = g.currfield[g1][tocol + fromcol - c][r];
-				g.currfield[g1][tocol + fromcol - c][r] = buffer;
+				buffer = g.field.c[g1][c][r];
+				g.field.c[g1][c][r] = g.field.c[g1][tocol + fromcol - c][r];
+				g.field.c[g1][tocol + fromcol - c][r] = buffer;
 			}
 		}
 	}
@@ -1930,9 +1904,9 @@ static void flip_v(struct wcontext *ctx, int fromgen, int togen)
 	for (g1 = fromgen; g1 <= togen; ++g1) {
 		for (r = (fromrow + torow) / 2; r >= fromrow; --r) {
 			for (c = fromcol; c <= tocol; ++c) {
-				buffer = g.currfield[g1][c][r];
-				g.currfield[g1][c][r] = g.currfield[g1][c][torow + fromrow - r];
-				g.currfield[g1][c][torow + fromrow - r] = buffer;
+				buffer = g.field.c[g1][c][r];
+				g.field.c[g1][c][r] = g.field.c[g1][c][torow + fromrow - r];
+				g.field.c[g1][c][torow + fromrow - r] = buffer;
 			}
 		}
 	}
@@ -1965,9 +1939,9 @@ static void transpose(struct wcontext *ctx, int fromgen, int togen)
 	for (g1 = fromgen; g1 <= togen; ++g1) {
 		for (r = fromrow + 1; r <= torow; ++r) {
 			for (c = fromcol; c < fromcol + (r - fromrow); ++c) {
-				buffer = g.currfield[g1][c][r];
-				g.currfield[g1][c][r] = g.currfield[g1][fromcol - fromrow + r][fromrow - fromcol + c];
-				g.currfield[g1][fromcol - fromrow + r][fromrow - fromcol + c] = buffer;
+				buffer = g.field.c[g1][c][r];
+				g.field.c[g1][c][r] = g.field.c[g1][fromcol - fromrow + r][fromrow - fromcol + c];
+				g.field.c[g1][fromcol - fromrow + r][fromrow - fromcol + c] = buffer;
 			}
 		}
 	}
@@ -1992,10 +1966,11 @@ static void shift_gen(struct wcontext *ctx, int fromgen, int togen, int gend, in
 		torow = g.nrows - 1;
 	}
 
+	// Make a temporary copy of all cells.
 	for(g1=fromgen; g1<=togen; g1++) {
 		for(c=fromcol; c<=tocol; c++) {
 			for (r=fromrow; r<=torow; r++) {
-				g.origfield[g1][c][r] = g.currfield[g1][c][r];
+				g.tmpfield.c[g1][c][r] = g.field.c[g1][c][r];
 			}
 		}
 	}
@@ -2006,7 +1981,7 @@ static void shift_gen(struct wcontext *ctx, int fromgen, int togen, int gend, in
 				gx = (g1 + gend - fromgen + togen - fromgen + 1) % (togen - fromgen + 1) + fromgen;
 				cx = (c + cold - fromcol + tocol - fromcol + 1) % (tocol - fromcol + 1) + fromcol;
 				rx = (r + rowd - fromrow + torow - fromrow + 1) % (torow - fromrow + 1) + fromrow;
-				g.currfield[gx][cx][rx] = g.origfield[g1][c][r];
+				g.field.c[gx][cx][rx] = g.tmpfield.c[g1][c][r];
 			}
 		}
 	}
@@ -2028,7 +2003,7 @@ static void copy_result(struct wcontext *ctx)
 	for(g1=0;g1<g.period;g1++) {
 		for(i=0;i<g.ncols;i++) {
 			for(j=0;j<g.nrows;j++) {
-				g.origfield[g1][i][j] = g.currfield[g1][i][j];
+				g.field.c[g1][i][j] = g.tmpfield.c[g1][i][j];
 			}
 		}
 	}
@@ -2055,7 +2030,7 @@ static void copy_combination(struct wcontext *ctx)
 	for(g1=0;g1<g.period;g1++) {
 		for(i=0;i<g.ncols;i++) {
 			for(j=0;j<g.nrows;j++) {
-				g.origfield[g1][i][j] = g.currfield[g1][i][j];
+				g.field.c[g1][i][j] = g.tmpfield.c[g1][i][j];
 			}
 		}
 	}
@@ -2080,7 +2055,7 @@ static void clear_combination(struct wcontext *ctx)
 
 #endif
 
-static void copytoclipboard(struct wcontext *ctx)
+static void copytoclipboard(struct wcontext *ctx, struct field_struct *field)
 {
 	DWORD size;
 	HGLOBAL hClip;
@@ -2120,7 +2095,7 @@ static void copytoclipboard(struct wcontext *ctx)
 
 	for(j=0;j<g.nrows;j++) {
 		for(i=0;i<g.ncols;i++) {
-			if(g.currfield[g.curgen][i][j]==CV_FORCEDON)
+			if(field->c[g.curgen][i][j]==CV_FORCEDON)
 				s[offset+(g.ncols+2)*j+i]='*';
 			else
 				s[offset+(g.ncols+2)*j+i]='.';
@@ -2348,7 +2323,10 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			gen_changeby(ctx,-1);
 			return 0;
 		case IDC_EDITCOPY:
-			copytoclipboard(ctx);
+			if(ctx->searchstate == WLS_SRCH_OFF)
+				copytoclipboard(ctx,&g.field);
+			else
+				copytoclipboard(ctx,&g.tmpfield);
 			return 0;
 		case IDC_CLEARGEN:
 			if(ctx->searchstate == WLS_SRCH_OFF) clear_gen(g.curgen);
@@ -2501,7 +2479,10 @@ static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
 	switch(msg) {
 	case WM_PAINT:
-		PaintWindow(ctx,hWnd);
+		if(ctx->searchstate==WLS_SRCH_OFF)
+			PaintWindow(ctx,hWnd,&g.field);
+		else
+			PaintWindow(ctx,hWnd,&g.tmpfield);
 		return 0;
 
 	case WM_HSCROLL:
@@ -3147,8 +3128,8 @@ static void InitGameSettings(struct wcontext *ctx)
 	for(k=0;k<GENMAX;k++) {
 		for(i=0;i<COLMAX;i++) {
 			for(j=0;j<ROWMAX;j++) {
-				g.origfield[k][i][j]=CV_CLEAR;       // set all cells to "don't care"
-				g.currfield[k][i][j]=CV_CLEAR;
+				g.field.c[k][i][j]=CV_CLEAR;       // set all cells to "don't care"
+				g.tmpfield.c[k][i][j]=CV_CLEAR;
 			}
 		}
 	}

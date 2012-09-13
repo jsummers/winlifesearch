@@ -169,6 +169,15 @@ struct cell {
 
 typedef	unsigned char   FLAGS;
 
+struct field_struct {
+#define CV_FORCEDOFF  0  // cell values - These must not be changed
+#define CV_FORCEDON   1
+#define CV_CLEAR      2
+#define CV_UNCHECKED  3
+#define CV_FROZEN     4
+	int c[GENMAX][COLMAX][ROWMAX];
+};
+
 struct globals_struct {
 /*
  * Current parameter values for the program to be saved over runs.
@@ -287,13 +296,10 @@ struct globals_struct {
 	int differentcombinedcells;
 #endif
 
-#define CV_FORCEDOFF  0  // cell values - These must not be changed
-#define CV_FORCEDON   1
-#define CV_CLEAR      2
-#define CV_UNCHECKED  3
-#define CV_FROZEN     4
-	int origfield[GENMAX][COLMAX][ROWMAX];
-	int currfield[GENMAX][COLMAX][ROWMAX];
+	// Represents the editable cells
+	struct field_struct field;
+	// Used for the current state of the search, and other temporary things
+	struct field_struct tmpfield;
 
 #define WLS_RULESTRING_LEN 50
 	TCHAR rulestring[WLS_RULESTRING_LEN];
