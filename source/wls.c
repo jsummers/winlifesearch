@@ -96,7 +96,20 @@ struct wcontext {
 #define WLS_PRIORITY_NORMAL  30
 	int search_priority;
 	int wheel_gen_dir; // 1:up decreases gen  2:up increases gen
-	int app_exit_requested;
+
+	//int app_exit_requested;
+	//int reset_search_requested;
+#define WLS_ACTION_APPEXIT           0x00000001
+#define WLS_ACTION_PAUSESEARCH       0x00000002
+#define WLS_ACTION_RESETSEARCH       0x00000004
+#define WLS_ACTION_BACKUP            0x00000008
+#define WLS_ACTION_BACKUP2           0x00000010
+#define WLS_ACTION_OPENSTATE         0x00000020
+#define WLS_ACTION_SAVEANDRESUME     0x00000040
+#define WLS_ACTION_COPYRESULT        0x00001000
+#define WLS_ACTION_COPYCOMBINATION   0x00002000
+#define WLS_ACTION_CLEARCOMBINATION  0x00008000
+	unsigned int deferred_action;
 };
 
 struct globals_struct g;
@@ -215,6 +228,12 @@ void record_malloc(int func, void *m)
 static void wlsRepaintCells(struct wcontext *ctx, int full_repaint)
 {
 	InvalidateRect(ctx->hwndMain,NULL,full_repaint?TRUE:FALSE);
+}
+
+static void wlsRepaintCells_Sync(struct wcontext *ctx, int full_repaint)
+{
+	wlsRepaintCells(ctx,full_repaint);
+	UpdateWindow(ctx->hwndMain);
 }
 
 /* Find all the cells symmetric to the given cell.
@@ -1131,11 +1150,14 @@ void wlsUpdateProgressCounter(void)
 	SetWindowText(ctx->hwndFrame,buf);
 }
 
-void wlsShowCurrentField(void)
+static void wlsShowCurrentField_internal(struct wcontext *ctx)
 {
 	int i,j,g1;
 	CELL *cell;
-	struct wcontext *ctx = gctx;
+
+	if(ctx->searchstate==WLS_SRCH_OFF) {
+		return;
+	}
 
 	// copy dbell's format back into mine
 	for(g1=0;g1<g.period;g1++) {
@@ -1163,6 +1185,19 @@ void wlsShowCurrentField(void)
 	wlsRepaintCells(ctx,FALSE);
 }
 
+void wlsShowCurrentField(void)
+{
+	struct wcontext *ctx = gctx;
+	wlsShowCurrentField_internal(ctx);
+	wlsRepaintCells(ctx,FALSE);
+}
+
+void wlsShowCurrentField_Sync(void)
+{
+	struct wcontext *ctx = gctx;
+	wlsShowCurrentField_internal(ctx);
+	wlsRepaintCells_Sync(ctx,FALSE);
+}
 
 #ifndef JS
 
@@ -1271,7 +1306,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 		if (g.curstatus == FOUND) {
 			g.curstatus = OK;
 
-			wlsShowCurrentField();
+			wlsShowCurrentField_Sync();
 			wlsStatusf(ctx,_T("Object %d found."), ++g.foundcount);
 
 			wlsWriteCurrentFieldToFile(ctx->hwndFrame, g.outputfile, TRUE);
@@ -1351,7 +1386,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 			g.curstatus = OK;
 
 			wlsUpdateProgressCounter();
-			wlsShowCurrentField();
+			wlsShowCurrentField_Sync();
 			++g.foundcount;
 			wlsStatusf(ctx,_T("Object %d found.\n"), g.foundcount);
 
@@ -1375,7 +1410,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 		}
 		else {
 			wlsUpdateProgressCounter();
-			wlsShowCurrentField();
+			wlsShowCurrentField_Sync();
 			reset = (g.foundcount == 0);
 			wlsMessagef(ctx,_T("Search completed:  %d object%s found"),
 				g.foundcount, (g.foundcount == 1) ? _T("") : _T("s"));
@@ -1400,7 +1435,7 @@ done:
 			}
 		}
 		ctx->searchstate=WLS_SRCH_OFF;
-		wlsRepaintCells(ctx,FALSE);
+		wlsRepaintCells_Sync(ctx,FALSE);
 	}
 	else {
 		ctx->searchstate = WLS_SRCH_PAUSED;
@@ -1434,6 +1469,7 @@ static void resume_search(struct wcontext *ctx)
 		wlsErrorf(ctx,_T("No search is paused"));
 		return;
 	}
+	ctx->deferred_action = 0;
 	abortthread=0;
 
 	ctx->searchstate=WLS_SRCH_RUNNING;
@@ -1478,6 +1514,7 @@ static void resume_search(struct wcontext *ctx)
 		wlsErrorf(ctx,_T("No search is paused"));
 		return;
 	}
+	ctx->deferred_action = 0;
 	abortthread=0;
 
 	ctx->searchstate=WLS_SRCH_RUNNING;
@@ -1680,6 +1717,8 @@ static void wlsRequestStopSearchThreads(struct wcontext *ctx)
 	abortthread=1;
 }
 
+static void wlsResetSearch(struct wcontext *ctx);
+
 static void wlsOnThreadDone(struct wcontext *ctx)
 {
 	if(ctx->hthread) {
@@ -1691,7 +1730,7 @@ static void wlsOnThreadDone(struct wcontext *ctx)
 	// Tell Windows we're okay with the computer going to sleep.
 	SetThreadExecutionState(ES_CONTINUOUS);
 
-	if(ctx->app_exit_requested) {
+	if(ctx->deferred_action & WLS_ACTION_APPEXIT) {
 		// Thread was stopped because the application wants to exit.
 		// It's our job to actually make that happen.
 		// Don't do any unnecessary UI; just destroy the main window and
@@ -1699,10 +1738,13 @@ static void wlsOnThreadDone(struct wcontext *ctx)
 		DestroyWindow(ctx->hwndFrame);
 		return;
 	}
+	else if(ctx->deferred_action & WLS_ACTION_RESETSEARCH) {
+		wlsResetSearch(ctx);
+	}
 
-#ifndef JS
-	wlsShowCurrentField();
-#endif
+//#ifndef JS
+//	wlsShowCurrentField();
+//#endif
 
 	SetWindowText(ctx->hwndFrame,WLS_APPNAME _T(" - Paused"));
 	if(ctx->thread_stop_reason==1) {
@@ -1727,11 +1769,11 @@ static void wlsRequestEndApp(struct wcontext *ctx)
 	// a message to us. At that time we'll check for the global flag, and if it's
 	// set, exit for real.
 	wlsStatusf(ctx,_T("Stopping search thread\x2026"));
-	ctx->app_exit_requested = 1;
+	ctx->deferred_action = WLS_ACTION_APPEXIT;
 	wlsRequestStopSearchThreads(ctx);
 }
 
-static void pause_search(struct wcontext *ctx)
+static void wlsRequestPauseSearch(struct wcontext *ctx)
 {
 	if(ctx->searchstate!=WLS_SRCH_RUNNING) {
 		wlsErrorf(ctx,_T("No search is running"));
@@ -1741,18 +1783,13 @@ static void pause_search(struct wcontext *ctx)
 	wlsRequestStopSearchThreads(ctx);
 }
 
-static void reset_search(struct wcontext *ctx)
+static void wlsResetSearch(struct wcontext *ctx)
 {
 	int i,j,k;
 
 	if(ctx->searchstate==WLS_SRCH_OFF) {
 		wlsErrorf(ctx,_T("No search in progress"));
 		goto here;
-	}
-
-	// stop the search thread if it is running
-	if(ctx->searchstate==WLS_SRCH_RUNNING) {
-		pause_search(ctx);
 	}
 
 	ctx->searchstate=WLS_SRCH_OFF;
@@ -1774,9 +1811,30 @@ here:
 	wlsStatusf(ctx,_T(""));
 }
 
+static void wlsRequestResetSearch(struct wcontext *ctx)
+{
+	// stop the search thread if it is running
+	if(ctx->searchstate==WLS_SRCH_RUNNING) {
+		//pause_search(ctx);
+		ctx->deferred_action |= WLS_ACTION_RESETSEARCH;
+		wlsRequestStopSearchThreads(ctx);
+	}
+	else if(ctx->searchstate==WLS_SRCH_PAUSED) {
+		wlsResetSearch(ctx);
+	}
+	else {
+		wlsErrorf(ctx,_T("No search in progress"));
+	}
+}
+
+
 static void open_state(struct wcontext *ctx)
 {
-	if(ctx->searchstate!=WLS_SRCH_OFF) reset_search(ctx);
+	if(ctx->searchstate!=WLS_SRCH_OFF) {
+		ctx->deferred_action |= WLS_ACTION_RESETSEARCH | WLS_ACTION_OPENSTATE;
+		//reset_search(ctx);
+		wlsRequestStopSearchThreads(ctx);
+	}
 
 #ifdef JS
 	prepare_and_start_search(ctx,_T(""));
@@ -1962,7 +2020,10 @@ static void copy_result(struct wcontext *ctx)
 
 	if (ctx->searchstate == WLS_SRCH_OFF) return;
 
-	if (ctx->searchstate != WLS_SRCH_PAUSED) pause_search(ctx);
+	if (ctx->searchstate != WLS_SRCH_PAUSED) {
+		//pause_search(ctx);
+		return; // shouldn't happen
+	}
 
 	for(g1=0;g1<g.period;g1++) {
 		for(i=0;i<g.ncols;i++) {
@@ -1972,7 +2033,10 @@ static void copy_result(struct wcontext *ctx)
 		}
 	}
 
-	if (ctx->searchstate != WLS_SRCH_OFF) reset_search(ctx);
+	if (ctx->searchstate != WLS_SRCH_OFF) {
+		//reset_search(ctx);
+		wlsRequestResetSearch(ctx);
+	}
 }
 
 static void copy_combination(struct wcontext *ctx)
@@ -1981,7 +2045,10 @@ static void copy_combination(struct wcontext *ctx)
 
 	if (ctx->searchstate == WLS_SRCH_OFF) return;
 
-	if (ctx->searchstate != WLS_SRCH_PAUSED) pause_search(ctx);
+	if (ctx->searchstate != WLS_SRCH_PAUSED) {
+		//pause_search(ctx);
+		return;
+	}
 
 	show_combine(ctx);
 
@@ -1993,14 +2060,20 @@ static void copy_combination(struct wcontext *ctx)
 		}
 	}
 
-	if (ctx->searchstate != WLS_SRCH_OFF) reset_search(ctx);
+	if (ctx->searchstate != WLS_SRCH_OFF) {
+		//reset_search(ctx);
+		wlsRequestResetSearch(ctx);
+	}
 }
 
 static void clear_combination(struct wcontext *ctx)
 {
 	if (ctx->searchstate == WLS_SRCH_OFF) return;
 
-	if (ctx->searchstate != WLS_SRCH_PAUSED) pause_search(ctx);
+	if (ctx->searchstate != WLS_SRCH_PAUSED) {
+		//pause_search(ctx);
+		return;
+	}
 
 	g.combining = 0;
 }
@@ -2209,27 +2282,36 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 #endif
 
 		case IDC_SEARCHPAUSE:
-			pause_search(ctx);
+			wlsRequestPauseSearch(ctx);
 			return 0;
 		case IDC_SEARCHRESET:
-			reset_search(ctx);
+			//reset_search(ctx);
+			wlsRequestResetSearch(ctx);
 			return 0;
 		case IDC_SEARCHRESUME:
 			resume_search(ctx);
 			return 0;
 
 		case IDC_SEARCHBACKUP:
-			if (ctx->searchstate==WLS_SRCH_RUNNING)
-				pause_search(ctx);
-			if(ctx->searchstate==WLS_SRCH_PAUSED)
+			if (ctx->searchstate==WLS_SRCH_RUNNING) {
+				ctx->deferred_action |= WLS_ACTION_BACKUP;
+				wlsRequestStopSearchThreads(ctx);
+				//pause_search(ctx);
+			}
+			else if(ctx->searchstate==WLS_SRCH_PAUSED) {
 				getbackup("1 ");
+			}
 			return 0;
 
 		case IDC_SEARCHBACKUP2:
-			if (ctx->searchstate==WLS_SRCH_RUNNING)
-				pause_search(ctx);
-			if(ctx->searchstate==WLS_SRCH_PAUSED)
+			if (ctx->searchstate==WLS_SRCH_RUNNING) {
+				ctx->deferred_action |= WLS_ACTION_BACKUP2;
+				wlsRequestStopSearchThreads(ctx);
+				//pause_search(ctx);
+			}
+			else if(ctx->searchstate==WLS_SRCH_PAUSED) {
 				getbackup("20 ");
+			}
 			return 0;
 
 		case IDC_OPENSTATE:
@@ -2243,16 +2325,19 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			if (ctx->searchstate==WLS_SRCH_OFF) {
 				if (prepare_search(ctx,FALSE)) {
 					dumpstate(ctx->hwndFrame, NULL, FALSE);
-					reset_search(ctx);
+					//reset_search(ctx);
+					wlsResetSearch(ctx);
 				}
 			}
 			else if (ctx->searchstate==WLS_SRCH_PAUSED) {
 				dumpstate(ctx->hwndFrame, NULL, FALSE);
 			}
 			else if (ctx->searchstate==WLS_SRCH_RUNNING) {
-				pause_search(ctx);
-				dumpstate(ctx->hwndFrame, NULL, FALSE);
-				resume_search(ctx);
+				ctx->deferred_action |= WLS_ACTION_SAVEANDRESUME;
+				//pause_search(ctx);
+				wlsRequestStopSearchThreads(ctx);
+				//dumpstate(ctx->hwndFrame, NULL, FALSE);
+				//resume_search(ctx);
 			}
 #endif
 			return 0;
