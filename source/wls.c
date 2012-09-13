@@ -98,6 +98,7 @@ struct wcontext {
 
 #define WLS_ACTION_APPEXIT           0x00000001
 #define WLS_ACTION_RESETSEARCH       0x00000004
+#define WLS_ACTION_UPDATEDISPLAY     0x00000010
 #define WLS_ACTION_OPENSTATE         0x00000020
 #define WLS_ACTION_SAVEANDRESUME     0x00000040
 	unsigned int deferred_action;
@@ -1205,6 +1206,7 @@ static void wlsCopyLifesrcToTmpfield(struct wcontext *ctx)
 void wlsUpdateAndShowTmpField(void)
 {
 	struct wcontext *ctx = gctx;
+	if(ctx->searchstate==WLS_SRCH_OFF) return;
 	wlsCopyLifesrcToTmpfield(ctx);
 	wlsRepaintCells(ctx,FALSE);
 }
@@ -1760,6 +1762,10 @@ static void wlsOnThreadDone(struct wcontext *ctx)
 			wlsStatusf(ctx,_T("Search paused."));
 		}
 	}
+
+	if(ctx->deferred_action & WLS_ACTION_UPDATEDISPLAY) {
+		wlsUpdateAndShowTmpField();
+	}
 }
 
 static void wlsRequestEndApp(struct wcontext *ctx)
@@ -2147,6 +2153,19 @@ static void Handle_Save(struct wcontext *ctx)
 #endif
 }
 
+// If a search is running or paused, UpdateDisplay forces a display of the
+// current state of the search (as opposed to the most recent progress
+// report).
+// If no search is active, it just repaints the display.
+static void Handle_UpdateDisplay(struct wcontext *ctx)
+{
+	if(ctx->searchstate==WLS_SRCH_OFF) {
+		wlsRepaintCells(ctx,TRUE);
+		return;
+	}
+	wlsUpdateAndShowTmpField_Sync();
+}
+
 static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
@@ -2290,6 +2309,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 				// The user can just press 'b' again if he really wants
 				// to back up from wherever the search happened to get
 				// interrupted.
+				ctx->deferred_action |= WLS_ACTION_UPDATEDISPLAY;
 				wlsRequestPauseSearch(ctx);
 			}
 			else if(ctx->searchstate==WLS_SRCH_PAUSED) {
@@ -2299,6 +2319,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 
 		case IDC_SEARCHBACKUP2:
 			if (ctx->searchstate==WLS_SRCH_RUNNING) {
+				ctx->deferred_action |= WLS_ACTION_UPDATEDISPLAY;
 				wlsRequestPauseSearch(ctx);
 			}
 			else if(ctx->searchstate==WLS_SRCH_PAUSED) {
@@ -2317,6 +2338,9 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			return 0;
 		case IDC_PREVGEN:
 			gen_changeby(ctx,-1);
+			return 0;
+		case IDC_UPDATEDISPLAY:
+			Handle_UpdateDisplay(ctx);
 			return 0;
 		case IDC_EDITCOPY:
 			Handle_Copy(ctx);

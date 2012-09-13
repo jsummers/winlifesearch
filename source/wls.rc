@@ -499,6 +499,7 @@ BEGIN
     BEGIN
         MENUITEM "&Next generation\tPgDn",      IDC_NEXTGEN
         MENUITEM "&Previous generation\tPgUp",  IDC_PREVGEN
+        MENUITEM "&Update display\tCtrl+W",     IDC_UPDATEDISPLAY
     END
     POPUP "&Options"
     BEGIN
@@ -559,6 +560,7 @@ BEGIN
     "T",            ID_TRANS_GEN,           VIRTKEY, CONTROL, NOINVERT
     "T",            ID_TRANS_ALL,           VIRTKEY, SHIFT, CONTROL, 
                                                     NOINVERT
+    "W",            IDC_UPDATEDISPLAY,      VIRTKEY, CONTROL, NOINVERT
     "Y",            IDC_SEARCHBACKUP2,      VIRTKEY, NOINVERT
     VK_SPACE,       IDC_SEARCHRESUME,       VIRTKEY, NOINVERT
     VK_BACK,        ID_HIDESEL,             VIRTKEY, NOINVERT

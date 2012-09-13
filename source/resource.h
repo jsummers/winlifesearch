@@ -106,6 +106,7 @@
 #define IDC_NEXTGEN                     40024
 #define IDC_PREVGEN                     40025
 #define IDC_EDITCOPY                    40026
+#define IDC_UPDATEDISPLAY               40027
 #define IDC_SEARCHBACKUP2               40028
 #define IDC_COPYRESULT                  40029
 #define IDC_SHIFTGUP                    40032
