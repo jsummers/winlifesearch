@@ -221,6 +221,19 @@ void record_malloc(int func, void *m)
 	}
 }
 
+static void wlsCopyField(struct field_struct *src, struct field_struct *dst)
+{
+	int gen,i,j;
+
+	for(gen=0;gen<g.period;gen++) {
+		for(i=0;i<g.ncols;i++) {
+			for(j=0;j<g.nrows;j++) {
+				dst->c[gen][i][j] = src->c[gen][i][j];
+			}
+		}
+	}
+}
+
 // Set full_repaint to 1 if something other than cell states has changed
 // (e.g. the number of cells).
 static void wlsRepaintCells(struct wcontext *ctx, int full_repaint)
@@ -978,12 +991,11 @@ static int set_initial_cells(void)
 	int i,j,g1;
 	struct wcontext *ctx = gctx;
 
+	wlsCopyField(&g.field,&g.tmpfield);
+
 	for(g1=0;g1<g.period;g1++) {
 		for(i=0;i<g.ncols;i++) {
 			for(j=0;j<g.nrows;j++) {
-
-				g.tmpfield.c[g1][i][j] = g.field.c[g1][i][j];
-
 				switch(g.field.c[g1][i][j]) {
 				case CV_FORCEDOFF:
 					if(!proceed(findcell(j+1,i+1,g1),OFF,FALSE)) {
@@ -1022,15 +1034,14 @@ BOOL set_initial_cells(void)
 	int i,j,g1;
 	struct wcontext *ctx = gctx;
 
+	wlsCopyField(&g.field,&g.tmpfield);
+
 	g.newset = g.settable;
 	g.nextset = g.settable;
 
 	for(g1=0;g1<g.period;g1++) {
 		for(i=0;i<g.ncols;i++) {
 			for(j=0;j<g.nrows;j++) {
-
-				g.tmpfield.c[g1][i][j] = g.field.c[g1][i][j];
-
 				switch(g.field.c[g1][i][j]) {
 				case CV_FORCEDOFF:
 					if(!proceed(findcell(j+1,i+1,g1),OFF,FALSE)) {
@@ -1991,8 +2002,6 @@ static void shift_gen(struct wcontext *ctx, int fromgen, int togen, int gend, in
 
 static void copy_result(struct wcontext *ctx)
 {
-	int g1, i, j;
-
 	if (ctx->searchstate == WLS_SRCH_OFF) return;
 
 	if (ctx->searchstate != WLS_SRCH_PAUSED) {
@@ -2000,13 +2009,7 @@ static void copy_result(struct wcontext *ctx)
 		return; // shouldn't happen
 	}
 
-	for(g1=0;g1<g.period;g1++) {
-		for(i=0;i<g.ncols;i++) {
-			for(j=0;j<g.nrows;j++) {
-				g.field.c[g1][i][j] = g.tmpfield.c[g1][i][j];
-			}
-		}
-	}
+	wlsCopyField(&g.tmpfield,&g.field);
 
 	if (ctx->searchstate != WLS_SRCH_OFF) {
 		//reset_search(ctx);
@@ -2016,8 +2019,6 @@ static void copy_result(struct wcontext *ctx)
 
 static void copy_combination(struct wcontext *ctx)
 {
-	int g1, i, j;
-
 	if (ctx->searchstate == WLS_SRCH_OFF) return;
 
 	if (ctx->searchstate != WLS_SRCH_PAUSED) {
@@ -2027,13 +2028,7 @@ static void copy_combination(struct wcontext *ctx)
 
 	show_combine(ctx);
 
-	for(g1=0;g1<g.period;g1++) {
-		for(i=0;i<g.ncols;i++) {
-			for(j=0;j<g.nrows;j++) {
-				g.field.c[g1][i][j] = g.tmpfield.c[g1][i][j];
-			}
-		}
-	}
+	wlsCopyField(&g.tmpfield,&g.field);
 
 	if (ctx->searchstate != WLS_SRCH_OFF) {
 		//reset_search(ctx);
