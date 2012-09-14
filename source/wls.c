@@ -1609,8 +1609,6 @@ static void resume_search(struct wcontext *ctx)
 
 #endif
 
-#ifdef JS
-
 static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 {
 	int i;
@@ -1619,9 +1617,6 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 		wlsErrorf(ctx,_T("A search is already running"));
 		return FALSE;
 	}
-
-	g.viewcount = -1;
-	wlsUpdateProgressCounter();
 
 	if (!setrules(g.rulestring)) {
 		wlsErrorf(ctx,_T("Cannot set Life rules!"));
@@ -1647,89 +1642,17 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 
 	g.newset=NULL;
 	g.nextset=NULL;
+	g.outputlastcols=0;
+	g.fullcolumns=0;
+	g.curstatus=OK;
+
+#ifdef JS
 	g.baseset=NULL;
 	g.fullsearchlist=NULL;
-	g.outputlastcols=0;
-	g.fullcolumns=0;
-	g.curstatus=OK;
-
-	if(load) {
-		if(!loadstate(ctx->hwndFrame)) {
-			wlsRepaintCells(ctx,TRUE);
-			return FALSE;
-		}
-
-		wlsUpdateAndShowTmpField();
-		draw_gen_counter(ctx);
-		ctx->searchstate=WLS_SRCH_PAUSED;
-	}
-	else {
-		g.inited=FALSE;
-
-		if(!initcells()) {
-			return FALSE;
-		}
-		g.baseset = g.nextset;
-
-		g.inited = TRUE;
-
-
-		if(!set_initial_cells()) {
-			record_malloc(0,NULL); // release allocated memory
-			return FALSE;   // there was probably an inconsistency in the initial cells
-		}
-
-		g.foundcount=0;
-		ctx->searchstate=WLS_SRCH_PAUSED;  // pretend the search is "paused"
-	}
-
-	return TRUE;
-}
-
 #else
-
-static BOOL prepare_search(struct wcontext *ctx, BOOL load)
-{
-	int i;
-
-	if(ctx->searchstate!=WLS_SRCH_OFF) {
-		wlsErrorf(ctx,_T("A search is already running"));
-		return FALSE;
-	}
-
-	if (!setrules(g.rulestring)) {
-		wlsErrorf(ctx,_T("Cannot set Life rules!"));
-		return FALSE;
-	}
-
-	// set the variables that dbell's code uses
-	g.coltrans= -g.trans_x;
-	g.rowtrans= -g.trans_y;
-	g.flipquads= g.trans_rotate%2;
-	g.fliprows= (g.trans_rotate>=2);
-	g.flipcols= (g.trans_flip==0 && g.trans_rotate>=2) ||
-		      (g.trans_flip==1 && g.trans_rotate<2);
-
-	// init some things that the orig code doesn't bother to init
-	for(i=0;i<g.ncols;i++) {
-		g.colinfo[i].oncount=0;
-		g.colinfo[i].setcount=0;
-		g.colinfo[i].sumpos=0;
-	}
-
-	for(i=0;i<g.nrows;i++) { g.rowinfo[i].oncount=0; }
-
-	g.newset=NULL;
-	g.nextset=NULL;
-	g.outputlastcols=0;
-	g.fullcolumns=0;
-	g.curstatus=OK;
 	g.g0oncellcount = 0; // KAS
 	g.cellcount = 0; // KAS
 	g.smartchoice = UNK; // KAS
-
-	g.viewcount = -1; // KAS
-	wlsUpdateProgressCounter(); // KAS
 
 	g.foundcount=0;
 	g.writecount=0;
@@ -1738,6 +1661,10 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 	g.combinedcells = 0;
 	g.setcombinedcells = 0;
 	g.differentcombinedcells = 0;
+#endif
+
+	g.viewcount = -1;
+	wlsUpdateProgressCounter();
 
 	if (load) {
 		if(!loadstate(ctx->hwndFrame)) {
@@ -1745,30 +1672,44 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 			return FALSE;
 		}
 
+#ifdef JS
+		wlsUpdateAndShowTmpField();
+#else
 		wlsRepaintCells(ctx,TRUE);
-
+#endif
 		draw_gen_counter(ctx);
 	}
 	else {
+#ifdef JS
+		g.inited=FALSE;
+#endif
 		if(!initcells()) {
 			return FALSE;
 		}
+
+#ifdef JS
+		g.baseset = g.nextset;
+		g.inited = TRUE;
+#endif
 
 		if(!set_initial_cells()) {
 			record_malloc(0,NULL); // release allocated memory
 			return FALSE;   // there was probably an inconsistency in the initial cells
 		}
-
+#ifdef JS
+		g.foundcount=0;
+#else
 		initsearchorder();
+#endif
 	}
+
 	ctx->searchstate=WLS_SRCH_PAUSED;  // pretend the search is "paused"
 
+#ifndef JS
 	wlsUpdateAndShowTmpField();
-
+#endif
 	return TRUE;
 }
-
-#endif
 
 static void start_search(struct wcontext *ctx)
 {
