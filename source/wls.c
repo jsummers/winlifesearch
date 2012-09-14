@@ -246,7 +246,7 @@ static void wlsFreeField(struct field_struct *field)
 
 // Allocate a new cell field.
 // The new field will have dimensions at least g.period x g.nrows x g.ncols.
-// [TODO] If prev_field is not NULL, the field data will be copied from prev_field,
+// If prev_field is not NULL, the field data will be copied from prev_field,
 // and then prev_field will be freed.
 // Any other cells will be initialized to CV_CLEAR.
 static struct field_struct *wlsAllocField(struct field_struct *prev_field)
@@ -256,16 +256,39 @@ static struct field_struct *wlsAllocField(struct field_struct *prev_field)
 	new_field = (struct field_struct*)calloc(1,sizeof(struct field_struct));
 	if(!new_field) return NULL;
 
-	new_field->ngens = GENMAX;
-	new_field->ncols = COLMAX;
-	new_field->nrows = ROWMAX;
+	new_field->ngens = g.period;
+	new_field->ncols = g.ncols;
+	new_field->nrows = g.nrows;
 	new_field->gen_stride = new_field->ncols * new_field->nrows;
 	new_field->row_stride = new_field->ncols;
 
 	new_field->c = (WLS_CELLVAL*)malloc(new_field->ngens * new_field->gen_stride);
 	if(!new_field) return NULL;
-		
+
 	wlsFillField_All(new_field,CV_CLEAR);
+
+	if(prev_field) {
+		int gens_to_copy, rows_to_copy, cols_to_copy;
+		int i,j,k;
+
+		// Copy the cells common to both the old and new field.
+		gens_to_copy=new_field->ngens;
+		if(gens_to_copy>prev_field->ngens) gens_to_copy=prev_field->ngens;
+		rows_to_copy=new_field->nrows;
+		if(rows_to_copy>prev_field->nrows) rows_to_copy=prev_field->nrows;
+		cols_to_copy=new_field->ncols;
+		if(cols_to_copy>prev_field->ncols) cols_to_copy=prev_field->ncols;
+
+		for(k=0;k<gens_to_copy;k++) {
+			for(j=0;j<rows_to_copy;j++) {
+				for(i=0;i<cols_to_copy;i++) {
+					wlsSetCellVal(new_field,k,i,j,wlsCellVal(prev_field,k,i,j));
+				}
+			}
+		}
+
+		wlsFreeField(prev_field);
+	}
 	return new_field;
 }
 
@@ -2674,6 +2697,63 @@ static INT_PTR CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 	return 0;  // Didn't process a message
 }
 
+static void Handle_PeriodRowsCols_OK(struct wcontext *ctx, HWND hWnd)
+{
+	int newperiod, newrows, newcols;
+
+	newperiod = GetDlgItemInt(hWnd,IDC_PERIOD,NULL,FALSE);
+	if(newperiod>GENMAX) newperiod=GENMAX;
+	if(newperiod<1) newperiod=1;
+
+	newcols = GetDlgItemInt(hWnd,IDC_COLUMNS,NULL,FALSE);
+	newrows = GetDlgItemInt(hWnd,IDC_ROWS,NULL,FALSE);
+	if(newcols<1) newcols=1;
+	if(newrows<1) newrows=1;
+	if(newcols>COLMAX) newcols=COLMAX;
+	if(newrows>ROWMAX) newrows=ROWMAX;
+
+	if(newperiod==g.period && newcols==g.ncols && newrows==g.nrows) {
+		return;
+	}
+
+	g.period = newperiod;
+	g.ncols = newcols;
+	g.nrows = newrows;
+	if(g.curgen>=g.period) g.curgen=g.period-1;
+
+	// put these in a separate Validate function
+	if(g.ncols!=g.nrows) {
+		if(symmap[g.symmetry] & 0x66) {
+			MessageBox(hWnd,_T("Current symmetry requires that rows and ")
+				_T("columns be equal. Your symmetry setting has been altered."),
+				_T("Warning"),MB_OK|MB_ICONWARNING);
+			switch(g.symmetry) {
+			case 3: case 4: g.symmetry=0; break;
+			case 7: case 8: g.symmetry=5; break;
+			case 9: g.symmetry=6;
+			}
+		}
+	}
+
+	if(g.ncols != g.nrows) {
+		if(g.trans_rotate==1 || g.trans_rotate==3) {
+			MessageBox(hWnd,_T("Current rotation setting requires that rows and ")
+				_T("columns be equal. Your translation setting has been altered."),
+				_T("Warning"),MB_OK|MB_ICONWARNING);
+			g.trans_rotate--;
+		}
+	}
+
+	g.field = wlsAllocField(g.field);
+	wlsFreeField(g.tmpfield);
+	g.tmpfield = wlsAllocField(NULL);
+
+	RecalcCenter(ctx);
+
+	draw_gen_counter(ctx);
+	set_main_scrollbars(ctx, 1, 1);
+}
+
 static INT_PTR CALLBACK DlgProcPeriodRowsCols(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
@@ -2694,44 +2774,7 @@ static INT_PTR CALLBACK DlgProcPeriodRowsCols(HWND hWnd, UINT msg, WPARAM wParam
 	case WM_COMMAND:
 		switch(id) {
 		case IDOK:
-			g.period=GetDlgItemInt(hWnd,IDC_PERIOD,NULL,FALSE);
-			if(g.period>GENMAX) g.period=GENMAX;
-			if(g.period<1) g.period=1;
-			if(g.curgen>=g.period) g.curgen=g.period-1;
-
-			g.ncols=GetDlgItemInt(hWnd,IDC_COLUMNS,NULL,FALSE);
-			g.nrows=GetDlgItemInt(hWnd,IDC_ROWS,NULL,FALSE);
-			if(g.ncols<1) g.ncols=1;
-			if(g.nrows<1) g.nrows=1;
-			if(g.ncols>COLMAX) g.ncols=COLMAX;
-			if(g.nrows>ROWMAX) g.nrows=ROWMAX;
-			RecalcCenter(ctx);
-
-			// put these in a separate Validate function
-			if(g.ncols!=g.nrows) {
-				if(symmap[g.symmetry] & 0x66) {
-					MessageBox(hWnd,_T("Current symmetry requires that rows and ")
-						_T("columns be equal. Your symmetry setting has been altered."),
-						_T("Warning"),MB_OK|MB_ICONWARNING);
-					switch(g.symmetry) {
-					case 3: case 4: g.symmetry=0; break;
-					case 7: case 8: g.symmetry=5; break;
-					case 9: g.symmetry=6;
-					}
-				}
-			}
-
-			if(g.ncols != g.nrows) {
-				if(g.trans_rotate==1 || g.trans_rotate==3) {
-					MessageBox(hWnd,_T("Current rotation setting requires that rows and ")
-						_T("columns be equal. Your translation setting has been altered."),
-						_T("Warning"),MB_OK|MB_ICONWARNING);
-					g.trans_rotate--;
-				}
-			}
-
-			draw_gen_counter(ctx);
-			set_main_scrollbars(ctx, 1, 1);
+			Handle_PeriodRowsCols_OK(ctx,hWnd);
 			EndDialog(hWnd, TRUE);
 			return 1;
 			
