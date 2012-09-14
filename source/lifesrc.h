@@ -10,14 +10,10 @@
 
 #define WLS_VERSION_STRING _T("0.70")
 
-#define	ROWMAX		80	/* maximum rows for search rectangle */
-#define	COLMAX		132	/* maximum columns for search rectangle */
-#ifdef JS
-#define	GENMAX		10	/* maximum number of generations */
-#else
-#define	GENMAX		19	/* maximum number of generations */
-#endif
-#define	TRANSMAX	8	/* largest translation value allowed */
+#define	ROWMAX		250	/* maximum rows for search rectangle */
+#define	COLMAX		250	/* maximum columns for search rectangle */
+#define	GENMAX		20	/* maximum number of generations */
+#define	TRANSMAX	10	/* largest translation value allowed */
 
 
 /*
@@ -37,7 +33,7 @@
 #define	DUMPVERSION	102		/* version of dump file */
 #endif
 
-#define	ALLOCSIZE	1000		/* chunk size for cell allocation */
+#define	ALLOCSIZE	2048		/* chunk size for cell allocation */
 #define	LINESIZE	1000		/* size of input lines */
 
 
