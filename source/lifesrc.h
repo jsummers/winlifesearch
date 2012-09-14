@@ -302,9 +302,9 @@ struct globals_struct {
 #endif
 
 	// Represents the editable cells
-	struct field_struct field;
+	struct field_struct *field;
 	// Used for the current state of the search, and other temporary things
-	struct field_struct tmpfield;
+	struct field_struct *tmpfield;
 
 #define WLS_RULESTRING_LEN 50
 	TCHAR rulestring[WLS_RULESTRING_LEN];
