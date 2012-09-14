@@ -172,19 +172,27 @@ typedef	unsigned char   FLAGS;
 typedef unsigned char WLS_CELLVAL;
 
 struct field_struct {
+	// Except for brief periods when allocating new fields, it's assumed that
+	// ngens==g.period, nrows==g.nrows, ncols==g.ncols.
+	int ngens;
+	int nrows;
+	int ncols;
+	int gen_stride;
+	int row_stride;
+
 #define CV_FORCEDOFF  0  // cell values - These must not be changed
 #define CV_FORCEDON   1
 #define CV_CLEAR      2
 #define CV_UNCHECKED  3
 #define CV_FROZEN     4
 #define CV_INVALID    255
-	WLS_CELLVAL c[GENMAX*ROWMAX*COLMAX];
+	WLS_CELLVAL *c;
 };
 
 // These may be implemented as functions or as macros.
 // It's not okay to use wlsCellVal() as an lvalue.
-#define wlsCellVal(f,k,i,j) ((f)->c[(k)*(ROWMAX*COLMAX) + (j)*COLMAX + (i)])
-#define wlsSetCellVal(f,k,i,j,v) ((f)->c[(k)*(ROWMAX*COLMAX) + (j)*COLMAX + (i)])=(v)
+#define wlsCellVal(f,k,i,j) ((f)->c[(k)*(f)->gen_stride + (j)*(f)->row_stride + (i)])
+#define wlsSetCellVal(f,k,i,j,v) ((f)->c[(k)*(f)->gen_stride + (j)*(f)->row_stride + (i)])=(v)
 
 struct globals_struct {
 /*

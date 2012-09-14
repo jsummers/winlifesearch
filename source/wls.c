@@ -220,21 +220,55 @@ void record_malloc(int func, void *m)
 	}
 }
 
+// Assumes the fields are the same size.
 static void wlsCopyField(struct field_struct *src, struct field_struct *dst)
 {
-	memcpy(dst->c,src->c,GENMAX*ROWMAX*COLMAX);
+	memcpy(dst->c,src->c,dst->ngens*dst->gen_stride);
 }
 
 static void wlsFillField_Gen(struct field_struct *field, int gen, WLS_CELLVAL cellval)
 {
-	memset(&field->c[gen*ROWMAX*COLMAX],cellval,ROWMAX*COLMAX);
+	memset(&field->c[gen*field->gen_stride],cellval,field->gen_stride);
 }
 
 // Set every cell to the same value
 static void wlsFillField_All(struct field_struct *field, WLS_CELLVAL cellval)
 {
-	memset(field->c,cellval,GENMAX*ROWMAX*COLMAX);
+	memset(field->c,cellval,field->ngens*field->gen_stride);
 }
+
+static void wlsFreeField(struct field_struct *field)
+{
+	if(!field) return;
+	free(field->c);
+	free(field);
+}
+
+// Allocate a new cell field.
+// The new field will have dimensions at least g.period x g.nrows x g.ncols.
+// [TODO] If prev_field is not NULL, the field data will be copied from prev_field,
+// and then prev_field will be freed.
+// Any other cells will be initialized to CV_CLEAR.
+static struct field_struct *wlsAllocField(struct field_struct *prev_field)
+{
+	struct field_struct *new_field;
+
+	new_field = (struct field_struct*)calloc(1,sizeof(struct field_struct));
+	if(!new_field) return NULL;
+
+	new_field->ngens = GENMAX;
+	new_field->ncols = COLMAX;
+	new_field->nrows = ROWMAX;
+	new_field->gen_stride = new_field->ncols * new_field->nrows;
+	new_field->row_stride = new_field->ncols;
+
+	new_field->c = (WLS_CELLVAL*)malloc(new_field->ngens * new_field->gen_stride);
+	if(!new_field) return NULL;
+		
+	wlsFillField_All(new_field,CV_CLEAR);
+	return new_field;
+}
+
 
 // Set full_repaint to 1 if something other than cell states has changed
 // (e.g. the number of cells).
@@ -597,7 +631,7 @@ static void ChangeChecking(struct wcontext *ctx, HDC hDC, int x, int y, int allg
 
 	if (allgens) {
 		g1 = 0;
-		g2 = GENMAX - 1;
+		g2 = g.period - 1;
 	}
 	else {
 		g1 = g.curgen;
@@ -633,7 +667,7 @@ static void Symmetricalize(struct wcontext *ctx, HDC hDC,int x,int y,int allgens
 		if(i>0)
 			wlsSetCellVal(g.field,g.curgen,pts[i].x,pts[i].y,cellval);
 		if(allgens) {
-			for(j=0;j<GENMAX;j++) {
+			for(j=0;j<g.period;j++) {
 				wlsSetCellVal(g.field,j,pts[i].x,pts[i].y,cellval);
 			}
 		}
@@ -726,10 +760,10 @@ static void FixFrozenCells(void)
 	int x,y,z;
 	WLS_CELLVAL cellval;
 
-	for(y=0;y<ROWMAX;y++) {
-		for(x=0;x<COLMAX;x++) {
+	for(y=0;y<g.nrows;y++) {
+		for(x=0;x<g.ncols;x++) {
 			cellval = wlsCellVal(g.field,g.curgen,x,y);
-			for(z=0;z<GENMAX;z++) {
+			for(z=0;z<g.period;z++) {
 				if(z!=g.curgen) {
 					if(cellval==CV_FROZEN) {
 						wlsSetCellVal(g.field,z,x,y,CV_FROZEN);
@@ -1580,12 +1614,12 @@ static void prepare_and_start_search(struct wcontext *ctx, TCHAR *statefile)
 		      (g.trans_flip==1 && g.trans_rotate<2);
 
 	// init some things that the orig code doesn't bother to init
-	for(i=0;i<COLMAX;i++) {
+	for(i=0;i<g.ncols;i++) {
 		g.colinfo[i].oncount=0;
 		g.colinfo[i].setcount=0;
 		g.colinfo[i].sumpos=0;
 	}
-	for(i=0;i<ROWMAX;i++) { g.rowinfo[i].oncount=0; }
+	for(i=0;i<g.nrows;i++) { g.rowinfo[i].oncount=0; }
 	g.newset=NULL;
 	g.nextset=NULL;
 	g.baseset=NULL;
@@ -1647,13 +1681,13 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 		      (g.trans_flip==1 && g.trans_rotate<2);
 
 	// init some things that the orig code doesn't bother to init
-	for(i=0;i<COLMAX;i++) {
+	for(i=0;i<g.ncols;i++) {
 		g.colinfo[i].oncount=0;
 		g.colinfo[i].setcount=0;
 		g.colinfo[i].sumpos=0;
 	}
 
-	for(i=0;i<ROWMAX;i++) { g.rowinfo[i].oncount=0; }
+	for(i=0;i<g.nrows;i++) { g.rowinfo[i].oncount=0; }
 
 	g.newset=NULL;
 	g.nextset=NULL;
@@ -2378,19 +2412,19 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTAUP:
-			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, 0, GENMAX-1, 0, 0, -1);
+			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, 0, g.period-1, 0, 0, -1);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTADOWN:
-			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, 0, GENMAX-1, 0, 0, 1);
+			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, 0, g.period-1, 0, 0, 1);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTALEFT:
-			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, 0, GENMAX-1, 0, -1, 0);
+			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, 0, g.period-1, 0, -1, 0);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTARIGHT:
-			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, 0, GENMAX-1, 0, 1, 0);
+			if(ctx->searchstate == WLS_SRCH_OFF) shift_gen(ctx, 0, g.period-1, 0, 1, 0);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case IDC_SHIFTAPAST:
@@ -2410,11 +2444,11 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_FLIP_ALL_H:
-			if(ctx->searchstate == WLS_SRCH_OFF) flip_h(ctx, 0, GENMAX - 1);
+			if(ctx->searchstate == WLS_SRCH_OFF) flip_h(ctx, 0, g.period - 1);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_FLIP_ALL_V:
-			if(ctx->searchstate == WLS_SRCH_OFF) flip_v(ctx, 0, GENMAX - 1);
+			if(ctx->searchstate == WLS_SRCH_OFF) flip_v(ctx, 0, g.period - 1);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_TRANS_GEN:
@@ -2422,7 +2456,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_TRANS_ALL:
-			if(ctx->searchstate == WLS_SRCH_OFF) transpose(ctx, 0, GENMAX - 1);
+			if(ctx->searchstate == WLS_SRCH_OFF) transpose(ctx, 0, g.period - 1);
 			wlsRepaintCells(ctx,ctx->selectstate == WLS_SEL_SELECTED);
 			return 0;
 		case ID_HIDESEL:
@@ -3140,13 +3174,6 @@ static void InitGameSettings(struct wcontext *ctx)
 	ctx->search_priority = WLS_PRIORITY_LOW;
 	ctx->wheel_gen_dir = 1;
 
-	g.field = malloc(sizeof(struct field_struct));
-	g.tmpfield = malloc(sizeof(struct field_struct));
-
-	// set all cells to "don't care"
-	wlsFillField_All(g.field,CV_CLEAR);
-	wlsFillField_All(g.tmpfield,CV_CLEAR);
-
 	g.symmetry=0;
 
 	g.trans_rotate=0;  // 1=90 degrees, 2=180, 3=270;
@@ -3231,6 +3258,9 @@ static void InitGameSettings(struct wcontext *ctx)
 	if(g.nrows>ROWMAX) g.nrows = ROWMAX;
 
 	RecalcCenter(ctx);
+
+	g.field = wlsAllocField(NULL);
+	g.tmpfield = wlsAllocField(NULL);
 }
 
 static BOOL RegisterClasses(struct wcontext *ctx)
@@ -3365,8 +3395,8 @@ static BOOL InitApp(struct wcontext *ctx, int nCmdShow)
 static void UninitApp(struct wcontext *ctx)
 {
 	if(ctx->statusfont) DeleteObject((HGDIOBJ)ctx->statusfont);
-	free(g.field);
-	free(g.tmpfield);
+	wlsFreeField(g.field);
+	wlsFreeField(g.tmpfield);
 	DeleteCriticalSection(&ctx->critsec_tmpfield);
 }
 
