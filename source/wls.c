@@ -1611,13 +1611,13 @@ static void resume_search(struct wcontext *ctx)
 
 #ifdef JS
 
-static void prepare_and_start_search(struct wcontext *ctx, TCHAR *statefile)
+static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 {
 	int i;
 
 	if(ctx->searchstate!=WLS_SRCH_OFF) {
 		wlsErrorf(ctx,_T("A search is already running"));
-		return;
+		return FALSE;
 	}
 
 	g.viewcount = -1;
@@ -1625,7 +1625,7 @@ static void prepare_and_start_search(struct wcontext *ctx, TCHAR *statefile)
 
 	if (!setrules(g.rulestring)) {
 		wlsErrorf(ctx,_T("Cannot set Life rules!"));
-		return; //exit(1);
+		return FALSE;
 	}
 
 	// set the variables that dbell's code uses
@@ -1642,7 +1642,9 @@ static void prepare_and_start_search(struct wcontext *ctx, TCHAR *statefile)
 		g.colinfo[i].setcount=0;
 		g.colinfo[i].sumpos=0;
 	}
+
 	for(i=0;i<g.nrows;i++) { g.rowinfo[i].oncount=0; }
+
 	g.newset=NULL;
 	g.nextset=NULL;
 	g.baseset=NULL;
@@ -1651,8 +1653,11 @@ static void prepare_and_start_search(struct wcontext *ctx, TCHAR *statefile)
 	g.fullcolumns=0;
 	g.curstatus=OK;
 
-	if(statefile) {
-		if(!loadstate(ctx->hwndFrame, statefile)) return;
+	if(load) {
+		if(!loadstate(ctx->hwndFrame)) {
+			wlsRepaintCells(ctx,TRUE);
+			return FALSE;
+		}
 
 		wlsUpdateAndShowTmpField();
 		draw_gen_counter(ctx);
@@ -1662,7 +1667,7 @@ static void prepare_and_start_search(struct wcontext *ctx, TCHAR *statefile)
 		g.inited=FALSE;
 
 		if(!initcells()) {
-			return;
+			return FALSE;
 		}
 		g.baseset = g.nextset;
 
@@ -1670,13 +1675,15 @@ static void prepare_and_start_search(struct wcontext *ctx, TCHAR *statefile)
 
 
 		if(!set_initial_cells()) {
-			return;   // there was probably an inconsistency in the initial cells
+			record_malloc(0,NULL); // release allocated memory
+			return FALSE;   // there was probably an inconsistency in the initial cells
 		}
 
 		g.foundcount=0;
 		ctx->searchstate=WLS_SRCH_PAUSED;  // pretend the search is "paused"
-		resume_search(ctx);
 	}
+
+	return TRUE;
 }
 
 #else
@@ -1761,14 +1768,14 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 	return TRUE;
 }
 
+#endif
+
 static void start_search(struct wcontext *ctx)
 {
 	if (prepare_search(ctx,FALSE)) {
 		resume_search(ctx);
 	}
 }
-
-#endif
 
 // Low-level function that ends the search thread(s), and does no UI.
 static void wlsRequestPauseSearch(struct wcontext *ctx)
@@ -1897,11 +1904,7 @@ static void open_state(struct wcontext *ctx)
 		return;
 	}
 
-#ifdef JS
-	prepare_and_start_search(ctx,_T(""));
-#else
 	prepare_search(ctx,TRUE);
-#endif
 }
 
 static void gen_changeby(struct wcontext *ctx, int delta)
@@ -2339,11 +2342,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			return 0;
 
 		case IDC_SEARCHSTART:
-#ifdef JS
-			prepare_and_start_search(ctx,NULL);
-#else
 			start_search(ctx);
-#endif
 			return 0;
 
 #ifndef JS

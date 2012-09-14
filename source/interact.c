@@ -511,7 +511,7 @@ void dumpstate(HWND hwndParent, TCHAR *file1)
  * Warning: Almost no checks are made for validity of the state.
  * Returns TRUE on success.
  */
-BOOL loadstate(HWND hwndParent, TCHAR *file1)
+BOOL loadstate(HWND hwndParent)
 {
 	FILE *	fp;
 	char *	cp;
@@ -531,7 +531,6 @@ BOOL loadstate(HWND hwndParent, TCHAR *file1)
 
 	//file = getstr(file, "Load state from file: ");
 	StringCchCopy(file,MAX_PATH,_T(""));
-	if(file1) StringCchCopy(file,MAX_PATH,file1);
 	getfilename_l(hwndParent,file);
 
 	//if (*file == '\0')

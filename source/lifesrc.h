@@ -407,11 +407,7 @@ void excludecone(int, int, int);
 BOOL freezecell(int, int);
 BOOL setrules(TCHAR *);
 BOOL setrulesA(char *);
-#ifdef JS
-BOOL loadstate(HWND hwndParent, TCHAR *file1);
-#else
 BOOL loadstate(HWND hwndParent);
-#endif
 void getbackup(char *cp);
 
 struct wcontext;
