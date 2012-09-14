@@ -178,13 +178,13 @@ struct field_struct {
 #define CV_UNCHECKED  3
 #define CV_FROZEN     4
 #define CV_INVALID    255
-	WLS_CELLVAL c[GENMAX][COLMAX][ROWMAX];
+	WLS_CELLVAL c[GENMAX*ROWMAX*COLMAX];
 };
 
 // These may be implemented as functions or as macros.
 // It's not okay to use wlsCellVal() as an lvalue.
-#define wlsCellVal(f,k,i,j) ((f)->c[k][i][j])
-#define wlsSetCellVal(f,k,i,j,v) ((f)->c[k][i][j])=(v)
+#define wlsCellVal(f,k,i,j) ((f)->c[(k)*(ROWMAX*COLMAX) + (j)*COLMAX + (i)])
+#define wlsSetCellVal(f,k,i,j,v) ((f)->c[(k)*(ROWMAX*COLMAX) + (j)*COLMAX + (i)])=(v)
 
 struct globals_struct {
 /*
