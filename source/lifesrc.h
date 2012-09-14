@@ -169,13 +169,16 @@ struct cell {
 
 typedef	unsigned char   FLAGS;
 
+typedef unsigned char WLS_CELLVAL;
+
 struct field_struct {
 #define CV_FORCEDOFF  0  // cell values - These must not be changed
 #define CV_FORCEDON   1
 #define CV_CLEAR      2
 #define CV_UNCHECKED  3
 #define CV_FROZEN     4
-	int c[GENMAX][COLMAX][ROWMAX];
+#define CV_INVALID    255
+	WLS_CELLVAL c[GENMAX][COLMAX][ROWMAX];
 };
 
 // These may be implemented as functions or as macros.

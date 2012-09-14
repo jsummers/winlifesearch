@@ -521,7 +521,7 @@ static void ClearCell(struct wcontext *ctx, HDC hDC,int x,int y, int thick_outli
 static void DrawCell(struct wcontext *ctx, HDC hDC,int x,int y, struct field_struct *field)
 {
 	int allsame=1;
-	int tmp;
+	WLS_CELLVAL tmp;
 	int i;
 
 	SelectObject(hDC,ctx->pens.celloutline);
@@ -539,19 +539,19 @@ static void DrawCell(struct wcontext *ctx, HDC hDC,int x,int y, struct field_str
 	ClearCell(ctx,hDC,x,y,!allsame);
 
 	switch(wlsCellVal(field,g.curgen,x,y)) {
-	case 0:        // must be off
+	case CV_FORCEDOFF:
 		SelectObject(hDC,ctx->pens.cell_off);
 		SelectObject(hDC,GetStockObject(NULL_BRUSH));
 		Ellipse(hDC,x*ctx->cellwidth+3,y*ctx->cellheight+3,
 			(x+1)*ctx->cellwidth-2,(y+1)*ctx->cellheight-2);
 		break;
-	case 1:	       // must be on
+	case CV_FORCEDON:
 		SelectObject(hDC,ctx->brushes.cell_on);
 		SelectObject(hDC,GetStockObject(NULL_PEN));
 		Ellipse(hDC,x*ctx->cellwidth+3,y*ctx->cellheight+3,
 			(x+1)*ctx->cellwidth-1,(y+1)*ctx->cellheight-1);
 		break;
-	case 3:       // unchecked
+	case CV_UNCHECKED:
 		SelectObject(hDC,ctx->pens.unchecked);
 		MoveToEx(hDC,(x  )*ctx->cellwidth+2,(y  )*ctx->cellheight+2,NULL);
 		LineTo(hDC,  (x+1)*ctx->cellwidth-2,(y+1)*ctx->cellheight-2);
@@ -559,7 +559,7 @@ static void DrawCell(struct wcontext *ctx, HDC hDC,int x,int y, struct field_str
 		LineTo(hDC,  (x  )*ctx->cellwidth+2,(y+1)*ctx->cellheight-2);
 
 		break;
-	case 4:       // frozen
+	case CV_FROZEN:
 		SelectObject(hDC,ctx->pens.cell_off);
 		MoveToEx(hDC,x*ctx->cellwidth+2*ctx->cellwidth/3,y*ctx->cellheight+  ctx->cellheight/3,NULL);
 		LineTo(hDC,  x*ctx->cellwidth+  ctx->cellwidth/3,y*ctx->cellheight+  ctx->cellheight/3);
@@ -580,16 +580,16 @@ static void ChangeChecking(struct wcontext *ctx, HDC hDC, int x, int y, int allg
 {
 	POINT pts[8];
 	int numpts,i,j;
-	int s1, s2;
+	WLS_CELLVAL s1, s2;
 	int g1, g2;
 
 	if (set) {
-		s1 = 2;
-		s2 = 3;
+		s1 = CV_CLEAR;
+		s2 = CV_UNCHECKED;
 	}
 	else {
-		s1 = 3;
-		s2 = 2;
+		s1 = CV_UNCHECKED;
+		s2 = CV_CLEAR;
 	}
 
 	if (allgens) {
@@ -620,7 +620,7 @@ static void Symmetricalize(struct wcontext *ctx, HDC hDC,int x,int y,int allgens
 {
 	POINT pts[8];
 	int numpts,i,j;
-	int cellval;
+	WLS_CELLVAL cellval;
 
 	GetSymmetricCells(x,y,pts,&numpts);
 
@@ -721,7 +721,7 @@ static void PaintWindow(struct wcontext *ctx, HWND hWnd, struct field_struct *fi
 static void FixFrozenCells(void)
 {
 	int x,y,z;
-	int cellval;
+	WLS_CELLVAL cellval;
 
 	for(x=0;x<COLMAX;x++) {
 		for(y=0;y<ROWMAX;y++) {
@@ -751,10 +751,10 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 	int vkey;
 	int tmp;
 	int allgens=0;
-	int prevval;
-	int newval;
+	WLS_CELLVAL prevval;
+	WLS_CELLVAL newval;
 
-	newval = -1;
+	newval = CV_INVALID;
 
 	xp+=(WORD)ctx->scrollpos.x;
 	yp+=(WORD)ctx->scrollpos.y;
@@ -926,7 +926,7 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 	SelectOff(ctx, hDC);
 
 	if(tmp==WLS_SEL_SELECTED) {
-		if(newval>=0) {
+		if(newval!=CV_INVALID) {
 			for(i=ctx->selectrect.left;i<=ctx->selectrect.right;i++) {
 				for(j=ctx->selectrect.top;j<=ctx->selectrect.bottom;j++) {
 					wlsSetCellVal(g.field,g.curgen,i,j,newval);
@@ -936,7 +936,7 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 		}
 	}
 	else {
-		if(newval>=0) wlsSetCellVal(g.field,g.curgen,x,y,newval);
+		if(newval!=CV_INVALID) wlsSetCellVal(g.field,g.curgen,x,y,newval);
 		Symmetricalize(ctx, hDC,x,y,allgens);
 	}
 
@@ -952,7 +952,7 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 
 	if(ctx->searchstate == WLS_SRCH_OFF) {
 		if(tmp==WLS_SEL_SELECTED) {
-			if(newval>=0) {
+			if(newval!=CV_INVALID) {
 				for(i=ctx->selectrect.left;i<=ctx->selectrect.right;i++) {
 					for(j=ctx->selectrect.top;j<=ctx->selectrect.bottom;j++) {
 						if (newval < 10) {
@@ -967,7 +967,7 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 			}
 		}
 		else {
-			if(newval>=0) {
+			if(newval!=CV_INVALID) {
 				if (newval < 10) {
 					wlsSetCellVal(g.field,g.curgen,x,y,newval);
 					Symmetricalize(ctx,hDC,x,y,allgens);
@@ -1876,7 +1876,7 @@ static void flip_h(struct wcontext *ctx, int fromgen, int togen)
 {
 	int g1, r, c;
 	int fromrow, torow, fromcol, tocol;
-	int buffer;
+	WLS_CELLVAL buffer;
 
 	if (ctx->selectstate == WLS_SEL_SELECTED) {
 		fromcol = ctx->selectrect.left;
@@ -1906,7 +1906,7 @@ static void flip_v(struct wcontext *ctx, int fromgen, int togen)
 {
 	int g1, r, c;
 	int fromrow, torow, fromcol, tocol;
-	int buffer;
+	WLS_CELLVAL buffer;
 
 	if (ctx->selectstate == WLS_SEL_SELECTED) {
 		fromcol = ctx->selectrect.left;
@@ -1936,7 +1936,7 @@ static void transpose(struct wcontext *ctx, int fromgen, int togen)
 {
 	int g1, r, c;
 	int fromrow, torow, fromcol, tocol;
-	int buffer;
+	WLS_CELLVAL buffer;
 
 	if (ctx->selectstate == WLS_SEL_SELECTED) {
 		fromcol = ctx->selectrect.left;

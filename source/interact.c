@@ -409,7 +409,7 @@ void dumpstate(HWND hwndParent, TCHAR *file1)
 	for(z=0;z<g.period;z++) {
 		for(y=0;y<g.nrows;y++) {
 			for(x=0;x<g.ncols;x++) {
-				fprintf(fp,"%d ",wlsCellVal(g.field,z,x,y));
+				fprintf(fp,"%d ",(int)wlsCellVal(g.field,z,x,y));
 			}
 			fprintf(fp,"\n");
 		}
@@ -485,7 +485,7 @@ void dumpstate(HWND hwndParent, TCHAR *file1)
 	for(g1=0;g1<g.period;g1++)
 		for(row=0;row<g.nrows;row++)
 			for(col=0;col<g.ncols;col++) {
-				fprintf(fp, "O %d %d %d %d\n",g1,row,col,wlsCellVal(g.field,g1,row,col));
+				fprintf(fp, "O %d %d %d %d\n",g1,row,col,(int)wlsCellVal(g.field,g1,row,col));
 			}
 
 
@@ -1403,7 +1403,7 @@ void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo)
 	for(gen=0;gen<g.period;gen++) {
 		for(row=0;row<g.nrows;row++) {
 			for(col=0;col<g.ncols;col++) {
-				fprintf(fp,"%d ",wlsCellVal(g.field,gen,col,row));
+				fprintf(fp,"%d ",(int)wlsCellVal(g.field,gen,col,row));
 			}
 			fprintf(fp,"\n");
 		}
