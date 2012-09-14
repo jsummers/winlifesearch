@@ -222,15 +222,18 @@ void record_malloc(int func, void *m)
 
 static void wlsCopyField(struct field_struct *src, struct field_struct *dst)
 {
-	int gen,i,j;
+	memcpy(dst->c,src->c,GENMAX*ROWMAX*COLMAX);
+}
 
-	for(gen=0;gen<g.period;gen++) {
-		for(i=0;i<g.ncols;i++) {
-			for(j=0;j<g.nrows;j++) {
-				wlsSetCellVal(dst,gen,i,j,wlsCellVal(src,gen,i,j));
-			}
-		}
-	}
+static void wlsFillField_Gen(struct field_struct *field, int gen, WLS_CELLVAL cellval)
+{
+	memset(&field->c[gen*ROWMAX*COLMAX],cellval,ROWMAX*COLMAX);
+}
+
+// Set every cell to the same value
+static void wlsFillField_All(struct field_struct *field, WLS_CELLVAL cellval)
+{
+	memset(field->c,cellval,GENMAX*ROWMAX*COLMAX);
 }
 
 // Set full_repaint to 1 if something other than cell states has changed
@@ -688,8 +691,8 @@ static void DrawWindow(struct wcontext *ctx, HDC hDC, struct field_struct *field
 {
 	int i,j;
 
-	for(i=0;i<g.ncols;i++) {
-		for(j=0;j<g.nrows;j++) {
+	for(j=0;j<g.nrows;j++) {
+		for(i=0;i<g.ncols;i++) {
 			DrawCell(ctx,hDC,i,j,field);
 		}
 	}
@@ -723,8 +726,8 @@ static void FixFrozenCells(void)
 	int x,y,z;
 	WLS_CELLVAL cellval;
 
-	for(x=0;x<COLMAX;x++) {
-		for(y=0;y<ROWMAX;y++) {
+	for(y=0;y<ROWMAX;y++) {
+		for(x=0;x<COLMAX;x++) {
 			cellval = wlsCellVal(g.field,g.curgen,x,y);
 			for(z=0;z<GENMAX;z++) {
 				if(z!=g.curgen) {
@@ -953,8 +956,8 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 	if(ctx->searchstate == WLS_SRCH_OFF) {
 		if(tmp==WLS_SEL_SELECTED) {
 			if(newval!=CV_INVALID) {
-				for(i=ctx->selectrect.left;i<=ctx->selectrect.right;i++) {
-					for(j=ctx->selectrect.top;j<=ctx->selectrect.bottom;j++) {
+				for(j=ctx->selectrect.top;j<=ctx->selectrect.bottom;j++) {
+					for(i=ctx->selectrect.left;i<=ctx->selectrect.right;i++) {
 						if (newval < 10) {
 							wlsSetCellVal(g.field,g.curgen,i,j,newval);
 							Symmetricalize(ctx,hDC,i,j,allgens);
@@ -1001,8 +1004,8 @@ static int set_initial_cells(void)
 	wlsCopyField(g.field,g.tmpfield);
 
 	for(g1=0;g1<g.period;g1++) {
-		for(i=0;i<g.ncols;i++) {
-			for(j=0;j<g.nrows;j++) {
+		for(j=0;j<g.nrows;j++) {
+			for(i=0;i<g.ncols;i++) {
 				switch(wlsCellVal(g.field,g1,i,j)) {
 				case CV_FORCEDOFF:
 					if(!proceed(findcell(j+1,i+1,g1),OFF,FALSE)) {
@@ -1047,8 +1050,8 @@ BOOL set_initial_cells(void)
 	g.nextset = g.settable;
 
 	for(g1=0;g1<g.period;g1++) {
-		for(i=0;i<g.ncols;i++) {
-			for(j=0;j<g.nrows;j++) {
+		for(j=0;j<g.nrows;j++) {
+			for(i=0;i<g.ncols;i++) {
 				switch(wlsCellVal(g.field,g1,i,j)) {
 				case CV_FORCEDOFF:
 					if(!proceed(findcell(j+1,i+1,g1),OFF,FALSE)) {
@@ -1081,8 +1084,8 @@ BOOL set_initial_cells(void)
 	do {
 		change = FALSE;
 		for(g1=0;g1<g.period;g1++) {
-			for(i=0;i<g.ncols;i++) {
-				for(j=0;j<g.nrows;j++) {
+			for(j=0;j<g.nrows;j++) {
+				for(i=0;i<g.ncols;i++) {
 					cell = findcell(j+1,i+1,g1);
 					if (cell->active && (cell->state == UNK)) {
 						if (proceed(cell, OFF, TRUE)) {
@@ -1181,8 +1184,8 @@ static void wlsCopyLifesrcToTmpfield(struct wcontext *ctx)
 
 	// copy dbell's format back into mine
 	for(g1=0;g1<g.period;g1++) {
-		for(i=0;i<g.ncols;i++) {
-			for(j=0;j<g.nrows;j++) {
+		for(j=0;j<g.nrows;j++) {
+			for(i=0;i<g.ncols;i++) {
 				cell=findcell(j+1,i+1,g1);
 				switch(cell->state) {
 				case OFF:
@@ -1270,8 +1273,8 @@ static void wlsCopyCombineToTmpfield(struct wcontext *ctx)
 
 	if (g.combinedcells > 0) {
 		for(g1=0;g1<g.period;g1++) {
-			for(i=0;i<g.ncols;i++) {
-				for(j=0;j<g.nrows;j++) {
+			for(j=0;j<g.nrows;j++) {
+				for(i=0;i<g.ncols;i++) {
 					cell=findcell(j+1,i+1,g1);
 					switch(cell->combined) {
 					case OFF:
@@ -1855,20 +1858,12 @@ static void hide_selection(struct wcontext *ctx)
 
 static void clear_gen(int g1)
 {
-	int i,j;
-	for(i=0;i<COLMAX;i++) {
-		for(j=0;j<ROWMAX;j++) {
-			wlsSetCellVal(g.field,g1,i,j,CV_CLEAR);
-		}
-	}
+	wlsFillField_Gen(g.field,g1,CV_CLEAR);
 }
 
 static void clear_all(struct wcontext *ctx)
 {
-	int g1;
-	for(g1=0;g1<GENMAX;g1++) {
-		clear_gen(g1);
-	}
+	wlsFillField_All(g.field,CV_CLEAR);
 	hide_selection(ctx);
 }
 
@@ -1988,16 +1983,16 @@ static void shift_gen(struct wcontext *ctx, int fromgen, int togen, int gend, in
 
 	// Make a temporary copy of the relevant cells.
 	for(g1=fromgen; g1<=togen; g1++) {
-		for(c=fromcol; c<=tocol; c++) {
-			for (r=fromrow; r<=torow; r++) {
+		for (r=fromrow; r<=torow; r++) {
+			for(c=fromcol; c<=tocol; c++) {
 				wlsSetCellVal(g.tmpfield,g1,c,r,wlsCellVal(g.field,g1,c,r));
 			}
 		}
 	}
 
 	for(g1=fromgen; g1<=togen; g1++) {
-		for(c=fromcol; c<=tocol; c++) {
-			for (r=fromrow; r<=torow; r++) {
+		for (r=fromrow; r<=torow; r++) {
+			for(c=fromcol; c<=tocol; c++) {
 				gx = (g1 + gend - fromgen + togen - fromgen + 1) % (togen - fromgen + 1) + fromgen;
 				cx = (c + cold - fromcol + tocol - fromcol + 1) % (tocol - fromcol + 1) + fromcol;
 				rx = (r + rowd - fromrow + torow - fromrow + 1) % (torow - fromrow + 1) + fromrow;
@@ -3137,8 +3132,6 @@ static INT_PTR CALLBACK DlgProcPreferences(HWND hWnd, UINT msg, WPARAM wParam, L
 
 static void InitGameSettings(struct wcontext *ctx)
 {
-	int i,j,k;
-
 	// The cellwidth and height are required to be the same, because only a
 	// single value is stored in the registry.
 	ctx->cellwidth = 16;
@@ -3150,14 +3143,9 @@ static void InitGameSettings(struct wcontext *ctx)
 	g.field = malloc(sizeof(struct field_struct));
 	g.tmpfield = malloc(sizeof(struct field_struct));
 
-	for(k=0;k<GENMAX;k++) {
-		for(i=0;i<COLMAX;i++) {
-			for(j=0;j<ROWMAX;j++) {
-				wlsSetCellVal(g.field,k,i,j,CV_CLEAR);       // set all cells to "don't care"
-				wlsSetCellVal(g.tmpfield,k,i,j,CV_CLEAR);
-			}
-		}
-	}
+	// set all cells to "don't care"
+	wlsFillField_All(g.field,CV_CLEAR);
+	wlsFillField_All(g.tmpfield,CV_CLEAR);
 
 	g.symmetry=0;
 
