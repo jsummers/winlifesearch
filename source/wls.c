@@ -1858,6 +1858,13 @@ static void wlsResetSearch(struct wcontext *ctx)
 
 	ctx->searchstate=WLS_SRCH_OFF;
 
+	free(g.settable); g.settable=NULL;
+	free(g.celltable); g.celltable=NULL;
+	free(g.auxtable); g.auxtable=NULL;
+#ifndef JS
+	free(g.searchtable); g.searchtable=NULL;
+#endif
+
 	record_malloc(0,NULL);    // free memory
 
 here:

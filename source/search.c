@@ -98,6 +98,8 @@ initcells(void)
 	CELL *	cell;
 	CELL *	cell2;
 
+	g.lifesrc_maxcells = (g.ncols + 2) * (g.nrows + 2) * g.period;
+	g.lifesrc_auxcells = TRANSMAX * (g.ncols + g.nrows + 4) * 2;
 	g.newcellcount=0;
 	g.auxcellcount=0;
 	g.newcells=NULL;
@@ -106,6 +108,9 @@ initcells(void)
 	g.dummyrowinfo.oncount=0;
 	g.dummycolinfo.oncount=0;
 
+	g.settable = (CELL**)malloc(sizeof(CELL*)*g.lifesrc_maxcells);
+	g.celltable = (CELL**)malloc(sizeof(CELL*)*g.lifesrc_maxcells);
+	g.auxtable = (CELL**)malloc(sizeof(CELL*)*g.lifesrc_auxcells);
 
 	if ((g.nrows <= 0) || (g.nrows > ROWMAX) ||
 		(g.ncols <= 0) || (g.ncols > COLMAX) ||
@@ -123,7 +128,7 @@ initcells(void)
 	 */
 	g.deadcell = allocatecell();
 
-	for (i = 0; i < MAXCELLS; i++)
+	for (i = 0; i < g.lifesrc_maxcells; i++)
 		g.celltable[i] = allocatecell();
 
 	/*
@@ -379,12 +384,13 @@ initsearchorder(void)
 	int	row, col, gen;
 	int	count;
 	CELL *	cell;
-	CELL *	table[MAXCELLS];
+	CELL **table = NULL;
 	int nrow,ncol;
 	/*
 	 * Make a table of cells that will be searched.
 	 * Ignore cells that are not relevant to the search due to symmetry.
 	 */
+	table = (CELL**)malloc(sizeof(CELL*)*g.lifesrc_maxcells);
 	count = 0;
 
 	for (gen = 0; gen < g.period; gen++)
@@ -459,6 +465,7 @@ initsearchorder(void)
 	}
 
 	g.fullsearchlist = g.searchlist;
+	free(table);
 }
 
 
@@ -2033,6 +2040,8 @@ initcells(void)
 
 	g.inited = FALSE;
 
+	g.lifesrc_maxcells = (g.ncols + 2) * (g.nrows + 2) * g.period;
+	g.lifesrc_auxcells = TRANSMAX * (g.ncols + g.nrows + 4) * 2;
 	g.newcellcount=0;
 	g.auxcellcount=0;
 	g.newcells=NULL;
@@ -2040,6 +2049,10 @@ initcells(void)
 	g.dummyrowinfo.oncount=0;
 	g.dummycolinfo.oncount=0;
 
+	g.settable = (CELL**)malloc(sizeof(CELL*)*g.lifesrc_maxcells);
+	g.celltable = (CELL**)malloc(sizeof(CELL*)*g.lifesrc_maxcells);
+	g.auxtable = (CELL**)malloc(sizeof(CELL*)*g.lifesrc_auxcells);
+	g.searchtable = (CELL**)malloc(sizeof(CELL*)*g.lifesrc_maxcells);
 
 	if ((g.nrows <= 0) || (g.nrows > ROWMAX) ||
 		(g.ncols <= 0) || (g.ncols > COLMAX) ||
@@ -2051,7 +2064,7 @@ initcells(void)
 		return FALSE;
 	}
 
-	for (i = 0; i < MAXCELLS; i++)
+	for (i = 0; i < g.lifesrc_maxcells; i++)
 		g.celltable[i] = allocatecell();
 
 	/*
@@ -2299,11 +2312,12 @@ initsearchorder(void)
 	int	row, col, gen;
 	int	count;
 	CELL *	cell;
-	CELL *	table[MAXCELLS];
+	CELL **table = NULL;
 	/*
 	 * Make a table of cells that will be searched.
 	 * Ignore cells that are not relevant to the search due to symmetry.
 	 */
+	table = (CELL**)malloc(sizeof(CELL*)*g.lifesrc_maxcells);
 	count = 0;
 
 	for (gen = 0; gen < g.period; gen++) {
@@ -2337,6 +2351,7 @@ initsearchorder(void)
 		cell->search = g.searchlist;
 		g.searchlist = cell;
 	}
+	free(table);
 }
 
 /*
@@ -3035,7 +3050,7 @@ getsmartunknown(void)
 
 	// Prepare threshold
 	threshold = g.smartthreshold;
-	if (threshold <= 0) threshold = MAXCELLS;
+	if (threshold <= 0) threshold = g.lifesrc_maxcells;
 
 	// Prepare the dummy maximum
 	max = 2; // at least 3 cells must change
@@ -3123,7 +3138,7 @@ getsmartunknown(void)
 				// the cell can be set only one way
 				best = cell;
 				bestchoice = g.smartchoice;
-				max = MAXCELLS + 1;
+				max = g.lifesrc_maxcells + 1;
 				window = 0;
 			}
 		}
@@ -3134,7 +3149,7 @@ getsmartunknown(void)
 	if (best != NULL) {
 
 
-		if (MAXCELLS >= max) {
+		if (g.lifesrc_maxcells >= max) {
 			g.smartstatsumwnd += wnd;
 			++g.smartstatsumwndc;
 			g.smartstatsumlen += max;

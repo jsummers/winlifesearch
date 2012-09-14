@@ -40,9 +40,6 @@
 #define	ALLOCSIZE	1000		/* chunk size for cell allocation */
 #define	LINESIZE	1000		/* size of input lines */
 
-#define	MAXCELLS	((COLMAX + 2) * (ROWMAX + 2) * GENMAX)
-#define	AUXCELLS	(TRANSMAX * (COLMAX + ROWMAX + 4) * 2)
-
 
 /*
  * Debugging macros
@@ -293,14 +290,14 @@ struct globals_struct {
 /*
  * Data about all of the cells.
  */
-	CELL * settable[MAXCELLS];	/* table of cells whose value is set */
+	CELL ** settable;	/* table of (MAXCELLS) cells whose value is set */
 	CELL ** newset;		/* where to add new cells into setting table */
 	CELL ** nextset;	/* next cell in setting table to examine */
 #ifdef JS
 	CELL ** baseset;	/* base of changeable part of setting table */
 	CELL * fullsearchlist;	/* complete list of cells to search */
 #else
-	CELL *  searchtable[MAXCELLS]; /* a stack of searchlist positions */
+	CELL ** searchtable; /* a stack of (MAXCELLS) searchlist positions */
 	CELL ** searchset;
 #endif
 	ROWINFO rowinfo[ROWMAX];	/* information about rows of gen 0 */
@@ -365,11 +362,14 @@ struct globals_struct {
 #ifdef JS
 	CELL * deadcell; /* boundary cell value */
 #endif
-	CELL * celltable[MAXCELLS]; /* table of usual cells */
-	CELL * auxtable[AUXCELLS]; /* table of auxillary cells */
+	CELL ** celltable; /* table of (MAXCELLS) usual cells */
+	CELL ** auxtable; /* table of (AUXCELLS) auxillary cells */
 
 	void *memblks[2000];
 	int memblks_used;
+
+	int lifesrc_maxcells; // formerly the MAXCELLS macro
+	int lifesrc_auxcells; // formerly the AUXCELLS macro
 };
 
 
