@@ -273,30 +273,42 @@ static struct field_struct *wlsAllocField(struct field_struct *prev_field)
 	new_field->c = (WLS_CELLVAL*)malloc(new_field->ngens * new_field->gen_stride);
 	if(!new_field) return NULL;
 
-	wlsFillField_All(new_field,CV_CLEAR);
-
 	if(prev_field) {
-		int gens_to_copy, rows_to_copy, cols_to_copy;
-		int i,j,k;
+		int i,j,k; // position in the new field
+		int i2,j2,k2; // position in the old field
+		WLS_CELLVAL val;
 
-		// Copy the cells common to both the old and new field.
-		gens_to_copy=new_field->ngens;
-		if(gens_to_copy>prev_field->ngens) gens_to_copy=prev_field->ngens;
-		rows_to_copy=new_field->nrows;
-		if(rows_to_copy>prev_field->nrows) rows_to_copy=prev_field->nrows;
-		cols_to_copy=new_field->ncols;
-		if(cols_to_copy>prev_field->ncols) cols_to_copy=prev_field->ncols;
+		// Copy cells from the old field.
+		for(k=0;k<new_field->ngens;k++) {
+			for(j=0;j<new_field->nrows;j++) {
+				for(i=0;i<new_field->ncols;i++) {
+					// Find the nearest cell that exists in the old field.
+					i2=i; j2=j; k2=k;
+					if(k2>prev_field->ngens-1) k2=prev_field->ngens-1;
+					if(j2>prev_field->nrows-1) j2=prev_field->nrows-1;
+					if(i2>prev_field->ncols-1) i2=prev_field->ncols-1;
 
-		for(k=0;k<gens_to_copy;k++) {
-			for(j=0;j<rows_to_copy;j++) {
-				for(i=0;i<cols_to_copy;i++) {
-					wlsSetCellVal(new_field,k,i,j,wlsCellVal(prev_field,k,i,j));
+					// Read its value.
+					val = wlsCellVal(prev_field,k2,i2,j2);
+
+					if(k2!=k || j2!=j || i2!=i) {
+						// Cell does not exist in old field. Use the value of the
+						// nearest cell that does exist, unless it is forced ON.
+						if(val==CV_FORCEDON) val=CV_CLEAR;
+					}
+					wlsSetCellVal(new_field,k,i,j,val);
 				}
 			}
 		}
 
 		wlsFreeField(prev_field);
 	}
+	else {
+		// No previous field to copy from
+		wlsFillField_All(new_field,CV_CLEAR);
+	}
+
+
 	return new_field;
 }
 
