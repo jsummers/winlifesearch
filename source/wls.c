@@ -2072,6 +2072,7 @@ static void copytoclipboard(struct wcontext *ctx, struct field_struct *field)
 	TCHAR buf[100],buf2[10];
 	TCHAR *s;
 	int i,j;
+	int adj_i, adj_j;
 	int offset;
 
 	if(ctx->searchstate==WLS_SRCH_OFF) {
@@ -2104,7 +2105,26 @@ static void copytoclipboard(struct wcontext *ctx, struct field_struct *field)
 
 	for(j=0;j<g.nrows;j++) {
 		for(i=0;i<g.ncols;i++) {
-			if(wlsCellVal(field,g.curgen,i,j)==CV_FORCEDON)
+			adj_i=i; adj_j=j;
+
+#ifdef JS
+			// A hack to properly copy cells when fast-symmetry is in use.
+			if(g.fastsym && ctx->searchstate!=WLS_SRCH_OFF) {
+				if(g.symmetry==2) {
+					if(j < (g.nrows - g.nrows%2)/2) {
+						adj_j = g.nrows - 1 - j;
+					}
+				}
+				else if(g.symmetry==4) {
+					if(j<i) {
+						adj_i = j;
+						adj_j = i;
+					}
+				}
+			}
+#endif
+
+			if(wlsCellVal(field,g.curgen,adj_i,adj_j)==CV_FORCEDON)
 				s[offset+(g.ncols+2)*j+i]='*';
 			else
 				s[offset+(g.ncols+2)*j+i]='.';
