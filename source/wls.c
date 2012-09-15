@@ -66,6 +66,7 @@ struct wcontext {
 	HINSTANCE hInst;
 	HWND hwndFrame,hwndMain,hwndToolbar;
 	HWND hwndGen,hwndGenScroll;
+	HWND hwndCoordinates;
 	HWND hwndStatus;
 #define WLS_SEL_OFF        0
 #define WLS_SEL_SELECTING  1
@@ -107,6 +108,9 @@ struct wcontext {
 	unsigned int thread_stop_flags;
 
 	CRITICAL_SECTION critsec_tmpfield;
+
+	// Current coordinates displayed on the status bar
+	int displayed_coord_x, displayed_coord_y;
 };
 
 struct globals_struct g;
@@ -821,6 +825,100 @@ static void FixFrozenCells(void)
 	}
 }
 
+static void wlsUpdateDisplayedCoordinates(struct wcontext *ctx, int x, int y)
+{
+	TCHAR buf[32];
+
+	if(x<0 || x>=g.ncols || y<0 || y>=g.nrows) { x = -1; y = -1; }
+
+	if(x==ctx->displayed_coord_x && y==ctx->displayed_coord_y) return;
+
+	ctx->displayed_coord_x = x;
+	ctx->displayed_coord_y = y;
+
+	if(x<0) {
+		StringCbPrintf(buf,sizeof(buf),_T(""));
+	}
+	else {
+		StringCbPrintf(buf,sizeof(buf),_T("%d,%d"),x+1,y+1);
+	}
+	SetWindowText(ctx->hwndCoordinates,buf);
+}
+
+static void wlsMousePosToCellCoord(struct wcontext *ctx,
+	   int xm, int ym, int *pxc, int *pyc)
+{
+	xm += ctx->scrollpos.x;
+	ym += ctx->scrollpos.y;
+	*pxc = xm/ctx->cellwidth;
+	*pyc = ym/ctx->cellheight;
+}
+
+static void Handle_MouseMove(struct wcontext *ctx, WORD xp, WORD yp)
+{
+	int x,y;
+	HDC hDC;
+
+	wlsMousePosToCellCoord(ctx,(int)xp,(int)yp,&x,&y);
+
+	if(x<0 || x>=g.ncols || y<0 || y>=g.nrows) {
+		wlsUpdateDisplayedCoordinates(ctx,-1,-1);
+		return;
+	}
+
+	wlsUpdateDisplayedCoordinates(ctx,x,y);
+
+	if(ctx->searchstate!=WLS_SRCH_OFF) return;
+
+	if(ctx->selectstate!=WLS_SEL_SELECTING) return;
+
+	if(x==ctx->endcell.x && y==ctx->endcell.y) {   // cursor hasn't moved to a new cell
+		return;
+	}
+
+	if(x==ctx->startcell.x && y==ctx->startcell.y) {  // cursor over starting cell
+		hDC=GetDC(ctx->hwndMain);
+		InvertCells(ctx,hDC); // turn off
+		ReleaseDC(ctx->hwndMain,hDC);
+
+		ctx->inverted=0;
+		ctx->endcell.x=x;
+		ctx->endcell.y=y;
+		return;
+	}
+
+	// else we're at a different cell
+
+	hDC=GetDC(ctx->hwndMain);
+	if(ctx->inverted) InvertCells(ctx,hDC);    // turn off
+	ctx->inverted=0;
+
+	ctx->endcell.x=x;
+	ctx->endcell.y=y;
+
+	InvertCells(ctx,hDC);    // turn back on
+
+	// record the select region
+	if(ctx->startcell.x<=ctx->endcell.x) {
+		ctx->selectrect.left= ctx->startcell.x;
+		ctx->selectrect.right=ctx->endcell.x;
+	}
+	else {
+		ctx->selectrect.left=ctx->endcell.x;
+		ctx->selectrect.right=ctx->startcell.x;
+	}
+	if(ctx->startcell.y<=ctx->endcell.y) {
+		ctx->selectrect.top= ctx->startcell.y;
+		ctx->selectrect.bottom=ctx->endcell.y;
+	}
+	else {
+		ctx->selectrect.top=ctx->endcell.y;
+		ctx->selectrect.bottom=ctx->startcell.y;
+	}
+
+	ctx->inverted=1;
+	ReleaseDC(ctx->hwndMain,hDC);
+}
 
 // returns 0 if processed
 static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM wParam)
@@ -836,71 +934,15 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 
 	newval = CV_INVALID;
 
-	xp+=(WORD)ctx->scrollpos.x;
-	yp+=(WORD)ctx->scrollpos.y;
+	wlsMousePosToCellCoord(ctx,(int)xp,(int)yp,&x,&y);
 
-	x=xp/ctx->cellwidth;   // + scroll offset
-	y=yp/ctx->cellheight;  // + scroll offset
-
-	if(x<0 || x>=g.ncols) return 1;
-	if(y<0 || y>=g.nrows) return 1;
+	if(x<0 || x>=g.ncols || y<0 || y>=g.nrows) {
+		return 1;
+	}
 
 	prevval = wlsCellVal(g.field,g.curgen,x,y);
 
 	switch(msg) {
-
-	case WM_MOUSEMOVE:
-		if(ctx->selectstate!=WLS_SEL_SELECTING) return 1;
-
-		if(x==ctx->endcell.x && y==ctx->endcell.y) {   // cursor hasn't moved to a new cell
-			return 0;
-		}
-
-		if(x==ctx->startcell.x && y==ctx->startcell.y) {  // cursor over starting cell
-			hDC=GetDC(ctx->hwndMain);
-			InvertCells(ctx,hDC); // turn off
-			ReleaseDC(ctx->hwndMain,hDC);
-
-			ctx->inverted=0;
-			ctx->endcell.x=x;
-			ctx->endcell.y=y;
-			return 0;
-		}
-
-
-		// else we're at a different cell
-
-		hDC=GetDC(ctx->hwndMain);
-		if(ctx->inverted) InvertCells(ctx,hDC);    // turn off
-		ctx->inverted=0;
-
-		ctx->endcell.x=x;
-		ctx->endcell.y=y;
-
-		InvertCells(ctx,hDC);    // turn back on
-
-		// record the select region
-		if(ctx->startcell.x<=ctx->endcell.x) {
-			ctx->selectrect.left= ctx->startcell.x;
-			ctx->selectrect.right=ctx->endcell.x;
-		}
-		else {
-			ctx->selectrect.left=ctx->endcell.x;
-			ctx->selectrect.right=ctx->startcell.x;
-		}
-		if(ctx->startcell.y<=ctx->endcell.y) {
-			ctx->selectrect.top= ctx->startcell.y;
-			ctx->selectrect.bottom=ctx->endcell.y;
-		}
-		else {
-			ctx->selectrect.top=ctx->endcell.y;
-			ctx->selectrect.bottom=ctx->startcell.y;
-		}
-
-		ctx->inverted=1;
-		ReleaseDC(ctx->hwndMain,hDC);
-
-		return 0;
 
 	case WM_LBUTTONDOWN:
 		if(ctx->selectstate!=WLS_SEL_OFF) {
@@ -2565,13 +2607,17 @@ static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 	case WM_SIZE:
 		set_main_scrollbars(ctx, 0, 1);
 		return 0;
+
 	case WM_LBUTTONDOWN:
 	case WM_RBUTTONDOWN:
 	case WM_LBUTTONUP:
-	case WM_MOUSEMOVE:
 		if(ctx->searchstate==WLS_SRCH_OFF) {
 			Handle_UIEvent(ctx,msg,LOWORD(lParam),HIWORD(lParam),wParam);
 		}
+		return 0;
+
+	case WM_MOUSEMOVE:
+		Handle_MouseMove(ctx,LOWORD(lParam),HIWORD(lParam));
 		return 0;
 	}
 
@@ -2586,9 +2632,11 @@ struct statusbarpositions_struct {
 	struct statusbarrect_struct gen;
 	struct statusbarrect_struct genscroll;
 	struct statusbarrect_struct status;
+	struct statusbarrect_struct coord;
 };
 
 #define WLS_GENWINDOWWIDTH 54
+#define WLS_COORDWINDOWWIDTH 54
 
 static void wlsGetStatusBarPositions(struct statusbarpositions_struct *sbp, int windowwidth)
 {
@@ -2604,8 +2652,13 @@ static void wlsGetStatusBarPositions(struct statusbarpositions_struct *sbp, int 
 
 	sbp->status.x = WLS_GENWINDOWWIDTH+81;
 	sbp->status.y = 1;
-	sbp->status.w = windowwidth-(WLS_GENWINDOWWIDTH+81);
+	sbp->status.w = windowwidth-(WLS_GENWINDOWWIDTH+81+WLS_COORDWINDOWWIDTH);
 	sbp->status.h = TOOLBARHEIGHT-2;
+
+	sbp->coord.x = windowwidth - WLS_COORDWINDOWWIDTH;
+	sbp->coord.y = 1;
+	sbp->coord.w = WLS_COORDWINDOWWIDTH;
+	sbp->coord.h = TOOLBARHEIGHT-2;
 }
 
 static void Handle_ToolbarCreate(struct wcontext *ctx, HWND hWnd, LPARAM lParam)
@@ -2636,6 +2689,13 @@ static void Handle_ToolbarCreate(struct wcontext *ctx, HWND hWnd, LPARAM lParam)
 	SendMessage(ctx->hwndStatus,WM_SETFONT,(WPARAM)ctx->statusfont,(LPARAM)FALSE);
 	ShowWindow(ctx->hwndStatus,SW_SHOW);
 
+	ctx->hwndCoordinates=CreateWindow(_T("Static"),_T(""),
+		WS_CHILD|WS_BORDER|SS_LEFTNOWORDWRAP|SS_NOPREFIX,
+		sbp.coord.x,sbp.coord.y,sbp.coord.w,sbp.coord.h,
+		hWnd,NULL,ctx->hInst,NULL);
+	SendMessage(ctx->hwndCoordinates,WM_SETFONT,(WPARAM)ctx->statusfont,(LPARAM)FALSE);
+	ShowWindow(ctx->hwndCoordinates,SW_SHOW);
+
 #ifdef _DEBUG
 		wlsStatusf(ctx,_T("DEBUG BUILD"));
 #endif
@@ -2651,9 +2711,14 @@ static void Handle_ToolbarSize(struct wcontext *ctx, HWND hWnd, LPARAM lParam)
 
 	wlsGetStatusBarPositions(&sbp,newwidth);
 
-	// Resize the status window accordingly
+	// Resize/move the status bar items that need it.
+
 	SetWindowPos(ctx->hwndStatus,NULL,
 		sbp.status.x,sbp.status.y,sbp.status.w,sbp.status.h,
+		SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_NOZORDER);
+
+	SetWindowPos(ctx->hwndCoordinates,NULL,
+		sbp.coord.x,sbp.coord.y,sbp.coord.w,sbp.coord.h,
 		SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_NOZORDER);
 }
 
@@ -3426,6 +3491,9 @@ static BOOL InitApp(struct wcontext *ctx, int nCmdShow)
 	InitializeCriticalSection(&ctx->critsec_tmpfield);
 
 	wlsCreateFonts(ctx);
+
+	ctx->displayed_coord_x = -1;
+	ctx->displayed_coord_y = -1;
 
 	/* Create a main window for this application instance.	*/
 	ctx->hwndFrame = CreateWindow(
