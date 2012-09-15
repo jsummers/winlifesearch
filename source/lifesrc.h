@@ -187,6 +187,8 @@ struct field_struct {
 #define wlsCellVal(f,k,i,j) ((f)->c[(k)*(f)->gen_stride + (j)*(f)->row_stride + (i)])
 #define wlsSetCellVal(f,k,i,j,v) ((f)->c[(k)*(f)->gen_stride + (j)*(f)->row_stride + (i)])=(v)
 
+void wlsSetCellVal_Safe(struct field_struct *field, int k, int i, int j, WLS_CELLVAL v);
+
 struct globals_struct {
 /*
  * Current parameter values for the program to be saved over runs.
@@ -420,3 +422,4 @@ void record_malloc(int func,void *m);
 BOOL set_initial_cells(void);
 #endif
 void wlsUpdateProgressCounter(void);
+void wlsNewField(void);

@@ -220,6 +220,14 @@ void record_malloc(int func, void *m)
 	}
 }
 
+void wlsSetCellVal_Safe(struct field_struct *field, int k, int i, int j, WLS_CELLVAL v)
+{
+	if(k>=g.period || i>=g.ncols || j>=g.nrows || k<0 || i<0 || j<0) {
+		return;
+	}
+	wlsSetCellVal(field,k,i,j,v);
+}
+
 // Assumes the fields are the same size.
 static void wlsCopyField(struct field_struct *src, struct field_struct *dst)
 {
@@ -1632,13 +1640,13 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 		      (g.trans_flip==1 && g.trans_rotate<2);
 
 	// init some things that the orig code doesn't bother to init
-	for(i=0;i<g.ncols;i++) {
+	for(i=0;i<COLMAX;i++) {
 		g.colinfo[i].oncount=0;
 		g.colinfo[i].setcount=0;
 		g.colinfo[i].sumpos=0;
 	}
 
-	for(i=0;i<g.nrows;i++) { g.rowinfo[i].oncount=0; }
+	for(i=0;i<ROWMAX;i++) { g.rowinfo[i].oncount=0; }
 
 	g.newset=NULL;
 	g.nextset=NULL;
@@ -1673,6 +1681,7 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 		}
 
 #ifdef JS
+		ctx->searchstate=WLS_SRCH_PAUSED;
 		wlsUpdateAndShowTmpField();
 #else
 		wlsRepaintCells(ctx,TRUE);
@@ -2644,6 +2653,23 @@ static INT_PTR CALLBACK DlgProcAbout(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 	return 0;  // Didn't process a message
 }
 
+static void wlsResizeField(void)
+{
+	g.field = wlsAllocField(g.field);
+	wlsFreeField(g.tmpfield);
+	g.tmpfield = wlsAllocField(NULL);
+	RecalcCenter(gctx);
+}
+
+void wlsNewField(void)
+{
+	wlsFreeField(g.field);
+	wlsFreeField(g.tmpfield);
+	g.field = wlsAllocField(NULL);
+	g.tmpfield = wlsAllocField(NULL);
+	RecalcCenter(gctx);
+}
+
 static void Handle_PeriodRowsCols_OK(struct wcontext *ctx, HWND hWnd)
 {
 	int newperiod, newrows, newcols;
@@ -2691,11 +2717,7 @@ static void Handle_PeriodRowsCols_OK(struct wcontext *ctx, HWND hWnd)
 		}
 	}
 
-	g.field = wlsAllocField(g.field);
-	wlsFreeField(g.tmpfield);
-	g.tmpfield = wlsAllocField(NULL);
-
-	RecalcCenter(ctx);
+	wlsResizeField();
 
 	draw_gen_counter(ctx);
 	set_main_scrollbars(ctx, 1, 1);

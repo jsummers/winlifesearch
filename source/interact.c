@@ -573,16 +573,22 @@ BOOL loadstate(HWND hwndParent)
 
 	fgets(buf, LINESIZE, fp);  // this line has x,y,gens
 	sscanf(buf,"%d %d %d",&x1,&y1,&z1);
+
+	g.ncols = x1;
+	g.nrows = y1;
+	g.period = z1;
+	wlsNewField();
+
 	for(z=0;z<z1;z++) {
 		for(y=0;y<y1;y++) {
 			fgets(buf, LINESIZE, fp);
 			cp=strtok(buf," ");
 			for(x=0;x<x1;x++) {
 				if(cp) {
-					wlsSetCellVal(g.field,z,x,y,atoi(cp));
+					wlsSetCellVal_Safe(g.field,z,x,y,atoi(cp));
 					cp=strtok(NULL," ");
 				}
-				else wlsSetCellVal(g.field,z,x,y,4);  // error
+				else wlsSetCellVal_Safe(g.field,z,x,y,4);  // error
 			}
 		}
 	}
@@ -721,7 +727,7 @@ BOOL loadstate(HWND hwndParent)
 		row = getnum(&cp, 0);
 		col = getnum(&cp, 0);
 		val=getnum(&cp,0);
-		wlsSetCellVal(g.field,g1,row,col,val);
+		wlsSetCellVal_Safe(g.field,g1,row,col,val);
 
 		buf[0] = '\0';
 		fgets(buf, LINESIZE, fp);
@@ -1549,6 +1555,8 @@ BOOL loadstate(HWND hwndParent)
 	for (param = param_table; *param; param++)
 		**param = getnum(&cp, 0);
 
+	wlsNewField();
+
 //*********************************************
 // Initialise
 //*********************************************
@@ -1598,10 +1606,10 @@ BOOL loadstate(HWND hwndParent)
 			cp=strtok(buf," ");
 			for(col=0;col<g.ncols;col++) {
 				if(cp) {
-					wlsSetCellVal(g.field,gen,col,row,atoi(cp));
+					wlsSetCellVal_Safe(g.field,gen,col,row,atoi(cp));
 					cp=strtok(NULL," ");
 				}
-				else wlsSetCellVal(g.field,gen,col,row,4);  // error
+				else wlsSetCellVal_Safe(g.field,gen,col,row,4);  // error
 			}
 		}
 	}
