@@ -99,7 +99,6 @@ initcells(void)
 	CELL *	cell2;
 
 	g.lifesrc_maxcells = (g.ncols + 2) * (g.nrows + 2) * g.period;
-	g.lifesrc_auxcells = TRANSMAX * (g.ncols + g.nrows + 4) * 2;
 	g.newcellcount=0;
 	g.auxcellcount=0;
 	g.newcells=NULL;
@@ -110,7 +109,8 @@ initcells(void)
 
 	g.settable = (CELL**)malloc(sizeof(CELL*)*g.lifesrc_maxcells);
 	g.celltable = (CELL**)malloc(sizeof(CELL*)*g.lifesrc_maxcells);
-	g.auxtable = (CELL**)malloc(sizeof(CELL*)*g.lifesrc_auxcells);
+	g.auxtable_alloc = TRANSMAX * (g.ncols + g.nrows + 4) * 2;
+	g.auxtable = (CELL**)malloc(sizeof(CELL*)*g.auxtable_alloc);
 
 	if ((g.nrows <= 0) || (g.nrows > ROWMAX) ||
 		(g.ncols <= 0) || (g.ncols > COLMAX) ||
@@ -1675,6 +1675,11 @@ findcell(row, col, gen)
 	cell->rowinfo = &g.dummyrowinfo;
 	cell->colinfo = &g.dummycolinfo;
 
+	if(g.auxcellcount>=g.auxtable_alloc) {
+		// Ran out of space in the aux cell table.
+		g.auxtable_alloc *= 2;
+		g.auxtable = (CELL**)realloc(g.auxtable,sizeof(CELL*)*g.auxtable_alloc);
+	}
 	g.auxtable[g.auxcellcount++] = cell;
 
 	return cell;
@@ -2041,7 +2046,6 @@ initcells(void)
 	g.inited = FALSE;
 
 	g.lifesrc_maxcells = (g.ncols + 2) * (g.nrows + 2) * g.period;
-	g.lifesrc_auxcells = TRANSMAX * (g.ncols + g.nrows + 4) * 2;
 	g.newcellcount=0;
 	g.auxcellcount=0;
 	g.newcells=NULL;
@@ -2051,7 +2055,8 @@ initcells(void)
 
 	g.settable = (CELL**)malloc(sizeof(CELL*)*g.lifesrc_maxcells);
 	g.celltable = (CELL**)malloc(sizeof(CELL*)*g.lifesrc_maxcells);
-	g.auxtable = (CELL**)malloc(sizeof(CELL*)*g.lifesrc_auxcells);
+	g.auxtable_alloc = TRANSMAX * (g.ncols + g.nrows + 4) * 2;
+	g.auxtable = (CELL**)malloc(sizeof(CELL*)*g.auxtable_alloc);
 	g.searchtable = (CELL**)malloc(sizeof(CELL*)*g.lifesrc_maxcells);
 
 	if ((g.nrows <= 0) || (g.nrows > ROWMAX) ||
@@ -3807,6 +3812,12 @@ findcell(row, col, gen)
 	cell->rowinfo = &g.dummyrowinfo;
 	cell->colinfo = &g.dummycolinfo;
 
+	if(g.auxcellcount>=g.auxtable_alloc) {
+		// Ran out of space in the aux cell table.
+		// (Not sure this is necessary in the "K" configuration.)
+		g.auxtable_alloc *= 2;
+		g.auxtable = (CELL**)realloc(g.auxtable,sizeof(CELL*)*g.auxtable_alloc);
+	}
 	g.auxtable[g.auxcellcount++] = cell;
 
 	return cell;

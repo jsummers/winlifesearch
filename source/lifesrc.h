@@ -361,13 +361,13 @@ struct globals_struct {
 	CELL * deadcell; /* boundary cell value */
 #endif
 	CELL ** celltable; /* table of (MAXCELLS) usual cells */
-	CELL ** auxtable; /* table of (AUXCELLS) auxillary cells */
+	CELL ** auxtable; /* table of (auxtable_alloc) auxillary cells */
+	int auxtable_alloc;
 
 	void *memblks[2000];
 	int memblks_used;
 
 	int lifesrc_maxcells; // formerly the MAXCELLS macro
-	int lifesrc_auxcells; // formerly the AUXCELLS macro
 };
 
 
