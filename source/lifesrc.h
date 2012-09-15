@@ -8,7 +8,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#define WLS_VERSION_STRING _T("0.70")
+#define WLS_VERSION_STRING _T("0.71")
 
 #define	ROWMAX		250	/* maximum rows for search rectangle */
 #define	COLMAX		250	/* maximum columns for search rectangle */

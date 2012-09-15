@@ -5,7 +5,7 @@ A program to search for oscillators, spaceships, and related objects in
 Conway's Game of Life and related cellular automata.
 
 By Jason Summers
-v0.70 - Sep. 2012
+v0.71 - Sep. 2012
 
 Other authors: David Bell, Karel Suhajda
 
@@ -25,9 +25,9 @@ There are two variants of WinLifeSearch included in this package:
 WinLifeSearchK and WinLifeSearchJ. "K" is based on v0.61, and "J" is based on
 v0.4:
 
-          v0.5 --- v0.6 --- v0.61 --- WinLifeSearchK v0.70 (wls.exe)
+          v0.5 --- v0.6 --- v0.61 --- WinLifeSearchK v0.70+ (wls.exe)
           /
-... --- v0.4 ------------------------ WinLifeSearchJ v0.70 (wlsj.exe)
+... --- v0.4 ------------------------ WinLifeSearchJ v0.70+ (wlsj.exe)
 
 In most respects, "K" is better, but there may be a few reasons to use "J"
 (the "fast symmetry" feature in particular). "J" is offered because I want to

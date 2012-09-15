@@ -105,8 +105,8 @@ BEGIN
 END
 
 VS_VERSION_INFO VERSIONINFO
-    FILEVERSION     0,4,0,0
-    PRODUCTVERSION  0,4,0,0
+    FILEVERSION     0,7,1,0
+    PRODUCTVERSION  0,7,1,0
     FILEOS          VOS_NT_WINDOWS32
     FILETYPE        VFT_APP
     FILESUBTYPE     VFT2_UNKNOWN
@@ -124,14 +124,14 @@ VS_VERSION_INFO VERSIONINFO
             VALUE "Comments", ""
             VALUE "CompanyName", ""
             VALUE "FileDescription", "WinLifeSearchJ"
-            VALUE "FileVersion", "0, 7, 0, 0"
+            VALUE "FileVersion", "0, 7, 1, 0"
             VALUE "InternalName", "wlsj"
             VALUE "LegalCopyright", "(C) 2012 Jason Summers et. al."
             VALUE "LegalTrademarks", ""
             VALUE "OriginalFilename", "wlsj.exe"
             VALUE "PrivateBuild", ""
             VALUE "ProductName", "WinLifeSearchJ"
-            VALUE "ProductVersion", "0, 7, 0, 0"
+            VALUE "ProductVersion", "0, 7, 1, 0"
             VALUE "SpecialBuild", ""
         }
     }
@@ -247,8 +247,8 @@ END
 
 
 VS_VERSION_INFO VERSIONINFO
-    FILEVERSION     0,6,1,0
-    PRODUCTVERSION  0,6,1,0
+    FILEVERSION     0,7,1,0
+    PRODUCTVERSION  0,7,1,0
     FILEOS          VOS_NT_WINDOWS32
     FILETYPE        VFT_APP
     FILESUBTYPE     VFT2_UNKNOWN
@@ -266,14 +266,14 @@ VS_VERSION_INFO VERSIONINFO
             VALUE "Comments", ""
             VALUE "CompanyName", ""
             VALUE "FileDescription", "WinLifeSearchK"
-            VALUE "FileVersion", "0, 7, 0, 0"
+            VALUE "FileVersion", "0, 7, 1, 0"
             VALUE "InternalName", "wls"
             VALUE "LegalCopyright", "(C) 2012 Jason Summers et. al."
             VALUE "LegalTrademarks", ""
             VALUE "OriginalFilename", "wls.exe"
             VALUE "PrivateBuild", ""
             VALUE "ProductName", "WinLifeSearchK"
-            VALUE "ProductVersion", "0, 7, 0, 0"
+            VALUE "ProductVersion", "0, 7, 1, 0"
             VALUE "SpecialBuild", ""
         }
     }
