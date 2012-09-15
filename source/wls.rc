@@ -34,20 +34,20 @@ STYLE DS_SETFONT | DS_FIXEDSYS | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSM
 CAPTION "Output settings"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    LTEXT           "Dump to file:",IDC_STATIC,7,31,40,8
-    EDITTEXT        IDC_DUMPFILE,54,28,51,14,ES_AUTOHSCROLL | WS_GROUP
-    LTEXT           "every",IDC_STATIC,113,30,18,8
-    EDITTEXT        IDC_DUMPFREQ,137,28,40,14,ES_AUTOHSCROLL | WS_GROUP
-    LTEXT           "calculations",IDC_STATIC,183,31,38,8
+    LTEXT           "Dump to file:",IDC_STATIC,7,10,47,8
+    EDITTEXT        IDC_DUMPFILE,54,7,51,14,ES_AUTOHSCROLL | WS_GROUP
+    LTEXT           "every",IDC_STATIC,113,10,18,8
+    EDITTEXT        IDC_DUMPFREQ,137,7,40,14,ES_AUTOHSCROLL | WS_GROUP
+    LTEXT           "calculations",IDC_STATIC,183,10,38,8
     CONTROL         "Stop when an object is found",IDC_STOPONFOUND,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP | WS_GROUP,7,48,108,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP | WS_GROUP,7,27,108,10
     CONTROL         "Save found objects to file:",IDC_OUTPUTFILEYN,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,63,98,10
-    EDITTEXT        IDC_OUTPUTFILE,105,61,58,14,ES_AUTOHSCROLL | WS_GROUP
-    LTEXT           "Save partial results every",IDC_STATIC,7,81,80,8
-    EDITTEXT        IDC_OUTPUTCOLS,104,79,40,14,ES_AUTOHSCROLL | WS_GROUP
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,42,98,10
+    EDITTEXT        IDC_OUTPUTFILE,105,40,58,14,ES_AUTOHSCROLL | WS_GROUP
+    LTEXT           "Save partial results every",IDC_STATIC,7,60,97,8
+    EDITTEXT        IDC_OUTPUTCOLS,104,58,40,14,ES_AUTOHSCROLL | WS_GROUP
     LTEXT           "columns [incompatible with Fast symmetry]",IDC_STATIC,
-                    147,81,143,8
+                    147,60,143,8
     DEFPUSHBUTTON   "OK",IDOK,252,7,50,14 | WS_GROUP
     PUSHBUTTON      "Cancel",IDCANCEL,252,24,50,14
 END
@@ -163,14 +163,17 @@ BEGIN
     EDITTEXT        IDC_OUTPUTFILE,106,40,56,14,ES_AUTOHSCROLL | WS_GROUP
     CONTROL         "All generations",IDC_OUTPUTALLGEN,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP | WS_GROUP,170,42,62,10
-    LTEXT           "Dump to file:",IDC_STATIC,7,75,40,8
-    EDITTEXT        IDC_DUMPFILE,106,72,56,14,ES_AUTOHSCROLL | WS_GROUP
-    LTEXT           "every",IDC_STATIC,170,75,18,8
-    EDITTEXT        IDC_DUMPFREQ,193,72,56,14,ES_AUTOHSCROLL | WS_GROUP
-    LTEXT           "calculations",IDC_STATIC,255,75,38,8
-    LTEXT           "Save partial results every",IDC_STATIC,7,91,80,8
-    EDITTEXT        IDC_OUTPUTCOLS,106,88,56,14,ES_AUTOHSCROLL | WS_GROUP
-    LTEXT           "columns",IDC_STATIC,170,91,27,8
+
+    LTEXT           "Dump to file:",IDC_STATIC,7,59,40,8
+    EDITTEXT        IDC_DUMPFILE,106,56,56,14,ES_AUTOHSCROLL | WS_GROUP
+    LTEXT           "every",IDC_STATIC,170,59,18,8
+    EDITTEXT        IDC_DUMPFREQ,193,56,56,14,ES_AUTOHSCROLL | WS_GROUP
+    LTEXT           "calculations",IDC_STATIC,255,59,38,8
+
+    LTEXT           "Save partial results every",IDC_STATIC,7,75,80,8
+    EDITTEXT        IDC_OUTPUTCOLS,106,72,56,14,ES_AUTOHSCROLL | WS_GROUP
+    LTEXT           "columns",IDC_STATIC,170,75,27,8
+
     DEFPUSHBUTTON   "OK",IDOK,243,8,50,14 | WS_GROUP
     PUSHBUTTON      "Cancel",IDCANCEL,243,24,50,14
 END
