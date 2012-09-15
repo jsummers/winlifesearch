@@ -2578,27 +2578,60 @@ static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
+struct statusbarrect_struct {
+	int x,y,w,h;
+};
+
+struct statusbarpositions_struct {
+	struct statusbarrect_struct gen;
+	struct statusbarrect_struct genscroll;
+	struct statusbarrect_struct status;
+};
+
+#define WLS_GENWINDOWWIDTH 54
+
+static void wlsGetStatusBarPositions(struct statusbarpositions_struct *sbp, int windowwidth)
+{
+	sbp->gen.x = 1;
+	sbp->gen.y = 1;
+	sbp->gen.w = WLS_GENWINDOWWIDTH;
+	sbp->gen.h = TOOLBARHEIGHT-2;
+
+	sbp->genscroll.x = WLS_GENWINDOWWIDTH+1;
+	sbp->genscroll.y = 1;
+	sbp->genscroll.w = 80;
+	sbp->genscroll.h = TOOLBARHEIGHT-2;
+
+	sbp->status.x = WLS_GENWINDOWWIDTH+81;
+	sbp->status.y = 1;
+	sbp->status.w = windowwidth-(WLS_GENWINDOWWIDTH+81);
+	sbp->status.h = TOOLBARHEIGHT-2;
+}
+
 static void Handle_ToolbarCreate(struct wcontext *ctx, HWND hWnd, LPARAM lParam)
 {
 	CREATESTRUCT *cs;
+	struct statusbarpositions_struct sbp;
 
 	cs = (CREATESTRUCT*)lParam;
-#define WLS_GENWINDOWWIDTH 54
+
+	wlsGetStatusBarPositions(&sbp,cs->cx);
+
 	ctx->hwndGen=CreateWindow(_T("Static"),_T(""),
 		WS_CHILD|WS_BORDER|SS_LEFTNOWORDWRAP|SS_NOPREFIX,
-		1,1,WLS_GENWINDOWWIDTH,TOOLBARHEIGHT-2,
+		sbp.gen.x,sbp.gen.y,sbp.gen.w,sbp.gen.h,
 		hWnd,NULL,ctx->hInst,NULL);
 	SendMessage(ctx->hwndGen,WM_SETFONT,(WPARAM)ctx->statusfont,(LPARAM)FALSE);
 	ShowWindow(ctx->hwndGen,SW_SHOW);
 
 	ctx->hwndGenScroll=CreateWindow(_T("Scrollbar"),_T("wls_gen_scrollbar"),
 		WS_CHILD|WS_VISIBLE|SBS_HORZ,
-		WLS_GENWINDOWWIDTH+1,1,80,TOOLBARHEIGHT-2,
+		sbp.genscroll.x,sbp.genscroll.y,sbp.genscroll.w,sbp.genscroll.h,
 		hWnd,NULL,ctx->hInst,NULL);
 
 	ctx->hwndStatus=CreateWindow(_T("Static"),_T(""),
 		WS_CHILD|WS_BORDER|SS_LEFTNOWORDWRAP|SS_NOPREFIX,
-		WLS_GENWINDOWWIDTH+81,1,cs->cx-(WLS_GENWINDOWWIDTH+81),TOOLBARHEIGHT-2,
+		sbp.status.x,sbp.status.y,sbp.status.w,sbp.status.h,
 		hWnd,NULL,ctx->hInst,NULL);
 	SendMessage(ctx->hwndStatus,WM_SETFONT,(WPARAM)ctx->statusfont,(LPARAM)FALSE);
 	ShowWindow(ctx->hwndStatus,SW_SHOW);
@@ -2611,13 +2644,17 @@ static void Handle_ToolbarCreate(struct wcontext *ctx, HWND hWnd, LPARAM lParam)
 
 static void Handle_ToolbarSize(struct wcontext *ctx, HWND hWnd, LPARAM lParam)
 {
+	struct statusbarpositions_struct sbp;
 	int newwidth = LOWORD(lParam);
 
 	if(!ctx->hwndStatus) return;
 
+	wlsGetStatusBarPositions(&sbp,newwidth);
+
 	// Resize the status window accordingly
-	SetWindowPos(ctx->hwndStatus,NULL,0,0,newwidth-(WLS_GENWINDOWWIDTH+81),TOOLBARHEIGHT-2,
-		SWP_NOACTIVATE|SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER);
+	SetWindowPos(ctx->hwndStatus,NULL,
+		sbp.status.x,sbp.status.y,sbp.status.w,sbp.status.h,
+		SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_NOZORDER);
 }
 
 static LRESULT CALLBACK WndProcToolbar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
