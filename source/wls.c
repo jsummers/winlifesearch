@@ -1396,6 +1396,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 		if (g.curstatus == FOUND) {
 			g.curstatus = OK;
 
+			wlsUpdateProgressCounter();
 			wlsUpdateAndShowTmpField_Sync();
 			wlsStatusf(ctx,_T("Object %d found."), ++g.foundcount);
 
@@ -1541,7 +1542,6 @@ static void resume_search(struct wcontext *ctx)
 {
 	DWORD threadid;
 
-	SetWindowText(ctx->hwndFrame,WLS_APPNAME);
 	wlsStatusf(ctx,_T("Searching\x2026"));
 
 	if(ctx->searchstate!=WLS_SRCH_PAUSED) {
@@ -1560,7 +1560,7 @@ static void resume_search(struct wcontext *ctx)
 		ctx->searchstate=WLS_SRCH_PAUSED;
 	}
 	else {
-		SetWindowText(ctx->hwndFrame,WLS_APPNAME);
+		wlsUpdateProgressCounter();
 
 		// Request that the computer not go to sleep while we're searching.
 		SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
@@ -1576,7 +1576,6 @@ static void resume_search(struct wcontext *ctx)
 {
 	DWORD threadid;
 
-	SetWindowText(ctx->hwndFrame,WLS_APPNAME);
 	if (g.combine) {
 		if (g.combining) {
 			wlsStatusf(ctx,_T("Combine: %d cells remaining"), g.combinedcells);
@@ -1605,7 +1604,7 @@ static void resume_search(struct wcontext *ctx)
 		ctx->searchstate=WLS_SRCH_PAUSED;
 	}
 	else {
-		SetWindowText(ctx->hwndFrame,WLS_APPNAME);
+		wlsUpdateProgressCounter();
 
 		// Request that the computer not go to sleep while we're searching.
 		SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
@@ -1620,15 +1619,17 @@ static void resume_search(struct wcontext *ctx)
 static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 {
 	int i;
+	HCURSOR prevcur = NULL;
+	BOOL retval = FALSE;
 
 	if(ctx->searchstate!=WLS_SRCH_OFF) {
 		wlsErrorf(ctx,_T("A search is already running"));
-		return FALSE;
+		goto done;
 	}
 
 	if (!setrules(g.rulestring)) {
 		wlsErrorf(ctx,_T("Cannot set Life rules!"));
-		return FALSE;
+		goto done;
 	}
 
 	// set the variables that dbell's code uses
@@ -1677,23 +1678,23 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 	if (load) {
 		if(!loadstate(ctx->hwndFrame)) {
 			wlsRepaintCells(ctx,TRUE);
-			return FALSE;
+			goto done;
 		}
 
-#ifdef JS
 		ctx->searchstate=WLS_SRCH_PAUSED;
+		g.curgen = 0;
 		wlsUpdateAndShowTmpField();
-#else
-		wlsRepaintCells(ctx,TRUE);
-#endif
 		draw_gen_counter(ctx);
 	}
 	else {
+		wlsStatusf(ctx,_T("Preparing search\x2026"));
+		prevcur=SetCursor(LoadCursor(NULL,IDC_WAIT));
+
 #ifdef JS
 		g.inited=FALSE;
 #endif
 		if(!initcells()) {
-			return FALSE;
+			goto done;
 		}
 
 #ifdef JS
@@ -1703,7 +1704,7 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 
 		if(!set_initial_cells()) {
 			record_malloc(0,NULL); // release allocated memory
-			return FALSE;   // there was probably an inconsistency in the initial cells
+			goto done;   // there was probably an inconsistency in the initial cells
 		}
 #ifdef JS
 		g.foundcount=0;
@@ -1717,7 +1718,12 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 #ifndef JS
 	wlsUpdateAndShowTmpField();
 #endif
-	return TRUE;
+	retval = TRUE;
+
+done:
+	wlsStatusf(ctx,_T(""));
+	if(prevcur) SetCursor(prevcur);
+	return retval;
 }
 
 static void start_search(struct wcontext *ctx)
@@ -1774,13 +1780,13 @@ static void wlsOnThreadDone(struct wcontext *ctx)
 		wlsResetSearch(ctx);
 	}
 	else {
-		//SetWindowText(ctx->hwndFrame,WLS_APPNAME _T(" - Paused"));
 		if(ctx->thread_stop_flags & WLS_THREADFLAG_ABORTED) {
 			wlsStatusf(ctx,_T("Search paused."));
 		}
 	}
 
 	if(ctx->deferred_action & WLS_ACTION_UPDATEDISPLAY) {
+		wlsUpdateProgressCounter();
 		wlsUpdateAndShowTmpField();
 	}
 }
@@ -1848,10 +1854,13 @@ static void wlsRequestResetSearch(struct wcontext *ctx)
 
 static void open_state(struct wcontext *ctx)
 {
-	if(ctx->searchstate!=WLS_SRCH_OFF) {
+	if(ctx->searchstate==WLS_SRCH_RUNNING) {
 		ctx->deferred_action |= WLS_ACTION_OPENSTATE;
 		wlsRequestPauseSearch(ctx);
 		return;
+	}
+	else if(ctx->searchstate==WLS_SRCH_PAUSED) {
+		wlsResetSearch(ctx);
 	}
 
 	prepare_search(ctx,TRUE);
@@ -2175,6 +2184,7 @@ static void Handle_UpdateDisplay(struct wcontext *ctx)
 		wlsRepaintCells(ctx,TRUE);
 		return;
 	}
+	wlsUpdateProgressCounter();
 	wlsUpdateAndShowTmpField_Sync();
 }
 
