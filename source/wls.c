@@ -1069,10 +1069,10 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 	int i,j;
 	HDC hDC;
 	int vkey;
-	int tmp;
 	int allgens=0;
 	WLS_CELLVAL prevval;
 	WLS_CELLVAL newval;
+	struct selected_row *sr = NULL;
 
 	newval = CV_INVALID;
 
@@ -1180,19 +1180,21 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 		return 1;
 	}
 
+	if(ctx->selectstate==WLS_SEL_SELECTED) {
+		sr = wlsGetSelectedCells(ctx);
+	}
+
 #ifdef JS
 	FixFrozenCells();
 
 	hDC=GetDC(ctx->hwndMain);
 
-	tmp=ctx->selectstate;
-
 	SelectOff(ctx, hDC);
 
-	if(tmp==WLS_SEL_SELECTED) {
+	if(sr) {
 		if(newval!=CV_INVALID) {
-			for(i=ctx->selectrect.left;i<=ctx->selectrect.right;i++) {
-				for(j=ctx->selectrect.top;j<=ctx->selectrect.bottom;j++) {
+			for(j=0;j<g.nrows;j++) {
+				for(i=sr[j].start; i<sr[j].start+sr[j].size; i++) {
 					wlsSetCellVal(g.field,g.curgen,i,j,newval);
 					Symmetricalize(ctx, hDC,i,j,allgens);
 				}
@@ -1210,15 +1212,13 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 #else
 	hDC=GetDC(ctx->hwndMain);
 
-	tmp=ctx->selectstate;
-
 	SelectOff(ctx,hDC);
 
 	if(ctx->searchstate == WLS_SRCH_OFF) {
-		if(tmp==WLS_SEL_SELECTED) {
+		if(sr) {
 			if(newval!=CV_INVALID) {
-				for(j=ctx->selectrect.top;j<=ctx->selectrect.bottom;j++) {
-					for(i=ctx->selectrect.left;i<=ctx->selectrect.right;i++) {
+				for(j=0;j<g.nrows;j++) {
+					for(i=sr[j].start; i<sr[j].start+sr[j].size; i++) {
 						if (newval < 10) {
 							wlsSetCellVal(g.field,g.curgen,i,j,newval);
 							Symmetricalize(ctx,hDC,i,j,allgens);
@@ -1250,6 +1250,7 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 	ReleaseDC(ctx->hwndMain,hDC);
 #endif
 
+	if(sr) free(sr);
 	return 0;
 }
 
