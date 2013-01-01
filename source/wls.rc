@@ -512,6 +512,7 @@ BEGIN
         MENUITEM "&Search settings...\tF6",     IDC_SEARCHSETTINGS
         MENUITEM "&Output settings...\tF7",     IDC_OUTPUTSETTINGS
         MENUITEM "P&references...\tF8",         IDC_PREFERENCES
+        MENUITEM "&Diagonal selections\t/",     IDC_SELECTMODE
     END
     POPUP "&Search"
     BEGIN
@@ -543,6 +544,7 @@ WLSACCEL ACCELERATORS DISCARDABLE
 BEGIN
     ",",            IDC_PREVGEN,            ASCII,  NOINVERT
     ".",            IDC_NEXTGEN,            ASCII,  NOINVERT
+    "/",            IDC_SELECTMODE,         ASCII, NOINVERT
     "B",            IDC_SEARCHBACKUP,       VIRTKEY, NOINVERT
     "C",            IDC_EDITCOPY,           VIRTKEY, CONTROL, NOINVERT
     "D",            IDC_SAVEGAME,           VIRTKEY, NOINVERT

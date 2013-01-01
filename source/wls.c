@@ -26,6 +26,7 @@
 #include <windows.h>
 #include <tchar.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <process.h>
 #include <malloc.h>
 #include <assert.h>
@@ -96,6 +97,7 @@ struct wcontext {
 #define WLS_PRIORITY_NORMAL  30
 	int search_priority;
 	int wheel_gen_dir; // 1:up decreases gen  2:up increases gen
+	int select_diag;
 
 #define WLS_ACTION_APPEXIT           0x00000001
 #define WLS_ACTION_RESETSEARCH       0x00000004
@@ -722,38 +724,178 @@ static void Symmetricalize(struct wcontext *ctx, HDC hDC,int x,int y,int allgens
 	}
 }
 
-// HDC can be NULL
-static void InvertCells(struct wcontext *ctx, HDC hDC1)
+struct selected_row {
+	int size;
+	int start;
+};
+
+// Returns a malloc'd array of g.nrows selected_row structs,
+// indicating which cells are selected in each row.
+// Caller should free the returned array.
+struct selected_row *wlsGetSelectedCells(struct wcontext *ctx)
+{
+	struct selected_row *sr;
+	int j;
+	int rowsize;
+	int x1;
+	int y1, y2;
+
+	int pt1_x, pt1_y;
+	int pt2_x, pt2_y;
+	int vdist, hdist;
+	int rowstart, rowend;
+	int tmp1, tmp2;
+	int d;
+
+
+	sr = calloc(g.nrows,sizeof(struct selected_row));
+
+	if(!ctx->select_diag) {
+		// Orthogonal selection
+		if(ctx->endcell.x >= ctx->startcell.x) {
+			x1 = ctx->startcell.x;
+			rowsize = ctx->endcell.x + 1 - ctx->startcell.x;
+		}
+		else {
+			x1 = ctx->endcell.x;
+			rowsize = ctx->startcell.x + 1 - ctx->endcell.x;
+		}
+		if(ctx->endcell.y >= ctx->startcell.y) {
+			y1 = ctx->startcell.y;
+			y2 = ctx->endcell.y;
+		}
+		else {
+			y1 = ctx->endcell.y;
+			y2 = ctx->startcell.y;
+		}
+		for(j=y1;j<=y2;j++) {
+			sr[j].size = rowsize;
+			sr[j].start = x1;
+		}
+		return sr;
+	}
+
+	// Diagonal selection
+
+	// If the vertical distance between the points is larger than the horiz. distance,
+	// they are vertically-oriented.
+	vdist = abs(ctx->endcell.y - ctx->startcell.y);
+	hdist = abs(ctx->endcell.x - ctx->startcell.x);
+
+	if(vdist >= hdist) {
+		if(ctx->endcell.y >= ctx->startcell.y) {
+			pt1_x = ctx->startcell.x;
+			pt1_y = ctx->startcell.y;
+			pt2_x = ctx->endcell.x;
+			pt2_y = ctx->endcell.y;
+		}
+		else {
+			pt1_x = ctx->endcell.x;
+			pt1_y = ctx->endcell.y;
+			pt2_x = ctx->startcell.x;
+			pt2_y = ctx->startcell.y;
+		}
+
+		// Iterate through the rows.
+		for(j=pt1_y; j<=pt2_y; j++) {
+			if(j<0 || j>=g.nrows) continue;
+
+			// The starting xpos could be as low as this:
+			tmp1 = pt1_x - (j-pt1_y);
+			// Or it could be as low as this:
+			tmp2 = pt2_x - (pt2_y-j);
+			// But it will be the highest of those:
+			if(tmp1>=tmp2) rowstart=tmp1;
+			else rowstart=tmp2;
+
+			// Ending position:
+			tmp1 = pt1_x + (j-pt1_y);
+			tmp2 = pt2_x + (pt2_y-j);
+			if(tmp1<=tmp2) rowend=tmp1;
+			else rowend=tmp2;
+
+			if(rowstart<0) rowstart=0;
+			if(rowend>=g.ncols)  rowend = g.ncols-1;
+			sr[j].start = rowstart;
+			sr[j].size = 1+rowend-rowstart;
+		}
+	}
+	else {
+		if(ctx->endcell.x >= ctx->startcell.x) {
+			pt1_x = ctx->startcell.x;
+			pt1_y = ctx->startcell.y;
+			pt2_x = ctx->endcell.x;
+			pt2_y = ctx->endcell.y;
+		}
+		else {
+			pt1_x = ctx->endcell.x;
+			pt1_y = ctx->endcell.y;
+			pt2_x = ctx->startcell.x;
+			pt2_y = ctx->startcell.y;
+		}
+		d = (pt2_x - pt1_x) - (pt2_y - pt1_y);
+
+		for(j=pt1_y-d/2; j<=pt2_y+d/2; j++) {
+			if(j<0 || j>=g.nrows) continue;
+
+			// starting position
+			tmp1 = pt1_x + (pt1_y - j);
+			tmp2 = pt1_x + (j - pt1_y);
+			if(tmp1>=tmp2) rowstart=tmp1;
+			else rowstart=tmp2;
+
+			// ending position
+			tmp1 = pt2_x - (pt2_y - j);
+			tmp2 = pt2_x - (j - pt2_y);
+			if(tmp1<=tmp2) rowend=tmp1;
+			else rowend=tmp2;
+
+			if(rowstart<0) rowstart=0;
+			if(rowend>=g.ncols)  rowend = g.ncols-1;
+			sr[j].start = rowstart;
+			sr[j].size = 1+rowend-rowstart;
+		}
+	}
+	return sr;
+}
+
+// Inverse-video a rectangle of cells.
+static void wlsInvertCells_lowlevel(struct wcontext *ctx, HDC hDC,
+	int x, int y, int w, int h)
 {
 	RECT r;
-	HDC hDC;
-
-	if(ctx->endcell.x>=ctx->startcell.x) {
-		r.left= ctx->startcell.x*ctx->cellwidth;
-		r.right= (ctx->endcell.x+1)*ctx->cellwidth;
-	}
-	else {
-		r.left= ctx->endcell.x*ctx->cellwidth;
-		r.right=(ctx->startcell.x+1)*ctx->cellwidth;
-	}
-
-	if(ctx->endcell.y>=ctx->startcell.y) {
-		r.top= ctx->startcell.y*ctx->cellheight;
-		r.bottom= (ctx->endcell.y+1)*ctx->cellheight;
-	}
-	else {
-		r.top=ctx->endcell.y*ctx->cellheight;
-		r.bottom=(ctx->startcell.y+1)*ctx->cellheight;
-	}
-
-
-	if(hDC1)  hDC=hDC1;
-	else      hDC=GetDC(ctx->hwndMain);
-
+	r.left = x*ctx->cellwidth;
+	r.right = (x+w)*ctx->cellwidth;
+	r.top = y*ctx->cellheight;
+	r.bottom = (y+h)*ctx->cellheight;
 	InvertRect(hDC,&r);
+}
 
-	if(!hDC1) ReleaseDC(ctx->hwndMain,hDC);
+// Inverse-video the cells from ctx->startcell to ctx->endcell.
+// hDC can be NULL.
+static void wlsInvertCells(struct wcontext *ctx, HDC hDC)
+{
+	struct selected_row *sr;
+	int j;
+	HDC hDC_torelease = NULL;
 
+	if(!hDC) {
+		hDC_torelease = GetDC(ctx->hwndMain);
+		hDC = hDC_torelease;
+	}
+
+	sr = wlsGetSelectedCells(ctx);
+
+	for(j=0;j<g.nrows;j++) {
+		if(sr[j].size<1) continue;
+		wlsInvertCells_lowlevel(ctx, hDC, sr[j].start, j, sr[j].size, 1);
+	}
+
+	free(sr);
+
+	if(hDC_torelease) {
+		ReleaseDC(ctx->hwndMain, hDC_torelease);
+	}
 }
 
 // HDC can be NULL
@@ -762,7 +904,7 @@ static void SelectOff(struct wcontext *ctx, HDC hDC)
 	if(ctx->selectstate==WLS_SEL_OFF) return;
 
 	if(ctx->inverted) {
-		InvertCells(ctx,hDC);
+		wlsInvertCells(ctx,hDC);
 		ctx->inverted=0;
 	}
 	ctx->selectstate=WLS_SEL_OFF;
@@ -780,7 +922,7 @@ static void DrawWindow(struct wcontext *ctx, HDC hDC, struct field_struct *field
 	DrawGuides(ctx,hDC);
 
 	if(ctx->selectstate!=WLS_SEL_OFF) {
-		InvertCells(ctx, hDC);
+		wlsInvertCells(ctx, hDC);
 	}
 }
 
@@ -878,7 +1020,7 @@ static void Handle_MouseMove(struct wcontext *ctx, WORD xp, WORD yp)
 
 	if(x==ctx->startcell.x && y==ctx->startcell.y) {  // cursor over starting cell
 		hDC=GetDC(ctx->hwndMain);
-		InvertCells(ctx,hDC); // turn off
+		wlsInvertCells(ctx,hDC); // turn off
 		ReleaseDC(ctx->hwndMain,hDC);
 
 		ctx->inverted=0;
@@ -890,13 +1032,13 @@ static void Handle_MouseMove(struct wcontext *ctx, WORD xp, WORD yp)
 	// else we're at a different cell
 
 	hDC=GetDC(ctx->hwndMain);
-	if(ctx->inverted) InvertCells(ctx,hDC);    // turn off
+	if(ctx->inverted) wlsInvertCells(ctx,hDC);    // turn off
 	ctx->inverted=0;
 
 	ctx->endcell.x=x;
 	ctx->endcell.y=y;
 
-	InvertCells(ctx,hDC);    // turn back on
+	wlsInvertCells(ctx,hDC);    // turn back on
 
 	// record the select region
 	if(ctx->startcell.x<=ctx->endcell.x) {
@@ -2335,6 +2477,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		EnableMenuItem((HMENU)wParam,IDC_COPYCOMBINATION,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
 		EnableMenuItem((HMENU)wParam,IDC_CLEARCOMBINATION,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
 #endif
+		CheckMenuItem((HMENU)wParam,IDC_SELECTMODE,MF_BYCOMMAND|(ctx->select_diag?MF_CHECKED:MF_UNCHECKED));
 		return 0;
 
 	case WM_CHAR:
@@ -2370,6 +2513,15 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			return 0;
 		case IDC_SEARCHSETTINGS:
 			DialogBox(ctx->hInst,_T("DLGSEARCHSETTINGS"),hWnd,DlgProcSearch);
+			return 0;
+		case IDC_SELECTMODE:
+			if(ctx->selectstate!=WLS_SEL_OFF) {
+				wlsInvertCells(ctx,NULL);
+			}
+			ctx->select_diag = ctx->select_diag ? 0 : 1;
+			if(ctx->selectstate!=WLS_SEL_OFF) {
+				wlsInvertCells(ctx,NULL);
+			}
 			return 0;
 		case IDC_PREFERENCES:
 			DialogBox(ctx->hInst,_T("DLGPREFERENCES"),hWnd,DlgProcPreferences);

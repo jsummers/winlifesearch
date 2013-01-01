@@ -94,6 +94,7 @@
 #define IDC_SEARCHSETTINGS              40007
 #define IDC_OUTPUTSETTINGS              40009
 #define IDC_PREFERENCES                 40010
+#define IDC_SELECTMODE                  40011
 #define IDC_OPENSTATE                   40013
 #define IDC_SAVEGAME                    40014
 #define IDC_SEARCHSTART                 40015
