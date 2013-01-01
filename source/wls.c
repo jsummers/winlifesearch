@@ -768,6 +768,20 @@ struct selected_row *wlsGetSelectedCells(struct wcontext *ctx)
 			y1 = ctx->endcell.y;
 			y2 = ctx->startcell.y;
 		}
+
+		if(x1 < 0) {
+			rowsize += x1;
+			x1 = 0;
+		}
+		if(x1+rowsize > g.ncols) {
+			rowsize = g.ncols - x1;
+		}
+		if(rowsize<0) {
+			rowsize = 0;
+		}
+		if(y1<0) y1=0;
+		if(y2>=g.nrows) y2=g.nrows-1;
+
 		for(j=y1;j<=y2;j++) {
 			sr[j].size = rowsize;
 			sr[j].start = x1;
@@ -987,23 +1001,30 @@ static void wlsUpdateDisplayedCoordinates(struct wcontext *ctx, int x, int y)
 	SetWindowText(ctx->hwndCoordinates,buf);
 }
 
-static void wlsMousePosToCellCoord(struct wcontext *ctx,
+// If cursor is outside the cell field, returns zero.
+static int wlsMousePosToCellCoord(struct wcontext *ctx,
 	   int xm, int ym, int *pxc, int *pyc)
 {
+	int valid = 1;
+
 	xm += ctx->scrollpos.x;
 	ym += ctx->scrollpos.y;
 	*pxc = xm/ctx->cellwidth;
 	*pyc = ym/ctx->cellheight;
+	if(*pxc < 0 || *pyc < 0) { valid=0; }
+	if(*pxc >= g.ncols || *pyc >= g.nrows) { valid=0; }
+	return valid;
 }
 
-static void Handle_MouseMove(struct wcontext *ctx, WORD xp, WORD yp)
+static void Handle_MouseMove(struct wcontext *ctx, int xp, int yp)
 {
 	int x,y;
+	int validcell;
 	HDC hDC;
 
-	wlsMousePosToCellCoord(ctx,(int)xp,(int)yp,&x,&y);
+	validcell=wlsMousePosToCellCoord(ctx,xp,yp,&x,&y);
 
-	if(x<0 || x>=g.ncols || y<0 || y>=g.nrows) {
+	if(ctx->selectstate!=WLS_SEL_SELECTING && !validcell) {
 		wlsUpdateDisplayedCoordinates(ctx,-1,-1);
 		return;
 	}
@@ -1073,16 +1094,19 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 	WLS_CELLVAL prevval;
 	WLS_CELLVAL newval;
 	struct selected_row *sr = NULL;
+	int validcell;
 
 	newval = CV_INVALID;
 
-	wlsMousePosToCellCoord(ctx,(int)xp,(int)yp,&x,&y);
+	validcell = wlsMousePosToCellCoord(ctx,(int)xp,(int)yp,&x,&y);
 
-	if(x<0 || x>=g.ncols || y<0 || y>=g.nrows) {
-		return 1;
+	if(validcell) {
+		prevval = wlsCellVal(g.field,g.curgen,x,y);
 	}
-
-	prevval = wlsCellVal(g.field,g.curgen,x,y);
+	else {
+		if(msg!=WM_LBUTTONUP && ctx->selectstate!=WLS_SEL_SELECTING) return 1;
+		prevval = CV_INVALID;
+	}
 
 	switch(msg) {
 
@@ -1126,6 +1150,8 @@ static int Handle_UIEvent(struct wcontext *ctx, UINT msg,WORD xp,WORD yp,WPARAM 
 			return 0;
 
 		}
+
+		if(!validcell) return 0;
 		break;
 
 	case WM_RBUTTONDOWN:     // toggle off/unchecked
@@ -2764,13 +2790,19 @@ static LRESULT CALLBACK WndProcMain(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 	case WM_LBUTTONDOWN:
 	case WM_RBUTTONDOWN:
 	case WM_LBUTTONUP:
-		if(ctx->searchstate==WLS_SRCH_OFF) {
+		if(msg==WM_LBUTTONDOWN) {
+			SetCapture(hWnd);
+		}
+		else if(msg==WM_LBUTTONUP) {
+			ReleaseCapture();
+		}
+		if(ctx->searchstate==WLS_SRCH_OFF || msg==WM_LBUTTONUP) {
 			Handle_UIEvent(ctx,msg,LOWORD(lParam),HIWORD(lParam),wParam);
 		}
 		return 0;
 
 	case WM_MOUSEMOVE:
-		Handle_MouseMove(ctx,LOWORD(lParam),HIWORD(lParam));
+		Handle_MouseMove(ctx,(int)(signed short)LOWORD(lParam),(int)(signed short)HIWORD(lParam));
 		return 0;
 	}
 
