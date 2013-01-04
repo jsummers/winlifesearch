@@ -88,6 +88,16 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (g.orderwide)?1:(-1);
 		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (g.orderwide)?(-1):1;
 	}
+	if(g.sortorder==SORTORDER_TOPDOWN) {
+		if(c1->row > c2->row) return 1;
+		if(c1->row < c2->row) return -1;
+		midcol = (g.ncols + 1) / 2;
+		dif1 = abs(c1->col - midcol);
+		dif2 = abs(c2->col - midcol);
+		if (dif1 < dif2) return (g.orderwide ? -1 : 1);
+		if (dif1 > dif2) return (g.orderwide ? 1 : -1);
+		return 0;
+	}
 
 	/*
 	 * Sort on the column number.

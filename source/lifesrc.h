@@ -242,6 +242,7 @@ struct globals_struct {
 #define SORTORDER_DEFAULT 0
 #define SORTORDER_DIAG    1
 #define SORTORDER_KNIGHT  2
+#define SORTORDER_TOPDOWN 3
 	int sortorder;
 
 	int knightsort; // deprecated
