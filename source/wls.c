@@ -3130,6 +3130,91 @@ static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 	return 0;
 }
 
+static void Handle_SearchOpts_Init(HWND hWnd)
+{
+	int sel;
+
+	CheckDlgButton(hWnd,IDC_ORDERWIDE,g.orderwide);
+	CheckDlgButton(hWnd,IDC_ORDERGENS,g.ordergens);
+	CheckDlgButton(hWnd,IDC_ORDERMIDDLE,g.ordermiddle);
+	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_ADDSTRING,0,(LPARAM)_T("Left to right"));
+	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_ADDSTRING,0,(LPARAM)_T("Diagonal"));
+	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_ADDSTRING,0,(LPARAM)_T("Knightship"));
+
+	if(g.diagsort) sel=1;
+	else if(g.knightsort) sel=2;
+	else sel=0;
+	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_SETCURSEL,(WPARAM)sel,0);
+
+#ifdef JS
+	CheckDlgButton(hWnd,IDC_FASTSYM,g.fastsym);
+#endif
+	CheckDlgButton(hWnd,IDC_ALLOBJECTS,g.allobjects);
+	CheckDlgButton(hWnd,IDC_PARENT,g.parent);
+	CheckDlgButton(hWnd,IDC_FOLLOW,g.follow);
+	CheckDlgButton(hWnd,IDC_FOLLOWGENS,g.followgens);
+#ifndef JS
+	CheckDlgButton(hWnd,IDC_SMART,g.smart);
+	CheckDlgButton(hWnd,IDC_SMARTON,g.smarton);
+	CheckDlgButton(hWnd,IDC_COMBINE,g.combine);
+#endif
+	SetDlgItemInt(hWnd,IDC_NEARCOLS,g.nearcols,TRUE);
+	SetDlgItemInt(hWnd,IDC_USECOL,g.usecol,TRUE);
+	SetDlgItemInt(hWnd,IDC_USEROW,g.userow,TRUE);
+#ifndef JS
+	SetDlgItemInt(hWnd,IDC_SMARTWINDOW,g.smartwindow,TRUE);
+	SetDlgItemInt(hWnd,IDC_SMARTTHRESHOLD,g.smartthreshold,TRUE);
+	SetDlgItemInt(hWnd,IDC_SMARTWINDOWSTAT,g.smartstatwnd,TRUE);
+	SetDlgItemInt(hWnd,IDC_SMARTTHRESHOLDSTAT,g.smartstatlen,TRUE);
+#endif
+
+	SetDlgItemInt(hWnd,IDC_MAXCOUNT,g.maxcount,TRUE);
+	SetDlgItemInt(hWnd,IDC_COLCELLS,g.colcells,TRUE);
+	SetDlgItemInt(hWnd,IDC_COLWIDTH,g.colwidth,TRUE);
+
+	SetDlgItemText(hWnd,IDC_RULESTRING,g.rulestring);
+}
+
+static void Handle_SearchOpts_OK(HWND hWnd)
+{
+	int sel;
+
+	g.orderwide=  IsDlgButtonChecked(hWnd,IDC_ORDERWIDE  )?1:0;
+	g.ordergens=  IsDlgButtonChecked(hWnd,IDC_ORDERGENS  )?1:0;
+	g.ordermiddle=IsDlgButtonChecked(hWnd,IDC_ORDERMIDDLE)?1:0;
+	sel = (int)SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_GETCURSEL,0,0);
+	g.diagsort = 0;
+	g.knightsort = 0;
+	if(sel==1) g.diagsort = 1;
+	else if(sel==2) g.knightsort = 1;
+
+#ifdef JS
+	g.fastsym=    IsDlgButtonChecked(hWnd,IDC_FASTSYM )?1:0;
+#endif
+	g.allobjects= IsDlgButtonChecked(hWnd,IDC_ALLOBJECTS )?1:0;
+	g.parent=     IsDlgButtonChecked(hWnd,IDC_PARENT     )?1:0;
+	g.follow=     IsDlgButtonChecked(hWnd,IDC_FOLLOW     )?1:0;
+	g.followgens= IsDlgButtonChecked(hWnd,IDC_FOLLOWGENS )?1:0;
+#ifndef JS
+	g.smart=      IsDlgButtonChecked(hWnd,IDC_SMART      )?1:0;
+	g.smarton=    IsDlgButtonChecked(hWnd,IDC_SMARTON    )?1:0;
+	g.combine=    IsDlgButtonChecked(hWnd,IDC_COMBINE    )?1:0;
+#endif
+
+	g.nearcols=GetDlgItemInt(hWnd,IDC_NEARCOLS,NULL,TRUE);
+	g.usecol=GetDlgItemInt(hWnd,IDC_USECOL,NULL,TRUE);
+	g.userow=GetDlgItemInt(hWnd,IDC_USEROW,NULL,TRUE);
+	g.maxcount=GetDlgItemInt(hWnd,IDC_MAXCOUNT,NULL,TRUE);
+	g.colcells=GetDlgItemInt(hWnd,IDC_COLCELLS,NULL,TRUE);
+	g.colwidth=GetDlgItemInt(hWnd,IDC_COLWIDTH,NULL,TRUE);
+#ifndef JS
+	g.smartwindow=GetDlgItemInt(hWnd,IDC_SMARTWINDOW,NULL,TRUE);
+	g.smartthreshold=GetDlgItemInt(hWnd,IDC_SMARTTHRESHOLD,NULL,TRUE);
+#endif
+
+	GetDlgItemText(hWnd,IDC_RULESTRING,g.rulestring,WLS_RULESTRING_LEN);
+}
+
 static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
@@ -3138,73 +3223,13 @@ static INT_PTR CALLBACK DlgProcSearch(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 
 	switch (msg) {
 	case WM_INITDIALOG:
-		CheckDlgButton(hWnd,IDC_ORDERWIDE,g.orderwide);
-		CheckDlgButton(hWnd,IDC_ORDERGENS,g.ordergens);
-		CheckDlgButton(hWnd,IDC_ORDERMIDDLE,g.ordermiddle);
-		CheckDlgButton(hWnd,IDC_DIAGSORT,g.diagsort);
-		CheckDlgButton(hWnd,IDC_KNIGHTSORT,g.knightsort);
-#ifdef JS
-		CheckDlgButton(hWnd,IDC_FASTSYM,g.fastsym);
-#endif
-		CheckDlgButton(hWnd,IDC_ALLOBJECTS,g.allobjects);
-		CheckDlgButton(hWnd,IDC_PARENT,g.parent);
-		CheckDlgButton(hWnd,IDC_FOLLOW,g.follow);
-		CheckDlgButton(hWnd,IDC_FOLLOWGENS,g.followgens);
-#ifndef JS
-		CheckDlgButton(hWnd,IDC_SMART,g.smart);
-		CheckDlgButton(hWnd,IDC_SMARTON,g.smarton);
-		CheckDlgButton(hWnd,IDC_COMBINE,g.combine);
-#endif
-		SetDlgItemInt(hWnd,IDC_NEARCOLS,g.nearcols,TRUE);
-		SetDlgItemInt(hWnd,IDC_USECOL,g.usecol,TRUE);
-		SetDlgItemInt(hWnd,IDC_USEROW,g.userow,TRUE);
-#ifndef JS
-		SetDlgItemInt(hWnd,IDC_SMARTWINDOW,g.smartwindow,TRUE);
-		SetDlgItemInt(hWnd,IDC_SMARTTHRESHOLD,g.smartthreshold,TRUE);
-		SetDlgItemInt(hWnd,IDC_SMARTWINDOWSTAT,g.smartstatwnd,TRUE);
-		SetDlgItemInt(hWnd,IDC_SMARTTHRESHOLDSTAT,g.smartstatlen,TRUE);
-#endif
-
-		SetDlgItemInt(hWnd,IDC_MAXCOUNT,g.maxcount,TRUE);
-		SetDlgItemInt(hWnd,IDC_COLCELLS,g.colcells,TRUE);
-		SetDlgItemInt(hWnd,IDC_COLWIDTH,g.colwidth,TRUE);
-
-		SetDlgItemText(hWnd,IDC_RULESTRING,g.rulestring);
+		Handle_SearchOpts_Init(hWnd);
 		return 1;
 
 	case WM_COMMAND:
 		switch(id) {
 		case IDOK:
-			g.orderwide=  IsDlgButtonChecked(hWnd,IDC_ORDERWIDE  )?1:0;
-			g.ordergens=  IsDlgButtonChecked(hWnd,IDC_ORDERGENS  )?1:0;
-			g.ordermiddle=IsDlgButtonChecked(hWnd,IDC_ORDERMIDDLE)?1:0;
-			g.diagsort=   IsDlgButtonChecked(hWnd,IDC_DIAGSORT   )?1:0;
-			g.knightsort= IsDlgButtonChecked(hWnd,IDC_KNIGHTSORT )?1:0;
-#ifdef JS
-			g.fastsym=    IsDlgButtonChecked(hWnd,IDC_FASTSYM )?1:0;
-#endif
-			g.allobjects= IsDlgButtonChecked(hWnd,IDC_ALLOBJECTS )?1:0;
-			g.parent=     IsDlgButtonChecked(hWnd,IDC_PARENT     )?1:0;
-			g.follow=     IsDlgButtonChecked(hWnd,IDC_FOLLOW     )?1:0;
-			g.followgens= IsDlgButtonChecked(hWnd,IDC_FOLLOWGENS )?1:0;
-#ifndef JS
-			g.smart=      IsDlgButtonChecked(hWnd,IDC_SMART      )?1:0;
-			g.smarton=    IsDlgButtonChecked(hWnd,IDC_SMARTON    )?1:0;
-			g.combine=    IsDlgButtonChecked(hWnd,IDC_COMBINE    )?1:0;
-#endif
-
-			g.nearcols=GetDlgItemInt(hWnd,IDC_NEARCOLS,NULL,TRUE);
-			g.usecol=GetDlgItemInt(hWnd,IDC_USECOL,NULL,TRUE);
-			g.userow=GetDlgItemInt(hWnd,IDC_USEROW,NULL,TRUE);
-			g.maxcount=GetDlgItemInt(hWnd,IDC_MAXCOUNT,NULL,TRUE);
-			g.colcells=GetDlgItemInt(hWnd,IDC_COLCELLS,NULL,TRUE);
-			g.colwidth=GetDlgItemInt(hWnd,IDC_COLWIDTH,NULL,TRUE);
-#ifndef JS
-			g.smartwindow=GetDlgItemInt(hWnd,IDC_SMARTWINDOW,NULL,TRUE);
-			g.smartthreshold=GetDlgItemInt(hWnd,IDC_SMARTTHRESHOLD,NULL,TRUE);
-#endif
-
-			GetDlgItemText(hWnd,IDC_RULESTRING,g.rulestring,WLS_RULESTRING_LEN);
+			Handle_SearchOpts_OK(hWnd);
 			EndDialog(hWnd, TRUE);
 			return 1;
 

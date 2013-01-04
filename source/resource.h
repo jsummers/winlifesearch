@@ -67,7 +67,7 @@
 #define IDC_DUMPFREQ                    1055
 #define IDC_SMARTTHRESHOLD              1056
 #define IDC_VIEWFREQ                    1057
-#define IDC_DIAGSORT                    1058
+#define IDC_SORTORDER                   1058
 #define IDC_ORDERWIDE                   1059
 #define IDC_ORDERGENS                   1060
 #define IDC_ORDERMIDDLE                 1061
@@ -80,7 +80,6 @@
 #define IDC_STOPONSTEP                  1071
 #define IDC_SMARTWINDOW                 1072
 #define IDC_SMARTON                     1073
-#define IDC_KNIGHTSORT                  1074
 #define IDC_DEFAULTPERIOD               1077
 #define IDC_DEFAULTCOLUMNS              1078
 #define IDC_DEFAULTROWS                 1079
