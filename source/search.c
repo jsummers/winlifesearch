@@ -76,13 +76,13 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 	}
 #endif
 
-	if(g.diagsort) {
+	if(g.sortorder==SORTORDER_DIAG) {
 		if(c1->col+c1->row > c2->col+c2->row) return 1;
 		if(c1->col+c1->row < c2->col+c2->row) return -1;
 		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (g.orderwide)?1:(-1);  /* ??? */
 		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (g.orderwide)?(-1):1;
 	}
-	if(g.knightsort) {
+	if(g.knightsort || g.sortorder==SORTORDER_KNIGHT) {
 		if(c1->col*2+c1->row > c2->col*2+c2->row) return 1;
 		if(c1->col*2+c1->row < c2->col*2+c2->row) return -1;
 		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (g.orderwide)?1:(-1);

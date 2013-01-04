@@ -239,8 +239,13 @@ struct globals_struct {
 	int smartstatsumwndc;
 #endif
 
-	int diagsort;
-	int knightsort;
+#define SORTORDER_DEFAULT 0
+#define SORTORDER_DIAG    1
+#define SORTORDER_KNIGHT  2
+	int sortorder;
+
+	int knightsort; // deprecated
+
 #ifdef JS
 	int fastsym;
 #endif

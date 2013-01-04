@@ -101,7 +101,7 @@ static	int *	param_table[] =
 	&g.userow, &g.usecol, &g.colcells, &g.colwidth, &g.follow,
 	&g.orderwide, &g.ordergens, &g.ordermiddle, &g.followgens,
 
-	&g.diagsort, &g.symmetry, &g.trans_rotate, &g.trans_flip, &g.trans_x, &g.trans_y,
+	&g.sortorder, &g.symmetry, &g.trans_rotate, &g.trans_flip, &g.trans_x, &g.trans_y,
 	&g.knightsort,
 	NULL
 };
@@ -1104,7 +1104,7 @@ static	int *param_table[] =
 	&g.parent, &g.allobjects, &g.nearcols, &g.maxcount,
 	&g.userow, &g.usecol, &g.colcells, &g.colwidth, &g.follow,
 	&g.orderwide, &g.ordergens, &g.ordermiddle, &g.followgens,
-	&g.diagsort, &g.symmetry, &g.trans_rotate, &g.trans_flip, &g.trans_x, &g.trans_y,
+	&g.sortorder, &g.symmetry, &g.trans_rotate, &g.trans_flip, &g.trans_x, &g.trans_y,
 	&g.knightsort,
 	&g.smart, &g.smartwindow, &g.smartthreshold,
 	&g.foundcount,

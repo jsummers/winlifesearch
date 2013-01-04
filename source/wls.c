@@ -3141,8 +3141,8 @@ static void Handle_SearchOpts_Init(HWND hWnd)
 	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_ADDSTRING,0,(LPARAM)_T("Diagonal"));
 	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_ADDSTRING,0,(LPARAM)_T("Knightship"));
 
-	if(g.diagsort) sel=1;
-	else if(g.knightsort) sel=2;
+	if(g.sortorder==SORTORDER_DIAG) sel=1;
+	else if(g.knightsort || g.sortorder==SORTORDER_KNIGHT) sel=2;
 	else sel=0;
 	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_SETCURSEL,(WPARAM)sel,0);
 
@@ -3183,10 +3183,15 @@ static void Handle_SearchOpts_OK(HWND hWnd)
 	g.ordergens=  IsDlgButtonChecked(hWnd,IDC_ORDERGENS  )?1:0;
 	g.ordermiddle=IsDlgButtonChecked(hWnd,IDC_ORDERMIDDLE)?1:0;
 	sel = (int)SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_GETCURSEL,0,0);
-	g.diagsort = 0;
+	g.sortorder = SORTORDER_DEFAULT;
 	g.knightsort = 0;
-	if(sel==1) g.diagsort = 1;
-	else if(sel==2) g.knightsort = 1;
+	if(sel==1) {
+		g.sortorder = SORTORDER_DIAG;
+	}
+	else if(sel==2) {
+		g.sortorder = SORTORDER_KNIGHT;
+		g.knightsort = 1;
+	}
 
 #ifdef JS
 	g.fastsym=    IsDlgButtonChecked(hWnd,IDC_FASTSYM )?1:0;
@@ -3579,7 +3584,7 @@ static void InitGameSettings(struct wcontext *ctx)
 	g.ordergens=TRUE;
 #endif
 	g.ordermiddle=FALSE;
-	g.diagsort=0;
+	g.sortorder=SORTORDER_DEFAULT;
 	g.knightsort=0;
 #ifdef JS
 	g.fastsym=1;
