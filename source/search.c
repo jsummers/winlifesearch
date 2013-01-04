@@ -21,6 +21,129 @@ extern struct globals_struct g;
 
 extern volatile int abortthread;
 
+/*
+ * The sort routine for searching.
+ */
+static int
+ordersortfunc(const void *xxx1, const void *xxx2)
+{
+	CELL **	arg1;
+	CELL **	arg2;
+	CELL *	c1;
+	CELL *	c2;
+	int	midcol;
+	int	midrow;
+	int	dif1;
+	int	dif2;
+
+	arg1=(CELL**)xxx1;
+	arg2=(CELL**)xxx2;
+
+	c1 = *arg1;
+	c2 = *arg2;
+
+#ifdef JS
+	/*
+	 * If we do not order by all generations, then put all of
+	 * generation zero ahead of the other generations.
+	 */
+	if (!g.ordergens)
+	{
+		if (c1->gen < c2->gen)
+			return -1;
+
+		if (c1->gen > c2->gen)
+			return 1;
+	}
+#else
+	/*
+	 * If on equal position or not ordering by all generations
+	 * then sort primarily by generations
+	 */
+	if (((c1->row == c2->row) && (c1->col == c2->col)) || !g.ordergens)
+	{
+		// Put generation 0 first
+		// or if calculating parents, put generation 0 last
+		if (g.parent)
+		{
+			if (c1->gen < c2->gen) return 1;
+			if (c1->gen > c2->gen) return -1;
+		} else {
+			if (c1->gen < c2->gen) return -1;
+			if (c1->gen > c2->gen) return 1;
+		}
+		// if we are here, it is the same cell
+	}
+#endif
+
+	if(g.diagsort) {
+		if(c1->col+c1->row > c2->col+c2->row) return 1;
+		if(c1->col+c1->row < c2->col+c2->row) return -1;
+		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (g.orderwide)?1:(-1);  /* ??? */
+		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (g.orderwide)?(-1):1;
+	}
+	if(g.knightsort) {
+		if(c1->col*2+c1->row > c2->col*2+c2->row) return 1;
+		if(c1->col*2+c1->row < c2->col*2+c2->row) return -1;
+		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (g.orderwide)?1:(-1);
+		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (g.orderwide)?(-1):1;
+	}
+
+	/*
+	 * Sort on the column number.
+	 * By default this is from left to right.
+	 * But if middle ordering is set, the ordering is from the center
+	 * column outwards.
+	 */
+	if (g.ordermiddle)
+	{
+		midcol = (g.ncols + 1) / 2;
+
+		dif1 = abs(c1->col - midcol);
+
+		dif2 = abs(c2->col - midcol);
+
+		if (dif1 < dif2) return -1;
+
+		if (dif1 > dif2) return 1;
+	}
+	else {
+		if (c1->col < c2->col) return -1;
+
+		if (c1->col > c2->col) return 1;
+	}
+
+	/*
+	 * Sort on the row number.
+	 * By default, this is from the middle row outwards.
+	 * But if wide ordering is set, the ordering is from the edge
+	 * inwards.  Note that we actually set the ordering to be the
+	 * opposite of the desired order because the initial setting
+	 * for new cells is OFF.
+	 */
+	midrow = (g.nrows + 1) / 2;
+
+	dif1 = abs(c1->row - midrow);
+
+	dif2 = abs(c2->row - midrow);
+
+	if (dif1 < dif2) return (g.orderwide ? -1 : 1);
+
+	if (dif1 > dif2) return (g.orderwide ? 1 : -1);
+
+#ifdef JS
+	/*
+	 * Sort by the generation again if we didn't do it yet.
+	 */
+	if (c1->gen < c2->gen)
+		return -1;
+
+	if (c1->gen > c2->gen)
+		return 1;
+#endif
+
+	return 0;
+}
 
 #ifdef JS
 
@@ -68,7 +191,6 @@ static	STATUS	examinenext (void);
 static	BOOL	checkwidth (CELL *);
 //static	int	getdesc (CELL *);
 //static	int	sumtodesc (STATE, int);
-//static	int	ordersortfunc (CELL **, CELL **);
 static	CELL *	(*getunknown) (void);
 static	__inline STATE	nextstate (STATE, int);
 
@@ -245,132 +367,6 @@ initcells(void)
 	initimplic();
 	return TRUE;
 }
-
-
-/*
- * The sort routine for searching.
- */
-static int
-ordersortfunc(const void *xxx1, const void *xxx2)
-{
-	CELL **	arg1;
-	CELL **	arg2;
-	CELL *	c1;
-	CELL *	c2;
-	int	midcol;
-	int	midrow;
-	int	dif1;
-	int	dif2;
-
-	arg1=(CELL**)xxx1;
-	arg2=(CELL**)xxx2;
-
-	c1 = *arg1;
-	c2 = *arg2;
-
-	/*
-	 * If we do not order by all generations, then put all of
-	 * generation zero ahead of the other generations.
-	 */
-	if (!g.ordergens)
-	{
-		if (c1->gen < c2->gen)
-			return -1;
-
-		if (c1->gen > c2->gen)
-			return 1;
-	}
-
-	if(g.diagsort) {
-		if(c1->col+c1->row > c2->col+c2->row) return 1;
-		if(c1->col+c1->row < c2->col+c2->row) return -1;
-		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (g.orderwide)?1:(-1);  /* ??? */
-		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (g.orderwide)?(-1):1;
-	}
-	if(g.knightsort) {
-		if(c1->col*2+c1->row > c2->col*2+c2->row) return 1;
-		if(c1->col*2+c1->row < c2->col*2+c2->row) return -1;
-		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (g.orderwide)?1:(-1);
-		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (g.orderwide)?(-1):1;
-	}
-
-
-	/*
-	 * Sort on the column number.
-	 * By default this is from left to right.
-	 * But if middle ordering is set, the ordering is from the center
-	 * column outwards.
-	 */
-	if (g.ordermiddle)
-	{
-		midcol = (g.ncols + 1) / 2;
-
-		dif1 = c1->col - midcol;
-
-		if (dif1 < 0)
-			dif1 = -dif1;
-
-		dif2 = c2->col - midcol;
-
-		if (dif2 < 0)
-			dif2 = -dif2;
-
-		if (dif1 < dif2)
-			return -1;
-
-		if (dif1 > dif2)
-			return 1;
-	}
-	else {
-		/*
-		if(c1->row < c1->col) return -1;
-		if(c1->row > c1->col) return 1;
-		*/
-		if (c1->col < c2->col)
-			return -1;
-
-		if (c1->col > c2->col)
-			return 1;
-	}
-
-	/*
-	 * Sort on the row number.
-	 * By default, this is from the middle row outwards.
-	 * But if wide ordering is set, the ordering is from the edge
-	 * inwards.  Note that we actually set the ordering to be the
-	 * opposite of the desired order because the initial setting
-	 * for new cells is OFF.
-	 */
-	midrow = (g.nrows + 1) / 2;
-
-	dif1 = c1->row - midrow;
-
-	if (dif1 < 0)
-		dif1 = -dif1;
-
-	dif2 = c2->row - midrow;
-
-	if (dif2 < 0)
-		dif2 = -dif2;
-
-	if (dif1 < dif2)
-		return (g.orderwide ? -1 : 1);
-
-	if (dif1 > dif2)
-		return (g.orderwide ? 1 : -1);
-
-	/*
-	 * Sort by the generation again if we didn't do it yet.
-	 */
-	if (c1->gen < c2->gen)
-		return -1;
-
-	if (c1->gen > c2->gen)
-		return 1;
-
-	return 0;
-}
-
 
 /*
  * Order the cells to be searched by building the search table list.
@@ -2205,105 +2201,6 @@ initcells(void)
 	g.inited = TRUE;
 	return TRUE;
 }
-
-
-/*
- * The sort routine for searching.
- */
-static int
-ordersortfunc(const void *xxx1, const void *xxx2)
-{
-	CELL **	arg1;
-	CELL **	arg2;
-	CELL *	c1;
-	CELL *	c2;
-	int	midcol;
-	int	midrow;
-	int	dif1;
-	int	dif2;
-
-	arg1=(CELL**)xxx1;
-	arg2=(CELL**)xxx2;
-
-	c1 = *arg1;
-	c2 = *arg2;
-
-	/*
-	 * If on equal position or not ordering by all generations
-	 * then sort primarily by generations
-	 */
-	if (((c1->row == c2->row) && (c1->col == c2->col)) || !g.ordergens)
-	{
-		// Put generation 0 first
-		// or if calculating parents, put generation 0 last
-		if (g.parent)
-		{
-			if (c1->gen < c2->gen) return 1;
-			if (c1->gen > c2->gen) return -1;
-		} else {
-			if (c1->gen < c2->gen) return -1;
-			if (c1->gen > c2->gen) return 1;
-		}
-		// if we are here, it is the same cell
-	}
-
-	if(g.diagsort) {
-		if(c1->col+c1->row > c2->col+c2->row) return 1;
-		if(c1->col+c1->row < c2->col+c2->row) return -1;
-		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (g.orderwide)?1:(-1);
-		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (g.orderwide)?(-1):1;
-	}
-	if(g.knightsort) {
-		if(c1->col*2+c1->row > c2->col*2+c2->row) return 1;
-		if(c1->col*2+c1->row < c2->col*2+c2->row) return -1;
-		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (g.orderwide)?1:(-1);
-		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (g.orderwide)?(-1):1;
-	}
-
-	/*
-	 * Sort on the column number.
-	 * By default this is from left to right.
-	 * But if middle ordering is set, the ordering is from the center
-	 * column outwards.
-	 */
-	if (g.ordermiddle)
-	{
-		midcol = (g.ncols + 1) / 2;
-
-		dif1 = abs(c1->col - midcol);
-
-		dif2 = abs(c2->col - midcol);
-
-		if (dif1 < dif2) return -1;
-
-		if (dif1 > dif2) return 1;
-	} else {
-		if (c1->col < c2->col) return -1;
-
-		if (c1->col > c2->col) return 1;
-	}
-
-	/*
-	 * Sort on the row number.
-	 * By default, this is from the middle row outwards.
-	 * But if wide ordering is set, the ordering is from the edge
-	 * inwards.  Note that we actually set the ordering to be the
-	 * opposite of the desired order because the initial setting
-	 * for new cells is OFF.
-	 */
-	midrow = (g.nrows + 1) / 2;
-
-	dif1 = abs(c1->row - midrow);
-
-	dif2 = abs(c2->row - midrow);
-
-	if (dif1 < dif2) return (g.orderwide ? -1 : 1);
-
-	if (dif1 > dif2) return (g.orderwide ? 1 : -1);
-
-	return 0;
-}
-
 
 /*
  * Order the cells to be searched by building the search table list.
