@@ -3141,10 +3141,12 @@ static void Handle_SearchOpts_Init(HWND hWnd)
 	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_ADDSTRING,0,(LPARAM)_T("Diagonal"));
 	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_ADDSTRING,0,(LPARAM)_T("Knightship"));
 	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_ADDSTRING,0,(LPARAM)_T("Top to bottom"));
+	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_ADDSTRING,0,(LPARAM)_T("Center out"));
 
 	if(g.sortorder==SORTORDER_DIAG) sel=1;
 	else if(g.knightsort || g.sortorder==SORTORDER_KNIGHT) sel=2;
 	else if(g.sortorder==SORTORDER_TOPDOWN) sel=3;
+	else if(g.sortorder==SORTORDER_CENTEROUT) sel=4;
 	else sel=0;
 	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_SETCURSEL,(WPARAM)sel,0);
 
@@ -3196,6 +3198,9 @@ static void Handle_SearchOpts_OK(HWND hWnd)
 	}
 	else if(sel==3) {
 		g.sortorder = SORTORDER_TOPDOWN;
+	}
+	else if(sel==4) {
+		g.sortorder = SORTORDER_CENTEROUT;
 	}
 
 #ifdef JS

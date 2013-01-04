@@ -98,6 +98,18 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 		if (dif1 > dif2) return (g.orderwide ? 1 : -1);
 		return 0;
 	}
+	if(g.sortorder==SORTORDER_CENTEROUT) {
+		double midcolf, midrowf, d1, d2;
+		midcolf = (1.0+(double)g.ncols) / 2.0;
+		midrowf = (1.0+(double)g.nrows) / 2.0;
+		d1 = (midcolf-(double)c1->col)*(midcolf-(double)c1->col) + 
+			(midrowf-(double)c1->row)*(midrowf-(double)c1->row);
+		d2 = (midcolf-(double)c2->col)*(midcolf-(double)c2->col) + 
+			(midrowf-(double)c2->row)*(midrowf-(double)c2->row);
+		if(d1>d2) return 1;
+		if(d1<d2) return -1;
+		return 0;
+	}
 
 	/*
 	 * Sort on the column number.
