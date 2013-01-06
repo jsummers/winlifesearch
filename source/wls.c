@@ -1845,6 +1845,8 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 	HCURSOR prevcur = NULL;
 	BOOL retval = FALSE;
 
+	wlsStatusf(ctx,_T(""));
+
 	if(ctx->searchstate!=WLS_SRCH_OFF) {
 		wlsErrorf(ctx,_T("A search is already running"));
 		goto done;
@@ -1944,7 +1946,6 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 	retval = TRUE;
 
 done:
-	wlsStatusf(ctx,_T(""));
 	if(prevcur) SetCursor(prevcur);
 	return retval;
 }
@@ -2403,12 +2404,12 @@ static void Handle_Save(struct wcontext *ctx)
 #else
 	if (ctx->searchstate==WLS_SRCH_OFF) {
 		if (prepare_search(ctx,FALSE)) {
-			dumpstate(ctx->hwndFrame, NULL, FALSE);
+			dumpstate(ctx->hwndFrame, NULL, TRUE);
 			wlsResetSearch(ctx);
 		}
 	}
 	else if (ctx->searchstate==WLS_SRCH_PAUSED) {
-		dumpstate(ctx->hwndFrame, NULL, FALSE);
+		dumpstate(ctx->hwndFrame, NULL, TRUE);
 	}
 	else if (ctx->searchstate==WLS_SRCH_RUNNING) {
 		ctx->deferred_action |= WLS_ACTION_SAVEANDRESUME;

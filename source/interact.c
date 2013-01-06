@@ -502,7 +502,7 @@ void dumpstate(HWND hwndParent, TCHAR *file1)
 		return;
 	}
 
-	ttystatus(_T("State dumped to \x201c%s\x201d\n"), file);
+	wlsStatusf(NULL,_T("State dumped to \x201c%s\x201d\n"), file);
 }
 
 
@@ -764,7 +764,7 @@ BOOL loadstate(HWND hwndParent)
 		return FALSE;
 	}
 
-	ttystatus(_T("State loaded from \x201c%s\x201d\n"), file);
+	wlsStatusf(NULL,_T("State loaded from \x201c%s\x201d\n"), file);
 	return TRUE;
 }
 
