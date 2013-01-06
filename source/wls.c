@@ -3134,6 +3134,18 @@ static INT_PTR CALLBACK DlgProcOutput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 static void Handle_SearchOpts_Init(HWND hWnd)
 {
 	int sel;
+	int i;
+#ifdef JS
+	static const int items_to_hide[] = { IDC_COMBINE, IDC_SMART, IDC_SMARTON,
+		IDC_ICWTEXT, IDC_SMARTWINDOW, IDC_SMARTWINDOWSTAT, IDC_ICTTEXT,
+		IDC_SMARTTHRESHOLD, IDC_SMARTTHRESHOLDSTAT, 0 };
+#else
+	static const int items_to_hide[] = { IDC_FASTSYM, 0 };
+#endif
+
+	for(i=0;items_to_hide[i];i++) {
+		ShowWindow(GetDlgItem(hWnd,items_to_hide[i]),SW_HIDE);
+	}
 
 	CheckDlgButton(hWnd,IDC_ORDERWIDE,g.orderwide);
 	CheckDlgButton(hWnd,IDC_ORDERGENS,g.ordergens);
