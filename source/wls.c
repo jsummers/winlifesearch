@@ -3601,11 +3601,7 @@ static void InitGameSettings(struct wcontext *ctx)
 	g.combining=FALSE;
 #endif
 	g.orderwide=FALSE;
-#ifdef JS
-	g.ordergens=FALSE;
-#else
 	g.ordergens=TRUE;
-#endif
 	g.ordermiddle=FALSE;
 	g.sortorder=SORTORDER_DEFAULT;
 	g.knightsort=0;
