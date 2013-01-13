@@ -323,6 +323,7 @@ static struct field_struct *wlsAllocField(struct field_struct *prev_field)
 // (e.g. the number of cells).
 static void wlsRepaintCells(struct wcontext *ctx, int full_repaint)
 {
+	if(ctx->selectstate!=WLS_SEL_OFF) full_repaint=1;
 	InvalidateRect(ctx->hwndMain,NULL,full_repaint?TRUE:FALSE);
 }
 
