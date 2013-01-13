@@ -732,6 +732,7 @@ struct selected_row {
 // Returns a malloc'd array of g.nrows selected_row structs,
 // indicating which cells are selected in each row.
 // Caller should free the returned array.
+// if ctx->selectstate==WLS_SEL_OFF, behaves as if all cells are selected.
 struct selected_row *wlsGetSelectedCells(struct wcontext *ctx)
 {
 	struct selected_row *sr;
@@ -739,7 +740,6 @@ struct selected_row *wlsGetSelectedCells(struct wcontext *ctx)
 	int rowsize;
 	int x1;
 	int y1, y2;
-
 	int pt1_x, pt1_y;
 	int pt2_x, pt2_y;
 	int vdist, hdist;
@@ -747,8 +747,15 @@ struct selected_row *wlsGetSelectedCells(struct wcontext *ctx)
 	int tmp1, tmp2;
 	int d;
 
-
 	sr = calloc(g.nrows,sizeof(struct selected_row));
+
+	if(ctx->selectstate==WLS_SEL_OFF) {
+		for(j=0;j<g.nrows;j++) {
+			sr[j].start = 0;
+			sr[j].size = g.ncols;
+		}
+		return sr;
+	}
 
 	if(!ctx->select_diag) {
 		// Orthogonal selection
@@ -2220,13 +2227,25 @@ static void shift_gen(struct wcontext *ctx, int fromgen, int togen, int gend, in
 	int g1,r,c;
 	int fromrow, torow, fromcol, tocol;
 	int gx,rx,cx;
+	struct selected_row *sr = NULL;
+
+	sr = wlsGetSelectedCells(ctx);
 
 	if (ctx->selectstate == WLS_SEL_SELECTED) {
-		if(ctx->select_diag /* && (cold!=0 || rowd!=0) */) return;
-		fromcol = ctx->selectrect.left;
-		tocol = ctx->selectrect.right;
-		fromrow = ctx->selectrect.top;
-		torow = ctx->selectrect.bottom;
+		if(ctx->select_diag) {
+			if(cold!=0 || rowd!=0) goto done;
+			if(fromgen!=0 || togen!=g.period-1) goto done;
+			fromcol = 0;
+			tocol = 0;
+			fromrow = 0;
+			torow = 0;
+		}
+		else {
+			fromcol = ctx->selectrect.left;
+			tocol = ctx->selectrect.right;
+			fromrow = ctx->selectrect.top;
+			torow = ctx->selectrect.bottom;
+		}
 	}
 	else {
 		fromcol = 0;
@@ -2237,23 +2256,32 @@ static void shift_gen(struct wcontext *ctx, int fromgen, int togen, int gend, in
 
 	// Make a temporary copy of the relevant cells.
 	for(g1=fromgen; g1<=togen; g1++) {
-		for (r=fromrow; r<=torow; r++) {
-			for(c=fromcol; c<=tocol; c++) {
+		for(r=0; r<g.nrows; r++) {
+			for(c=sr[r].start; c<sr[r].start+sr[r].size; c++) {
 				wlsSetCellVal(g.tmpfield,g1,c,r,wlsCellVal(g.field,g1,c,r));
 			}
 		}
 	}
 
 	for(g1=fromgen; g1<=togen; g1++) {
-		for (r=fromrow; r<=torow; r++) {
-			for(c=fromcol; c<=tocol; c++) {
+		for (r=0; r<=g.nrows; r++) {
+			for(c=sr[r].start; c<sr[r].start+sr[r].size; c++) {
 				gx = (g1 + gend - fromgen + togen - fromgen + 1) % (togen - fromgen + 1) + fromgen;
-				cx = (c + cold - fromcol + tocol - fromcol + 1) % (tocol - fromcol + 1) + fromcol;
-				rx = (r + rowd - fromrow + torow - fromrow + 1) % (torow - fromrow + 1) + fromrow;
+				if(rowd==0 && cold==0) {
+					cx = c;
+					rx = r;
+				}
+				else {
+					cx = (c + cold - fromcol + tocol - fromcol + 1) % (tocol - fromcol + 1) + fromcol;
+					rx = (r + rowd - fromrow + torow - fromrow + 1) % (torow - fromrow + 1) + fromrow;
+				}
 				wlsSetCellVal(g.field,gx,cx,rx,wlsCellVal(g.tmpfield,g1,c,r));
 			}
 		}
 	}
+
+done:
+	free(sr);
 }
 
 #ifndef JS
