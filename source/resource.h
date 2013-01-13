@@ -70,7 +70,6 @@
 #define IDC_SORTORDER                   1058
 #define IDC_ORDERWIDE                   1059
 #define IDC_ORDERGENS                   1060
-#define IDC_ORDERMIDDLE                 1061
 #define IDC_OUTPUTCOLS                  1062
 #define IDC_SMARTWINDOWSTAT             1063
 #define IDC_SMARTTHRESHOLDSTAT          1064

@@ -221,7 +221,7 @@ struct globals_struct {
 	BOOL follow;      /* follow average position of previous column */
 	BOOL orderwide;   /* ordering tries to find wide objects */
 	BOOL ordergens;   /* ordering tries all gens first */
-	BOOL ordermiddle; /* ordering tries middle columns first */
+	BOOL ordermiddle; /* ordering tries middle columns first (deprecated) */
 	BOOL followgens;  /* try to follow setting of other gens */
 
 #ifndef JS
@@ -244,6 +244,7 @@ struct globals_struct {
 #define SORTORDER_KNIGHT  2
 #define SORTORDER_TOPDOWN 3
 #define SORTORDER_CENTEROUT 4
+#define SORTORDER_MIDDLECOLOUT 5
 	int sortorder;
 
 	int knightsort; // deprecated

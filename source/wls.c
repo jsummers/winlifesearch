@@ -3149,17 +3149,18 @@ static void Handle_SearchOpts_Init(HWND hWnd)
 
 	CheckDlgButton(hWnd,IDC_ORDERWIDE,g.orderwide);
 	CheckDlgButton(hWnd,IDC_ORDERGENS,g.ordergens);
-	CheckDlgButton(hWnd,IDC_ORDERMIDDLE,g.ordermiddle);
 	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_ADDSTRING,0,(LPARAM)_T("Left to right"));
 	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_ADDSTRING,0,(LPARAM)_T("Diagonal"));
 	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_ADDSTRING,0,(LPARAM)_T("Knightship"));
 	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_ADDSTRING,0,(LPARAM)_T("Top to bottom"));
 	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_ADDSTRING,0,(LPARAM)_T("Center out"));
+	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_ADDSTRING,0,(LPARAM)_T("Middle column out"));
 
 	if(g.sortorder==SORTORDER_DIAG) sel=1;
 	else if(g.knightsort || g.sortorder==SORTORDER_KNIGHT) sel=2;
 	else if(g.sortorder==SORTORDER_TOPDOWN) sel=3;
 	else if(g.sortorder==SORTORDER_CENTEROUT) sel=4;
+	else if(g.ordermiddle || g.sortorder==SORTORDER_MIDDLECOLOUT) sel=5;
 	else sel=0;
 	SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_SETCURSEL,(WPARAM)sel,0);
 
@@ -3198,10 +3199,10 @@ static void Handle_SearchOpts_OK(HWND hWnd)
 
 	g.orderwide=  IsDlgButtonChecked(hWnd,IDC_ORDERWIDE  )?1:0;
 	g.ordergens=  IsDlgButtonChecked(hWnd,IDC_ORDERGENS  )?1:0;
-	g.ordermiddle=IsDlgButtonChecked(hWnd,IDC_ORDERMIDDLE)?1:0;
 	sel = (int)SendDlgItemMessage(hWnd,IDC_SORTORDER,CB_GETCURSEL,0,0);
 	g.sortorder = SORTORDER_DEFAULT;
 	g.knightsort = 0;
+	g.ordermiddle = 0;
 	if(sel==1) {
 		g.sortorder = SORTORDER_DIAG;
 	}
@@ -3214,6 +3215,10 @@ static void Handle_SearchOpts_OK(HWND hWnd)
 	}
 	else if(sel==4) {
 		g.sortorder = SORTORDER_CENTEROUT;
+	}
+	else if(sel==5) {
+		g.sortorder = SORTORDER_MIDDLECOLOUT;
+		g.ordermiddle = 1;
 	}
 
 #ifdef JS

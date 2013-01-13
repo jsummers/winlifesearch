@@ -101,7 +101,7 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 		if(d1<d2) return -1;
 		return gen_diff;
 	}
-	else if(g.ordermiddle) {
+	else if(g.ordermiddle || g.sortorder==SORTORDER_MIDDLECOLOUT) {
 		// the ordering is from the center column outwards
 		midcol = (g.ncols + 1) / 2;
 		dif1 = abs(c1->col - midcol);
