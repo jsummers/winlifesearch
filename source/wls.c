@@ -2124,6 +2124,7 @@ static void flip_h(struct wcontext *ctx, int fromgen, int togen)
 	WLS_CELLVAL buffer;
 
 	if (ctx->selectstate == WLS_SEL_SELECTED) {
+		if(ctx->select_diag) return;
 		fromcol = ctx->selectrect.left;
 		tocol = ctx->selectrect.right;
 		fromrow = ctx->selectrect.top;
@@ -2154,6 +2155,7 @@ static void flip_v(struct wcontext *ctx, int fromgen, int togen)
 	WLS_CELLVAL buffer;
 
 	if (ctx->selectstate == WLS_SEL_SELECTED) {
+		if(ctx->select_diag) return;
 		fromcol = ctx->selectrect.left;
 		tocol = ctx->selectrect.right;
 		fromrow = ctx->selectrect.top;
@@ -2184,6 +2186,7 @@ static void transpose(struct wcontext *ctx, int fromgen, int togen)
 	WLS_CELLVAL buffer;
 
 	if (ctx->selectstate == WLS_SEL_SELECTED) {
+		if(ctx->select_diag) return;
 		fromcol = ctx->selectrect.left;
 		tocol = ctx->selectrect.right;
 		fromrow = ctx->selectrect.top;
@@ -2219,6 +2222,7 @@ static void shift_gen(struct wcontext *ctx, int fromgen, int togen, int gend, in
 	int gx,rx,cx;
 
 	if (ctx->selectstate == WLS_SEL_SELECTED) {
+		if(ctx->select_diag /* && (cold!=0 || rowd!=0) */) return;
 		fromcol = ctx->selectrect.left;
 		tocol = ctx->selectrect.right;
 		fromrow = ctx->selectrect.top;
@@ -2432,6 +2436,41 @@ static void Handle_UpdateDisplay(struct wcontext *ctx)
 	wlsUpdateAndShowTmpField_Sync();
 }
 
+static void Handle_InitMenu(struct wcontext *ctx, HMENU m)
+{
+	int i;
+	static const int items1[] = { IDC_SHIFTGUP, IDC_SHIFTGDOWN, IDC_SHIFTGLEFT,
+		IDC_SHIFTGRIGHT, IDC_SHIFTAUP, IDC_SHIFTADOWN, IDC_SHIFTALEFT,
+		IDC_SHIFTARIGHT, ID_FLIP_GEN_H, ID_FLIP_GEN_V, ID_FLIP_ALL_H,
+		ID_FLIP_ALL_V,ID_TRANS_GEN, ID_TRANS_ALL, 0 };
+
+	EnableMenuItem(m,IDC_SEARCHSTART,ctx->searchstate==WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+	EnableMenuItem(m,IDC_SEARCHRESET,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+	EnableMenuItem(m,IDC_SEARCHPAUSE,ctx->searchstate==WLS_SRCH_RUNNING?MF_ENABLED:MF_GRAYED);
+	EnableMenuItem(m,IDC_SEARCHRESUME,ctx->searchstate==WLS_SRCH_PAUSED?MF_ENABLED:MF_GRAYED);
+	EnableMenuItem(m,IDC_SEARCHBACKUP,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+	EnableMenuItem(m,IDC_SEARCHBACKUP2,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+	EnableMenuItem(m,ID_HIDESEL,ctx->selectstate==WLS_SEL_SELECTED?MF_ENABLED:MF_GRAYED);
+#ifdef JS
+	EnableMenuItem(m,IDC_SEARCHPREPARE,MF_GRAYED);
+	EnableMenuItem(m,IDC_COPYRESULT,MF_GRAYED);
+	EnableMenuItem(m,IDC_COPYCOMBINATION,MF_GRAYED);
+	EnableMenuItem(m,IDC_CLEARCOMBINATION,MF_GRAYED);
+#else
+	EnableMenuItem(m,IDC_SEARCHPREPARE,ctx->searchstate==WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+	EnableMenuItem(m,IDC_COPYRESULT,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+	EnableMenuItem(m,IDC_COPYCOMBINATION,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+	EnableMenuItem(m,IDC_CLEARCOMBINATION,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
+#endif
+	CheckMenuItem(m,IDC_SELECTMODE,MF_BYCOMMAND|(ctx->select_diag?MF_CHECKED:MF_UNCHECKED));
+
+	// Disable most shift/flip/etc. operations if a diagonal selection is active.
+	for(i=0; items1[i]; i++) {
+		EnableMenuItem(m, items1[i], (ctx->selectstate==WLS_SEL_SELECTED && ctx->select_diag) ?
+			MF_GRAYED : MF_ENABLED);
+	}
+}
+
 static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	WORD id;
@@ -2487,25 +2526,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 		return 0;
 
 	case WM_INITMENU:
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHSTART,ctx->searchstate==WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESET,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHPAUSE,ctx->searchstate==WLS_SRCH_RUNNING?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHRESUME,ctx->searchstate==WLS_SRCH_PAUSED?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHBACKUP2,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,ID_HIDESEL,ctx->selectstate==WLS_SEL_SELECTED?MF_ENABLED:MF_GRAYED);
-#ifdef JS
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHPREPARE,MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_COPYRESULT,MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_COPYCOMBINATION,MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_CLEARCOMBINATION,MF_GRAYED);
-#else
-		EnableMenuItem((HMENU)wParam,IDC_SEARCHPREPARE,ctx->searchstate==WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_COPYRESULT,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_COPYCOMBINATION,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
-		EnableMenuItem((HMENU)wParam,IDC_CLEARCOMBINATION,ctx->searchstate!=WLS_SRCH_OFF?MF_ENABLED:MF_GRAYED);
-#endif
-		CheckMenuItem((HMENU)wParam,IDC_SELECTMODE,MF_BYCOMMAND|(ctx->select_diag?MF_CHECKED:MF_UNCHECKED));
+		Handle_InitMenu(ctx,(HMENU)wParam);
 		return 0;
 
 	case WM_CHAR:
