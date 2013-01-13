@@ -320,15 +320,15 @@ BEGIN
                     WS_TABSTOP,7,154,69,10
     CONTROL         "Combine solutions only",IDC_COMBINE,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,7,170,87,10
-    CONTROL         "Sort to try all &gens first",IDC_ORDERGENS,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,185,26,85,10
     LTEXT           "Sort order:",IDC_STATIC,185,44,40,10,WS_GROUP
     COMBOBOX        IDC_SORTORDER,225,42,110,200,CBS_DROPDOWNLIST |
                     WS_VSCROLL | WS_TABSTOP
-    CONTROL         "Fast symmetry",IDC_FASTSYM,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP | WS_GROUP,185,60,60,10
+    CONTROL         "Sort to try all &gens first",IDC_ORDERGENS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP | WS_GROUP,185,60,85,10
     CONTROL         "S&ort to find wide objects",IDC_ORDERWIDE,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,185,76,91,10
+    CONTROL         "Fast symmetry",IDC_FASTSYM,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,185,92,60,10
     CONTROL         "First try cells &near ON cells in the previous column",
                     IDC_FOLLOW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,185,122,
                     173,10
