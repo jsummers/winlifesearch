@@ -35,6 +35,7 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 	int	midrow;
 	int	dif1;
 	int	dif2;
+	int gen_diff;
 
 	arg1=(CELL**)xxx1;
 	arg2=(CELL**)xxx2;
@@ -42,53 +43,43 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 	c1 = *arg1;
 	c2 = *arg2;
 
-#ifdef JS
-	/*
-	 * If we do not order by all generations, then put all of
-	 * generation zero ahead of the other generations.
-	 */
-	if (!g.ordergens)
-	{
-		if (c1->gen < c2->gen)
-			return -1;
-
-		if (c1->gen > c2->gen)
-			return 1;
+	// Put generation 0 first
+	// or if calculating parents, put generation 0 last
+	gen_diff = 0;
+	if (g.parent) {
+		if (c1->gen < c2->gen) gen_diff = 1;
+		if (c1->gen > c2->gen) gen_diff = -1;
 	}
-#else
+	else {
+		if (c1->gen < c2->gen) gen_diff = -1;
+		if (c1->gen > c2->gen) gen_diff = 1;
+	}
+
 	/*
 	 * If on equal position or not ordering by all generations
 	 * then sort primarily by generations
 	 */
 	if (((c1->row == c2->row) && (c1->col == c2->col)) || !g.ordergens)
 	{
-		// Put generation 0 first
-		// or if calculating parents, put generation 0 last
-		if (g.parent)
-		{
-			if (c1->gen < c2->gen) return 1;
-			if (c1->gen > c2->gen) return -1;
-		} else {
-			if (c1->gen < c2->gen) return -1;
-			if (c1->gen > c2->gen) return 1;
-		}
+		if (gen_diff!=0) return gen_diff;
 		// if we are here, it is the same cell
 	}
-#endif
 
 	if(g.sortorder==SORTORDER_DIAG) {
 		if(c1->col+c1->row > c2->col+c2->row) return 1;
 		if(c1->col+c1->row < c2->col+c2->row) return -1;
-		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (g.orderwide)?1:(-1);  /* ??? */
+		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (g.orderwide)?1:(-1);
 		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (g.orderwide)?(-1):1;
+		return gen_diff;
 	}
-	if(g.knightsort || g.sortorder==SORTORDER_KNIGHT) {
+	else if(g.knightsort || g.sortorder==SORTORDER_KNIGHT) {
 		if(c1->col*2+c1->row > c2->col*2+c2->row) return 1;
 		if(c1->col*2+c1->row < c2->col*2+c2->row) return -1;
 		if(abs(c1->col-c1->row) > abs(c2->col-c2->row)) return (g.orderwide)?1:(-1);
 		if(abs(c1->col-c1->row) < abs(c2->col-c2->row)) return (g.orderwide)?(-1):1;
+		return gen_diff;
 	}
-	if(g.sortorder==SORTORDER_TOPDOWN) {
+	else if(g.sortorder==SORTORDER_TOPDOWN) {
 		if(c1->row > c2->row) return 1;
 		if(c1->row < c2->row) return -1;
 		midcol = (g.ncols + 1) / 2;
@@ -96,9 +87,9 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 		dif2 = abs(c2->col - midcol);
 		if (dif1 < dif2) return (g.orderwide ? -1 : 1);
 		if (dif1 > dif2) return (g.orderwide ? 1 : -1);
-		return 0;
+		return gen_diff;
 	}
-	if(g.sortorder==SORTORDER_CENTEROUT) {
+	else if(g.sortorder==SORTORDER_CENTEROUT) {
 		double midcolf, midrowf, d1, d2;
 		midcolf = (1.0+(double)g.ncols) / 2.0;
 		midrowf = (1.0+(double)g.nrows) / 2.0;
@@ -108,32 +99,28 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 			(midrowf-(double)c2->row)*(midrowf-(double)c2->row);
 		if(d1>d2) return 1;
 		if(d1<d2) return -1;
-		return 0;
+		return gen_diff;
 	}
-
-	/*
-	 * Sort on the column number.
-	 * By default this is from left to right.
-	 * But if middle ordering is set, the ordering is from the center
-	 * column outwards.
-	 */
-	if (g.ordermiddle)
-	{
+	else if(g.ordermiddle) {
+		// the ordering is from the center column outwards
 		midcol = (g.ncols + 1) / 2;
-
 		dif1 = abs(c1->col - midcol);
-
 		dif2 = abs(c2->col - midcol);
-
 		if (dif1 < dif2) return -1;
-
 		if (dif1 > dif2) return 1;
-	}
-	else {
-		if (c1->col < c2->col) return -1;
 
-		if (c1->col > c2->col) return 1;
+		midrow = (g.nrows + 1) / 2;
+		dif1 = abs(c1->row - midrow);
+		dif2 = abs(c2->row - midrow);
+		if (dif1 < dif2) return (g.orderwide ? -1 : 1);
+		if (dif1 > dif2) return (g.orderwide ? 1 : -1);
+		return gen_diff;
 	}
+
+	// else left-to-right sort order
+
+	if (c1->col < c2->col) return -1;
+	if (c1->col > c2->col) return 1;
 
 	/*
 	 * Sort on the row number.
@@ -144,27 +131,12 @@ ordersortfunc(const void *xxx1, const void *xxx2)
 	 * for new cells is OFF.
 	 */
 	midrow = (g.nrows + 1) / 2;
-
 	dif1 = abs(c1->row - midrow);
-
 	dif2 = abs(c2->row - midrow);
-
 	if (dif1 < dif2) return (g.orderwide ? -1 : 1);
-
 	if (dif1 > dif2) return (g.orderwide ? 1 : -1);
 
-#ifdef JS
-	/*
-	 * Sort by the generation again if we didn't do it yet.
-	 */
-	if (c1->gen < c2->gen)
-		return -1;
-
-	if (c1->gen > c2->gen)
-		return 1;
-#endif
-
-	return 0;
+	return gen_diff;
 }
 
 #ifdef JS
