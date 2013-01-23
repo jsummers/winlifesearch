@@ -86,6 +86,8 @@
 #define IDC_WHEELGENDIR                 1081
 #define IDC_ICWTEXT                     1082
 #define IDC_ICTTEXT                     1083
+#define IDC_SAVESTATEFOLDER             1084
+#define IDC_SAVESTATEBROWSE             1085
 #define IDC_ABOUT                       40001
 #define IDC_EXIT                        40002
 #define IDC_SYMMETRY                    40003

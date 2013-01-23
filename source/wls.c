@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <process.h>
 #include <malloc.h>
+#include <shlobj.h>
 #include <assert.h>
 #include "resource.h"
 #include "lifesrc.h"
@@ -113,6 +114,9 @@ struct wcontext {
 
 	// Current coordinates displayed on the status bar
 	int displayed_coord_x, displayed_coord_y;
+
+	int com_init_flag;
+	TCHAR save_folder[MAX_PATH];
 };
 
 struct globals_struct g;
@@ -3461,6 +3465,12 @@ static void wlsWriteIntPref(struct wcontext *ctx, HKEY hkey, const TCHAR *valnam
 	RegSetValueEx(hkey,valname,0,REG_DWORD,(const BYTE *)&tmp,sizeof(DWORD));
 }
 
+static void wlsWriteStringPref(struct wcontext *ctx, HKEY hkey, const TCHAR *valname,
+	const TCHAR *val)
+{
+	RegSetValueEx(hkey,valname,0,REG_SZ,(BYTE*)val,(1+lstrlen(val))*sizeof(TCHAR));
+}
+
 static void wlsSavePreferences(struct wcontext *ctx)
 {
 	LONG ret;
@@ -3482,6 +3492,7 @@ static void wlsSavePreferences(struct wcontext *ctx)
 	wlsWriteIntPref(ctx,hkey,_T("DefaultRows"),ctx->user_default_rows);
 	wlsWriteIntPref(ctx,hkey,_T("SearchPriority"),ctx->search_priority);
 	wlsWriteIntPref(ctx,hkey,_T("MouseWheelAction"),ctx->wheel_gen_dir);
+	wlsWriteStringPref(ctx,hkey,_T("SaveFolder"),ctx->save_folder);
 
 done:
 	if(hkey) RegCloseKey(hkey);
@@ -3505,6 +3516,22 @@ static BOOL wlsReadIntPref(struct wcontext *ctx, HKEY hkey, const TCHAR *valname
 	return TRUE;
 }
 
+static BOOL wlsReadStringPref(struct wcontext *ctx, HKEY hkey, const TCHAR *valname,
+	TCHAR *val, size_t vsize)
+{
+	LONG ret;
+	DWORD datatype;
+	DWORD datasize;
+
+	datasize = vsize*sizeof(TCHAR);
+	ret = RegQueryValueEx(hkey,valname,NULL,&datatype,(BYTE*)val,&datasize);
+	if(ret!=ERROR_SUCCESS || datatype!=REG_SZ) {
+		val[0] = '\0';
+		return FALSE;
+	}
+	return TRUE;
+}
+
 static void wlsLoadPreferences(struct wcontext *ctx)
 {
 	LONG ret;
@@ -3522,6 +3549,7 @@ static void wlsLoadPreferences(struct wcontext *ctx)
 	wlsReadIntPref(ctx,hkey,_T("DefaultRows"),&ctx->user_default_rows);
 	wlsReadIntPref(ctx,hkey,_T("SearchPriority"),&ctx->search_priority);
 	wlsReadIntPref(ctx,hkey,_T("MouseWheelAction"),&ctx->wheel_gen_dir);
+	wlsReadStringPref(ctx,hkey,_T("SaveFolder"),ctx->save_folder,MAX_PATH);
 
 done:
 	if(hkey) RegCloseKey(hkey);
@@ -3552,6 +3580,8 @@ static void Handle_Prefs_Init(struct wcontext *ctx, HWND hWnd)
 	sel=0;
 	if(ctx->wheel_gen_dir==2) sel=1;
 	SendDlgItemMessage(hWnd,IDC_WHEELGENDIR,CB_SETCURSEL,(WPARAM)sel,0);
+
+	SetDlgItemText(hWnd,IDC_SAVESTATEFOLDER,ctx->save_folder);
 }
 
 static void Handle_Prefs_OK(struct wcontext *ctx, HWND hWnd)
@@ -3577,8 +3607,49 @@ static void Handle_Prefs_OK(struct wcontext *ctx, HWND hWnd)
 	if(sel==1) ctx->wheel_gen_dir = 2;
 	else ctx->wheel_gen_dir = 1;
 
+	GetDlgItemText(hWnd,IDC_SAVESTATEFOLDER,ctx->save_folder,MAX_PATH);
+
 	wlsSavePreferences(ctx);
 	wlsRepaintCells(ctx,1);
+}
+
+static int CALLBACK myBrowseCallback(HWND hwnd, UINT uMsg, LPARAM lParam, LPARAM lpData)
+{
+	if(uMsg==BFFM_INITIALIZED) {
+		// Set the folder that is initially selected.
+	    SendMessage(hwnd,BFFM_SETSELECTION,(WPARAM)TRUE,(LPARAM)(TCHAR*)lpData);
+	}
+	return 0;
+}
+
+static void Handle_SaveStateBrowse(struct wcontext *ctx, HWND hWnd)
+{
+	LPITEMIDLIST pidl;
+	BROWSEINFO bi;
+	IMalloc *imalloc = NULL;
+
+	if(!ctx->com_init_flag) {
+		CoInitialize(NULL);
+		ctx->com_init_flag = 1;
+	}
+
+	SHGetMalloc(&imalloc);
+
+	ZeroMemory(&bi,sizeof(bi));
+	bi.hwndOwner=hWnd;
+	bi.lpszTitle=_T("Default folder for save states");
+	if(ctx->save_folder[0]) {
+		bi.lpfn=myBrowseCallback;
+		bi.lParam=(LPARAM)ctx->save_folder;
+	}
+
+	pidl = SHBrowseForFolder(&bi);
+	if(pidl) {
+		SHGetPathFromIDList(pidl, ctx->save_folder);
+		SetDlgItemText(hWnd, IDC_SAVESTATEFOLDER, ctx->save_folder);
+		if(imalloc) imalloc->lpVtbl->Free(imalloc, pidl);
+	}
+	if(imalloc) imalloc->lpVtbl->Release(imalloc);
 }
 
 static INT_PTR CALLBACK DlgProcPreferences(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -3606,6 +3677,9 @@ static INT_PTR CALLBACK DlgProcPreferences(HWND hWnd, UINT msg, WPARAM wParam, L
 			EndDialog(hWnd, TRUE);
 			return 1;
 
+		case IDC_SAVESTATEBROWSE:
+			Handle_SaveStateBrowse(ctx, hWnd);
+			return 1;
 		}
 	}
 	return 0;
@@ -3846,6 +3920,7 @@ static void UninitApp(struct wcontext *ctx)
 	wlsFreeField(g.field);
 	wlsFreeField(g.tmpfield);
 	DeleteCriticalSection(&ctx->critsec_tmpfield);
+	if(ctx->com_init_flag) CoUninitialize();
 }
 
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
