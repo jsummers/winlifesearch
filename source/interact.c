@@ -345,9 +345,8 @@ void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
 
 /*
  * Dump the current state of the search in the specified file.
- * If no file is specified, it is asked for.
  */
-void dumpstate(HWND hwndParent, TCHAR *file1)
+void dumpstate_internal(const TCHAR *filename)
 {
 	FILE *	fp;
 	CELL **	set;
@@ -358,26 +357,16 @@ void dumpstate(HWND hwndParent, TCHAR *file1)
 	int **	param;
 	int g1;
 	int x,y,z;
-	TCHAR file[MAX_PATH];
 	char buf[80];
 
-	//file = getstr(file, "Dump state to file: ");
-	if(file1) {
-		StringCchCopy(file,MAX_PATH,file1);
-	}
-	else {
-		StringCchCopy(file,MAX_PATH,_T("dump.txt"));
-		getfilename_s(hwndParent,file);
-	}
-
-	if (*file == '\0')
+	if (*filename == '\0')
 		return;
 
-	fp = _tfopen(file, _T("w"));
+	fp = _tfopen(filename, _T("w"));
 
 	if (fp == NULL)
 	{
-		ttystatus(_T("Cannot create \x201c%s\x201d\n"), file);
+		ttystatus(_T("Cannot create \x201c%s\x201d\n"), filename);
 
 		return;
 	}
@@ -481,12 +470,34 @@ void dumpstate(HWND hwndParent, TCHAR *file1)
 
 	if (fclose(fp))
 	{
-		ttystatus(_T("Error writing \x201c%s\x201d\n"), file);
+		ttystatus(_T("Error writing \x201c%s\x201d\n"), filename);
 
 		return;
 	}
 
-	wlsStatusf(NULL,_T("State dumped to \x201c%s\x201d\n"), file);
+	wlsStatusf(NULL,_T("State dumped to \x201c%s\x201d\n"), filename);
+}
+
+/*
+ * Dump the current state of the search in the specified file.
+ * If no file is specified, it is asked for.
+ */
+void dumpstate(HWND hwndParent, TCHAR *file1)
+{
+	TCHAR filename[MAX_PATH];
+
+	if(file1) {
+		StringCchCopy(filename,MAX_PATH,file1);
+	}
+	else {
+		StringCchCopy(filename,MAX_PATH,_T("dump.txt"));
+		getfilename_s(hwndParent,filename);
+	}
+
+	if (*filename == '\0')
+		return;
+
+	dumpstate_internal(filename);
 }
 
 /*
@@ -1332,9 +1343,8 @@ void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
 
 /*
  * Dump the current state of the search in the specified file.
- * If no file is specified, it is asked for.
  */
-void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo)
+void dumpstate_internal(const TCHAR *filename, BOOL echo)
 {
 	FILE *	fp;
 	CELL **	set;
@@ -1344,19 +1354,7 @@ void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo)
 	int	gen;
 	int **	param;
 	char ind;
-	TCHAR *file = g.state_filename;
 	char buf[80];
-
-	if(file1) {
-		file = file1;
-	}
-	else
-	{
-		if (!getfilename_s(hwndParent,g.state_filename))
-		{
-			return;
-		}
-	}
 
 	fp = _tfopen(g.state_filename, _T("wt"));
 
@@ -1462,6 +1460,28 @@ void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo)
 	{
 		wlsStatusf(NULL,_T("State dumped to \x201c%s\x201d\n"), g.state_filename);
 	}
+}
+
+/*
+ * Dump the current state of the search in the specified file.
+ * If no file is specified, it is asked for.
+ */
+void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo)
+{
+	TCHAR *filename = g.state_filename;
+
+	if(file1) {
+		filename = file1;
+	}
+	else
+	{
+		if (!getfilename_s(hwndParent,g.state_filename))
+		{
+			return;
+		}
+	}
+
+	dumpstate_internal(filename, echo);
 }
 
 /*
