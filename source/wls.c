@@ -252,6 +252,136 @@ static BOOL loadstate(HWND hwndParent)
 }
 #endif
 
+// Get a filename for saving a state file.
+static BOOL getfilename_s(HWND hwndParent, TCHAR *filename)
+{
+	OPENFILENAME ofn;
+
+	ZeroMemory(&ofn,sizeof(OPENFILENAME));
+
+	ofn.lStructSize=sizeof(OPENFILENAME);
+	ofn.hwndOwner=hwndParent;
+#ifdef JS
+	ofn.lpstrFilter=_T("*.txt\0*.txt\0All files\0*.*\0\0");
+#else
+	ofn.lpstrFilter=_T("WLS Dump Files (*.wdf)\0*.wdf\0Text Files (*.txt)\0*.txt\0All files\0*.*\0\0");
+#endif
+	ofn.nFilterIndex=1;
+	ofn.lpstrTitle=_T("Save state");
+	ofn.lpstrDefExt=_T("txt");
+	ofn.lpstrFile=filename;
+	ofn.nMaxFile=MAX_PATH;
+	ofn.Flags=OFN_HIDEREADONLY|OFN_OVERWRITEPROMPT;
+
+	if(GetSaveFileName(&ofn)) {
+		return TRUE;
+	}
+#ifdef JS
+	StringCchCopy(filename,MAX_PATH,_T(""));
+#endif
+	return FALSE;
+}
+
+#ifdef JS
+/*
+ * Write the current generation to the specified file.
+ * If no file is specified, it is asked for.
+ * Empty rows and columns are not written.
+ * Filename of "." means write to stdout.
+ */
+void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
+{
+	TCHAR filename[MAX_PATH];
+
+	if(!g.saveoutput && !g.outputcols) return;
+
+	if(file1) {
+		StringCchCopy(filename,MAX_PATH,file1);
+	}
+	else {
+		StringCchCopy(filename,MAX_PATH,_T(""));
+		getfilename_s(hwndParent,filename);
+	}
+
+	if (*filename == '\0')
+		return;
+
+	wlsWriteCurrentFieldToFile_internal(filename, append);
+}
+
+/*
+ * Dump the current state of the search in the specified file.
+ * If no file is specified, it is asked for.
+ */
+void dumpstate(HWND hwndParent, TCHAR *file1)
+{
+	TCHAR filename[MAX_PATH];
+
+	if(file1) {
+		StringCchCopy(filename,MAX_PATH,file1);
+	}
+	else {
+		StringCchCopy(filename,MAX_PATH,_T("dump.txt"));
+		getfilename_s(hwndParent,filename);
+	}
+
+	if (*filename == '\0')
+		return;
+
+	dumpstate_internal(filename);
+}
+
+#else
+
+/*
+ * Write the current generation to the specified file.
+ * Empty rows and columns are not written.
+ * If no file is specified, it is asked for.
+ * Filename of "." means write to stdout.
+ */
+void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
+{
+	TCHAR filename[MAX_PATH];
+
+	if(!g.saveoutput && !g.outputcols) return;
+
+	if(file1) {
+		StringCchCopy(filename,MAX_PATH,file1);
+	}
+	else {
+		StringCchCopy(filename,MAX_PATH,_T(""));
+		getfilename_s(hwndParent,filename);
+	}
+
+	if (*filename == '\0')
+		return;
+
+	wlsWriteCurrentFieldToFile_internal(filename, append);
+}
+
+/*
+ * Dump the current state of the search in the specified file.
+ * If no file is specified, it is asked for.
+ */
+void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo)
+{
+	TCHAR *filename = g.state_filename;
+
+	if(file1) {
+		filename = file1;
+	}
+	else
+	{
+		if (!getfilename_s(hwndParent,g.state_filename))
+		{
+			return;
+		}
+	}
+
+	dumpstate_internal(filename, echo);
+}
+
+#endif
 
 // TODO: Find a better way to keep track of allocated memory.
 // At least use a linked list or something.

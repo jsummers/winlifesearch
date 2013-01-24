@@ -392,10 +392,13 @@ void initsearchorder(void);
 void wlsUpdateAndShowTmpField(void);
 void wlsUpdateAndShowTmpField_Sync(void);
 void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append);
+void wlsWriteCurrentFieldToFile_internal(const TCHAR *filename, BOOL append);
 #ifdef JS
 void dumpstate(HWND hwndParent, TCHAR *file1);
+void dumpstate_internal(const TCHAR *filename);
 #else
 void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo);
+void dumpstate_internal(const TCHAR *filename, BOOL echo);
 #endif
 
 void adjustnear(CELL *, int);
