@@ -205,6 +205,54 @@ void wlsStatusf(struct wcontext *ctx, TCHAR *fmt, ...)
 	va_end(ap);
 }
 
+// Get a filename for loading a state file.
+static BOOL getfilename_l(HWND hwndParent, TCHAR *filename)
+{
+	OPENFILENAME ofn;
+
+	ZeroMemory(&ofn,sizeof(OPENFILENAME));
+
+	ofn.lStructSize=sizeof(OPENFILENAME);
+	ofn.hwndOwner=hwndParent;
+#ifdef JS
+	ofn.lpstrFilter=_T("*.txt\0*.txt\0All files\0*.*\0\0");
+#else
+	ofn.lpstrFilter=_T("WLS Dump Files (*.wdf)\0*.wdf\0Text Files (*.txt)\0*.txt\0All files\0*.*\0\0");
+#endif
+	ofn.nFilterIndex=1;
+	ofn.lpstrTitle=_T("Load state");
+	ofn.lpstrFile=filename;
+	ofn.nMaxFile=MAX_PATH;
+	ofn.Flags=OFN_FILEMUSTEXIST|OFN_HIDEREADONLY;
+
+	if(GetOpenFileName(&ofn)) {
+		return TRUE;
+	}
+#ifdef JS
+	StringCchCopy(filename,MAX_PATH,_T(""));
+#endif
+	return FALSE;
+}
+
+#ifdef JS
+static BOOL loadstate(HWND hwndParent)
+{
+	TCHAR filename[MAX_PATH];
+
+	StringCchCopy(filename,MAX_PATH,_T(""));
+	getfilename_l(hwndParent,filename);
+	if(filename[0]=='\0') return FALSE;
+	return loadstate_from_filename(filename);
+}
+#else
+static BOOL loadstate(HWND hwndParent)
+{
+	if (!getfilename_l(hwndParent,g.state_filename)) return FALSE;
+	return loadstate_from_filename(g.state_filename);
+}
+#endif
+
+
 // TODO: Find a better way to keep track of allocated memory.
 // At least use a linked list or something.
 // (The original lifesrc did not bother to free memory or to make it easy to

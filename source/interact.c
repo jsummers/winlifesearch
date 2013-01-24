@@ -16,35 +16,6 @@
 
 extern struct globals_struct g;
 
-// Get a filename for loading a state file.
-static BOOL getfilename_l(HWND hwndParent, TCHAR *filename)
-{
-	OPENFILENAME ofn;
-
-	ZeroMemory(&ofn,sizeof(OPENFILENAME));
-
-	ofn.lStructSize=sizeof(OPENFILENAME);
-	ofn.hwndOwner=hwndParent;
-#ifdef JS
-	ofn.lpstrFilter=_T("*.txt\0*.txt\0All files\0*.*\0\0");
-#else
-	ofn.lpstrFilter=_T("WLS Dump Files (*.wdf)\0*.wdf\0Text Files (*.txt)\0*.txt\0All files\0*.*\0\0");
-#endif
-	ofn.nFilterIndex=1;
-	ofn.lpstrTitle=_T("Load state");
-	ofn.lpstrFile=filename;
-	ofn.nMaxFile=MAX_PATH;
-	ofn.Flags=OFN_FILEMUSTEXIST|OFN_HIDEREADONLY;
-
-	if(GetOpenFileName(&ofn)) {
-		return TRUE;
-	}
-#ifdef JS
-	StringCchCopy(filename,MAX_PATH,_T(""));
-#endif
-	return FALSE;
-}
-
 // Get a filename for saving a state file.
 static BOOL getfilename_s(HWND hwndParent, TCHAR *filename)
 {
@@ -505,13 +476,12 @@ void dumpstate(HWND hwndParent, TCHAR *file1)
 	wlsStatusf(NULL,_T("State dumped to \x201c%s\x201d\n"), file);
 }
 
-
 /*
  * Load a previously dumped state from a file.
  * Warning: Almost no checks are made for validity of the state.
  * Returns TRUE on success.
  */
-BOOL loadstate(HWND hwndParent)
+BOOL loadstate_from_filename(const TCHAR *filename)
 {
 	FILE *	fp;
 	char *	cp;
@@ -525,23 +495,16 @@ BOOL loadstate(HWND hwndParent)
 	int **	param;
 	char	buf[LINESIZE];
 	int g1,val;
-	TCHAR file[MAX_PATH];
 
 	int x1,y1,z1,x,y,z;
 
-	//file = getstr(file, "Load state from file: ");
-	StringCchCopy(file,MAX_PATH,_T(""));
-	getfilename_l(hwndParent,file);
+	if(filename[0]=='\0') return FALSE;
 
-	//if (*file == '\0')
-	//	return TRUE;
-	if(file[0]=='\0') return FALSE;
-
-	fp = _tfopen(file, _T("r"));
+	fp = _tfopen(filename, _T("r"));
 
 	if (fp == NULL)
 	{
-		ttystatus(_T("Cannot open state file \x201c%s\x201d\n"), file);
+		ttystatus(_T("Cannot open state file \x201c%s\x201d\n"), filename);
 
 		return FALSE;
 	}
@@ -551,7 +514,7 @@ BOOL loadstate(HWND hwndParent)
 
 	if (buf[0] != 'V')
 	{
-		ttystatus(_T("Missing version line in file \x201c%s\x201d\n"), file);
+		ttystatus(_T("Missing version line in file \x201c%s\x201d\n"), filename);
 		fclose(fp);
 
 		return FALSE;
@@ -561,7 +524,7 @@ BOOL loadstate(HWND hwndParent)
 /*
 	if (getnum(&cp, 0) != DUMPVERSION)
 	{
-		ttystatus(_T("Unknown version in state file \x201c%s\x201d\n"), file);
+		ttystatus(_T("Unknown version in state file \x201c%s\x201d\n"), filename);
 		fclose(fp);
 
 		return FALSE;
@@ -759,12 +722,12 @@ BOOL loadstate(HWND hwndParent)
 
 	if (fclose(fp))
 	{
-		ttystatus(_T("Error reading \x201c%s\x201d\n"), file);
+		ttystatus(_T("Error reading \x201c%s\x201d\n"), filename);
 
 		return FALSE;
 	}
 
-	wlsStatusf(NULL,_T("State loaded from \x201c%s\x201d\n"), file);
+	wlsStatusf(NULL,_T("State loaded from \x201c%s\x201d\n"), filename);
 	return TRUE;
 }
 
@@ -1474,13 +1437,12 @@ void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo)
 	}
 }
 
-
 /*
  * Load a previously dumped state from a file.
  * Warning: Almost no checks are made for validity of the state.
  * Returns OK on success, ERROR1 on failure.
  */
-BOOL loadstate(HWND hwndParent)
+BOOL loadstate_from_filename(const TCHAR *filename)
 {
 	FILE *	fp;
 	char *	cp;
@@ -1496,13 +1458,12 @@ BOOL loadstate(HWND hwndParent)
 
 	STATUS status;
 
-	if (!getfilename_l(hwndParent,g.state_filename)) return FALSE;
 
-	fp = _tfopen(g.state_filename, _T("r"));
+	fp = _tfopen(filename, _T("r"));
 
 	if (fp == NULL)
 	{
-		ttystatus(_T("Cannot open state file \x201c%s\x201d\n"), g.state_filename);
+		ttystatus(_T("Cannot open state file \x201c%s\x201d\n"), filename);
 
 		return FALSE;
 	}
@@ -1516,7 +1477,7 @@ BOOL loadstate(HWND hwndParent)
 
 	if (buf[0] != 'V')
 	{
-		ttystatus(_T("Missing version line in file \x201c%s\x201d\n"), g.state_filename);
+		ttystatus(_T("Missing version line in file \x201c%s\x201d\n"), filename);
 		fclose(fp);
 
 		return FALSE;
@@ -1719,12 +1680,12 @@ BOOL loadstate(HWND hwndParent)
 
 	if (fclose(fp))
 	{
-		ttystatus(_T("Error reading \x201c%s\x201d\n"), g.state_filename);
+		ttystatus(_T("Error reading \x201c%s\x201d\n"), filename);
 
 		return FALSE;
 	}
 
-	wlsStatusf(NULL,_T("State loaded from \x201c%s\x201d\n"), g.state_filename);
+	wlsStatusf(NULL,_T("State loaded from \x201c%s\x201d\n"), filename);
 	return TRUE;
 }
 

@@ -417,7 +417,7 @@ void excludecone(int, int, int);
 BOOL freezecell(int, int);
 BOOL setrules(TCHAR *);
 BOOL setrulesA(char *);
-BOOL loadstate(HWND hwndParent);
+BOOL loadstate_from_filename(const TCHAR *filename);
 void getbackup(char *cp);
 
 struct wcontext;
