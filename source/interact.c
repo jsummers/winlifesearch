@@ -201,11 +201,9 @@ getbackup(char *cp)
 /*
  * Write the current generation to the specified file.
  * Empty rows and columns are not written.
- * If no file is specified, it is asked for.
  * Filename of "." means write to stdout.
  */
-void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
-/*	char *	file;		 file name (or NULL) */
+void wlsWriteCurrentFieldToFile_internal(const TCHAR *filename, BOOL append)
 /*	BOOL	append;		 TRUE to append instead of create */
 {
 	FILE *	fp;
@@ -214,30 +212,20 @@ void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
 	int	col;
 	int	ch;
 	int	minrow, maxrow, mincol, maxcol;
-	TCHAR file[MAX_PATH];
 
 	if(!g.saveoutput && !g.outputcols) return;
 
-//	file = getstr(file, "Write object to file: ");
-	if(file1) {
-		StringCchCopy(file,MAX_PATH,file1);
-	}
-	else {
-		StringCchCopy(file,MAX_PATH,_T(""));
-		getfilename_s(hwndParent,file);
-	}
-
-	if (*file == '\0')
+	if (*filename == '\0')
 		return;
 
 	fp = stdout;
 
-	if (_tcscmp(file, _T(".")))
-		fp = _tfopen(file, append ? _T("a") : _T("w"));
+	if (_tcscmp(filename, _T(".")))
+		fp = _tfopen(filename, append ? _T("a") : _T("w"));
 
 	if (fp == NULL)
 	{
-		ttystatus(_T("Cannot create \x201c%s\x201d\n"), file);
+		ttystatus(_T("Cannot create \x201c%s\x201d\n"), filename);
 
 		return;
 	}
@@ -318,17 +306,42 @@ void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
 
 	if ((fp != stdout) && fclose(fp))
 	{
-		ttystatus(_T("Error writing \x201c%s\x201d\n"), file);
+		ttystatus(_T("Error writing \x201c%s\x201d\n"), filename);
 
 		return;
 	}
 
 	g.writecount++;
 	if (fp != stdout) {
-		wlsStatusf(NULL,_T("\x201c%s\x201d written (%d)"),file,g.writecount);
+		wlsStatusf(NULL,_T("\x201c%s\x201d written (%d)"),filename,g.writecount);
 	}
 }
 
+/*
+ * Write the current generation to the specified file.
+ * If no file is specified, it is asked for.
+ * Empty rows and columns are not written.
+ * Filename of "." means write to stdout.
+ */
+void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
+{
+	TCHAR filename[MAX_PATH];
+
+	if(!g.saveoutput && !g.outputcols) return;
+
+	if(file1) {
+		StringCchCopy(filename,MAX_PATH,file1);
+	}
+	else {
+		StringCchCopy(filename,MAX_PATH,_T(""));
+		getfilename_s(hwndParent,filename);
+	}
+
+	if (*filename == '\0')
+		return;
+
+	wlsWriteCurrentFieldToFile_internal(filename, append);
+}
 
 /*
  * Dump the current state of the search in the specified file.
@@ -1158,11 +1171,9 @@ getbackup(char *cp)
 /*
  * Write the current generation to the specified file.
  * Empty rows and columns are not written.
- * If no file is specified, it is asked for.
  * Filename of "." means write to stdout.
  */
-void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
-/*	char *	file;		 file name (or NULL) */
+void wlsWriteCurrentFieldToFile_internal(const TCHAR *filename, BOOL append)
 /*	BOOL	append;		 TRUE to append instead of create */
 {
 	FILE *	fp;
@@ -1172,29 +1183,20 @@ void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
 	int gen;
 	int	ch;
 	int	minrow, maxrow, mincol, maxcol;
-	TCHAR file[MAX_PATH];
 
 	if(!g.saveoutput && !g.outputcols) return;
 
-	if(file1) {
-		StringCchCopy(file,MAX_PATH,file1);
-	}
-	else {
-		StringCchCopy(file,MAX_PATH,_T(""));
-		getfilename_s(hwndParent,file);
-	}
-
-	if (*file == '\0')
+	if (*filename == '\0')
 		return;
 
 	fp = stdout;
 
-	if (_tcscmp(file, _T(".")))
-		fp = _tfopen(file, append ? _T("a") : _T("w"));
+	if (_tcscmp(filename, _T(".")))
+		fp = _tfopen(filename, append ? _T("a") : _T("w"));
 
 	if (fp == NULL)
 	{
-		ttystatus(_T("Cannot create \x201c%s\x201d\n"), file);
+		ttystatus(_T("Cannot create \x201c%s\x201d\n"), filename);
 
 		return;
 	}
@@ -1291,17 +1293,42 @@ void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
 
 	if ((fp != stdout) && fclose(fp))
 	{
-		ttystatus(_T("Error writing \x201c%s\x201d\n"), file);
+		ttystatus(_T("Error writing \x201c%s\x201d\n"), filename);
 
 		return;
 	}
 
 	g.writecount++;
 	if (fp != stdout) {
-		wlsStatusf(NULL,_T("\x201c%s\x201d written (%d)"),file,g.writecount);
+		wlsStatusf(NULL,_T("\x201c%s\x201d written (%d)"),filename,g.writecount);
 	}
 }
 
+/*
+ * Write the current generation to the specified file.
+ * Empty rows and columns are not written.
+ * If no file is specified, it is asked for.
+ * Filename of "." means write to stdout.
+ */
+void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
+{
+	TCHAR filename[MAX_PATH];
+
+	if(!g.saveoutput && !g.outputcols) return;
+
+	if(file1) {
+		StringCchCopy(filename,MAX_PATH,file1);
+	}
+	else {
+		StringCchCopy(filename,MAX_PATH,_T(""));
+		getfilename_s(hwndParent,filename);
+	}
+
+	if (*filename == '\0')
+		return;
+
+	wlsWriteCurrentFieldToFile_internal(filename, append);
+}
 
 /*
  * Dump the current state of the search in the specified file.
