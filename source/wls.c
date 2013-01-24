@@ -228,29 +228,14 @@ static BOOL getfilename_l(HWND hwndParent, TCHAR *filename)
 	if(GetOpenFileName(&ofn)) {
 		return TRUE;
 	}
-#ifdef JS
-	StringCchCopy(filename,MAX_PATH,_T(""));
-#endif
 	return FALSE;
 }
 
-#ifdef JS
-static BOOL loadstate(HWND hwndParent)
-{
-	TCHAR filename[MAX_PATH];
-
-	StringCchCopy(filename,MAX_PATH,_T(""));
-	getfilename_l(hwndParent,filename);
-	if(filename[0]=='\0') return FALSE;
-	return loadstate_from_filename(filename);
-}
-#else
 static BOOL loadstate(HWND hwndParent)
 {
 	if (!getfilename_l(hwndParent,g.state_filename)) return FALSE;
 	return loadstate_from_filename(g.state_filename);
 }
-#endif
 
 // Get a filename for saving a state file.
 static BOOL getfilename_s(HWND hwndParent, TCHAR *filename)
@@ -276,62 +261,8 @@ static BOOL getfilename_s(HWND hwndParent, TCHAR *filename)
 	if(GetSaveFileName(&ofn)) {
 		return TRUE;
 	}
-#ifdef JS
-	StringCchCopy(filename,MAX_PATH,_T(""));
-#endif
 	return FALSE;
 }
-
-#ifdef JS
-/*
- * Write the current generation to the specified file.
- * If no file is specified, it is asked for.
- * Empty rows and columns are not written.
- * Filename of "." means write to stdout.
- */
-void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
-{
-	TCHAR filename[MAX_PATH];
-
-	if(!g.saveoutput && !g.outputcols) return;
-
-	if(file1) {
-		StringCchCopy(filename,MAX_PATH,file1);
-	}
-	else {
-		StringCchCopy(filename,MAX_PATH,_T(""));
-		getfilename_s(hwndParent,filename);
-	}
-
-	if (*filename == '\0')
-		return;
-
-	wlsWriteCurrentFieldToFile_internal(filename, append);
-}
-
-/*
- * Dump the current state of the search in the specified file.
- * If no file is specified, it is asked for.
- */
-void dumpstate(HWND hwndParent, TCHAR *file1)
-{
-	TCHAR filename[MAX_PATH];
-
-	if(file1) {
-		StringCchCopy(filename,MAX_PATH,file1);
-	}
-	else {
-		StringCchCopy(filename,MAX_PATH,_T("dump.txt"));
-		getfilename_s(hwndParent,filename);
-	}
-
-	if (*filename == '\0')
-		return;
-
-	dumpstate_internal(filename);
-}
-
-#else
 
 /*
  * Write the current generation to the specified file.
@@ -380,8 +311,6 @@ void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo)
 
 	dumpstate_internal(filename, echo);
 }
-
-#endif
 
 // TODO: Find a better way to keep track of allocated memory.
 // At least use a linked list or something.
@@ -1801,7 +1730,7 @@ static DWORD WINAPI search_thread(LPVOID foo)
 
 		if (g.dumpfreq) {
 			g.dumpcount = 0;
-			dumpstate(ctx->hwndFrame, g.dumpfile);
+			dumpstate(ctx->hwndFrame, g.dumpfile, 0);
 		}
 
 		g.curgen = 0;
@@ -2615,7 +2544,7 @@ static void Handle_Save(struct wcontext *ctx)
 {
 #ifdef JS
 	if(ctx->searchstate==WLS_SRCH_PAUSED)
-		dumpstate(ctx->hwndFrame, NULL);
+		dumpstate(ctx->hwndFrame, NULL, 0);
 #else
 	if (ctx->searchstate==WLS_SRCH_OFF) {
 		if (prepare_search(ctx,FALSE)) {

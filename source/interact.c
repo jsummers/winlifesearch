@@ -291,7 +291,7 @@ void wlsWriteCurrentFieldToFile_internal(const TCHAR *filename, BOOL append)
 /*
  * Dump the current state of the search in the specified file.
  */
-void dumpstate_internal(const TCHAR *filename)
+void dumpstate_internal(const TCHAR *filename, BOOL reserved)
 {
 	FILE *	fp;
 	CELL **	set;

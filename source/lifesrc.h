@@ -327,8 +327,8 @@ struct globals_struct {
 	int saveoutputallgen;
 	int stoponfound;
 	int stoponstep;
-	TCHAR state_filename[MAX_PATH];
 #endif
+	TCHAR state_filename[MAX_PATH];
 	int foundcount;
 	int writecount;
 #ifdef JS
@@ -393,13 +393,8 @@ void wlsUpdateAndShowTmpField(void);
 void wlsUpdateAndShowTmpField_Sync(void);
 void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append);
 void wlsWriteCurrentFieldToFile_internal(const TCHAR *filename, BOOL append);
-#ifdef JS
-void dumpstate(HWND hwndParent, TCHAR *file1);
-void dumpstate_internal(const TCHAR *filename);
-#else
 void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo);
 void dumpstate_internal(const TCHAR *filename, BOOL echo);
-#endif
 
 void adjustnear(CELL *, int);
 STATUS search(void);

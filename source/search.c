@@ -1078,7 +1078,7 @@ search(void)
 		if (g.dumpfreq && (++g.dumpcount >= g.dumpfreq))
 		{
 			g.dumpcount = 0;
-			dumpstate(NULL, g.dumpfile);
+			dumpstate(NULL, g.dumpfile, 0);
 		}
 
 		/*
