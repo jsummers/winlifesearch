@@ -206,7 +206,7 @@ void wlsStatusf(struct wcontext *ctx, TCHAR *fmt, ...)
 }
 
 // Get a filename for loading a state file.
-static BOOL getfilename_l(HWND hwndParent, TCHAR *filename)
+static BOOL getfilename_l(struct wcontext *ctx, HWND hwndParent, TCHAR *filename)
 {
 	OPENFILENAME ofn;
 
@@ -223,6 +223,9 @@ static BOOL getfilename_l(HWND hwndParent, TCHAR *filename)
 	ofn.lpstrTitle=_T("Load state");
 	ofn.lpstrFile=filename;
 	ofn.nMaxFile=MAX_PATH;
+	if(filename[0]=='\0' && ctx->save_folder[0]!='\0') {
+		ofn.lpstrInitialDir = ctx->save_folder;
+	}
 	ofn.Flags=OFN_FILEMUSTEXIST|OFN_HIDEREADONLY;
 
 	if(GetOpenFileName(&ofn)) {
@@ -231,14 +234,14 @@ static BOOL getfilename_l(HWND hwndParent, TCHAR *filename)
 	return FALSE;
 }
 
-static BOOL loadstate(HWND hwndParent)
+static BOOL loadstate(struct wcontext *ctx, HWND hwndParent)
 {
-	if (!getfilename_l(hwndParent,g.state_filename)) return FALSE;
+	if (!getfilename_l(ctx, hwndParent, g.state_filename)) return FALSE;
 	return loadstate_from_filename(g.state_filename);
 }
 
 // Get a filename for saving a state file.
-static BOOL getfilename_s(HWND hwndParent, TCHAR *filename)
+static BOOL getfilename_s(struct wcontext *ctx, HWND hwndParent, TCHAR *filename)
 {
 	OPENFILENAME ofn;
 
@@ -256,6 +259,9 @@ static BOOL getfilename_s(HWND hwndParent, TCHAR *filename)
 	ofn.lpstrDefExt=_T("txt");
 	ofn.lpstrFile=filename;
 	ofn.nMaxFile=MAX_PATH;
+	if(filename[0]=='\0' && ctx->save_folder[0]!='\0') {
+		ofn.lpstrInitialDir = ctx->save_folder;
+	}
 	ofn.Flags=OFN_HIDEREADONLY|OFN_OVERWRITEPROMPT;
 
 	if(GetSaveFileName(&ofn)) {
@@ -281,7 +287,7 @@ void wlsWriteCurrentFieldToFile(HWND hwndParent, TCHAR *file1, BOOL append)
 	}
 	else {
 		StringCchCopy(filename,MAX_PATH,_T(""));
-		getfilename_s(hwndParent,filename);
+		getfilename_s(gctx, hwndParent,filename);
 	}
 
 	if (*filename == '\0')
@@ -303,7 +309,7 @@ void dumpstate(HWND hwndParent, TCHAR *file1, BOOL echo)
 	}
 	else
 	{
-		if (!getfilename_s(hwndParent,g.state_filename))
+		if (!getfilename_s(gctx,hwndParent,g.state_filename))
 		{
 			return;
 		}
@@ -2020,7 +2026,7 @@ static BOOL prepare_search(struct wcontext *ctx, BOOL load)
 	wlsUpdateProgressCounter();
 
 	if (load) {
-		if(!loadstate(ctx->hwndFrame)) {
+		if(!loadstate(ctx, ctx->hwndFrame)) {
 			wlsRepaintCells(ctx,TRUE);
 			goto done;
 		}
